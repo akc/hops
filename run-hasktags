@@ -1,0 +1,1 @@
+hasktags --ignore-close-implementation --etags gfscript.hs GfScript/

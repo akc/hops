@@ -1,0 +1,63 @@
+Name:                gfscript
+Version:             0.0.1
+Synopsis:            A language for generating functions
+Homepage:            http://github.com/akc/gfscript
+License:             BSD3
+License-file:        LICENSE
+Author:              Anders Claesson
+Maintainer:          anders.claesson@gmail.com
+Category:            Math
+Build-type:          Custom
+Extra-Source-Files:  README.md gfscript.1
+
+Cabal-version:       >=1.9.2
+
+source-repository head
+  type:                git
+  location:            git://github.com/akc/gfscript.git
+
+Executable gfscript
+  Main-is:             gfscript.hs
+
+  Other-Modules:       GfScript.Config
+                       GfScript.DB
+                       GfScript.Download
+                       GfScript.Entry
+                       GfScript.Matrix
+                       GfScript.OEIS
+                       GfScript.Options
+                       GfScript.Utils
+                       GfScript.Gf
+                       GfScript.Gf.Const
+                       GfScript.Gf.Rat
+                       GfScript.Gf.Rats
+                       GfScript.Gf.Series
+                       GfScript.Gf.Transform
+
+  ghc-options:         -Wall -fno-warn-unused-do-bind -fno-warn-missing-signatures
+                       -threaded -O2 -with-rtsopts=-N
+
+  Build-depends:       aeson >=0.8,
+                       ansi-terminal >=0.6,
+                       attoparsec >=0.11,
+                       base >=4 && <5,
+                       bytestring >=0.10,
+                       conduit >=1,
+                       conduit-extra >=1,
+                       containers >=0.5,
+                       deepseq >=1.4,
+                       directory >=1.2,
+                       filepath >=1.3,
+                       http-conduit >=2,
+                       http-types >=0.8,
+                       optparse-applicative >=0.10,
+                       parallel >=3.2,
+                       text >=0.11,
+                       transformers >=0.3,
+                       vector >=0.10
+
+Test-Suite Properties
+  type:                exitcode-stdio-1.0
+  Main-is:             tests/Properties.hs
+  Build-depends:       base >=4 && <5,
+                       QuickCheck >=2.7
