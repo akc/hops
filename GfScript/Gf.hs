@@ -334,7 +334,7 @@ evalExpr3 env (Fac u)    = fac $ evalExpr4 env u
 evalExpr3 env (Comp g h) = evalExpr4 env g `o` evalExpr4 env h
 evalExpr3 env (Expr4 g)  = evalExpr4 env g
 evalExpr3 env (Tr t g)   =
-    let g'  = evalExpr4 env g
+    let g' = evalExpr4 env g
     in case lookupTransform t of
          Just tr -> tr g'
          Nothing -> fromMaybe nil (lookupVar t env) `o` g'

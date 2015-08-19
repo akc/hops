@@ -85,7 +85,7 @@ $ gfscript --prec 10 'y=1/(2-exp(x)); laplace(y)'
 y=1/(2-exp(x));laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
 ```
 
-Alternatively, one can exploit that *y\'=2y<sup>2</sup>-y*:
+Alternatively, one can exploit that *y'=2y<sup>2</sup>-y*:
 
 ```
 $ gfscript --prec 10 'y = 1 + integral(2*y^2 - y); laplace(y)'
