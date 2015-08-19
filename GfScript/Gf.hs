@@ -360,12 +360,10 @@ nil = series (Proxy :: Proxy n) []
 
 -- | Evaluate a program in a given environment.
 evalPrg :: KnownNat n => Env n -> Prg Integer -> (Env n, Series n)
-evalPrg env p = snd $ fromMaybe t (find hasConverged (zip trail trail'))
+evalPrg env p = trail !! precision f0
   where
-    t = ((env, nil), (env, nil))
-    trail  = iterate (evalPrgNext p) (env, nil)
-    trail' = drop 1 trail
-    hasConverged ((_,a), (_,b)) = a == b
+    f0 = nil
+    trail = iterate (evalPrgNext p) (env, f0)
 
 -- | Evaluate a list of programs in a given environment.
 evalPrgs :: KnownNat n => Env n -> [Prg Integer] -> [(Env n, Series n)]
