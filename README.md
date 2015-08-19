@@ -1,4 +1,4 @@
-# GfScript - A language for generating functions [![Build Status](https://travis-ci.org/akc/gfscript.svg)](https://travis-ci.org/akc/gfscript)
+# GfScript - A scripting language for generating functions [![Build Status](https://travis-ci.org/akc/gfscript.svg)](https://travis-ci.org/akc/gfscript)
 
 ## Install
 
@@ -112,23 +112,31 @@ $ gfscript 'REVERT(A067145)-LEFT(A067145)'
 REVERT(A067145)-LEFT(A067145) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 ```
 
+### GfScript program files
+
 Sometimes it is useful be able to apply many transformations to the same
 input. One way to achieve that is to write a little program with the
-transformations we are interested in.
+transformations we are interested in. E.g. if we create a file
+`transforms.gf` containing
 
 ```
-$ cat >transforms.gf
 BINOMIAL(stdin)
 EULER(stdin)
 REVEGF(stdin)
 STIRLING(stdin)
+```
+then we can apply all of these transforms to `1/(1-x)` as follows:
 
+```
 $ gfscript '1/(1-x)' | gfscript --prec=9 -f transforms.gf
 f=1/(1-x);BINOMIAL(f) => {1,2,4,8,16,32,64,128,256}
 f=1/(1-x);EULER(f) => {1,2,3,5,7,11,15,22,30}
 f=1/(1-x);REVEGF(f) => {1,-2,9,-64,625,-7776,117649,-2097152,43046721}
 f=1/(1-x);STIRLING(f) => {1,2,5,15,52,203,877,4140,21147}
 ```
+
+N.B: As in this example, the preferred file extension for GfScript
+program files is `.gf`.
 
 ### Tagging sequences
 
@@ -140,11 +148,14 @@ TAG000002 => {1,1,2,5,19,34}
 
 ## The man page
 
-For further information on usage see the [man page](gfscript.md).
+For further information on usage see the
+[man page](https://github.com/akc/gfscript/blob/master/gfscript.md).
 
-## An EBNF grammar for programs accepted by `gfscript`
+## A grammar for Gfscript programs
 
 ```
+gfscript ::= prg { "\n" prg }
+
 prg ::= cmd { ";" cmd }
 
 cmd ::= expr0 | name "=" expr0
@@ -193,16 +204,15 @@ cexpr4 ::= literal | cexpr0
 
 ## Issues
 
-Have you found a bug? Do you have a suggestion for an improvement? Want
-to extend `gfscript` with new features? Please open a issue at
-<https://github.com/akc/gfscript/issues>.
+Have you found a bug? Want to contribut to GfScript? Please open a issue
+at <https://github.com/akc/gfscript/issues>.
 
 ## How to cite
 
 ```
 @misc{gfscript,
   author = "Anders Claesson",
-  title  = "GfScript: a language for generating functions
+  title  = "GfScript: A scripting language for generating functions
   year   =  2015,
   howpublished = "\url{http://akc.is/src/gfscript}"
 }
@@ -210,4 +220,5 @@ to extend `gfscript` with new features? Please open a issue at
 
 ## License
 
-BSD-3: see the [LICENSE](LICENSE) file.
+BSD-3: see the
+[LICENSE](https://github.com/akc/gfscript/blob/master/LICENSE) file.

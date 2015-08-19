@@ -5,7 +5,7 @@ date: 17 Aug 2015
 
 # NAME
 
-gfscript - a language for generating functions.
+gfscript - a scripting language for generating functions.
 
 # SYNOPSIS
 
