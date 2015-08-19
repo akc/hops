@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DataKinds #-}
@@ -21,6 +22,9 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import qualified Data.Map.Strict as M
+#if __GLASGOW_HASKELL__ < 710
+import Control.Applicative
+#endif
 import Control.Monad
 import Test.QuickCheck
 import GfScript.Matrix
