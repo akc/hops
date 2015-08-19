@@ -9,11 +9,11 @@ gfscript - a scripting language for generating functions.
 
 # SYNOPSIS
 
-**gfscript** [--prec N] PROGRAMS...  
-**gfscript** [--prec N] (-f|--script) FILENAME  
-**gfscript** --tag N  
-**gfscript** (--to-json|--from-json)  
-**gfscript** (--list-transforms|--dump|--update|--version|--help)
+**gfscript** `[--prec N] PROGRAMS...`  
+**gfscript** `[--prec N] (-f|--script) FILENAME`  
+**gfscript** `--tag N`  
+**gfscript** `(--to-json|--from-json)`  
+**gfscript** `(--list-transforms|--dump|--update|--version|--help)`
 
 # DESCRIPTION
 
