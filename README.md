@@ -1,4 +1,6 @@
-# GfScript - A scripting language for generating functions [![Build Status](https://travis-ci.org/akc/gfscript.svg)](https://travis-ci.org/akc/gfscript)
+# `gfscript` [![Build Status](https://travis-ci.org/akc/gfscript.svg)](https://travis-ci.org/akc/gfscript)
+
+A scripting language for generating functions.
 
 ## Install
 
@@ -73,6 +75,23 @@ $ gfscript --prec=12 'f=sec(x)+tan(x);laplace(f)'
 f=sec(x)+tan(x);laplace(f) => {1,1,1,2,5,16,61,272,1385,7936,50521,353792}
 ```
 
+### Number of ballots (ordered set partitions)
+
+This sequence most simply defined by its exponential generating function
+*y=1/(2-exp(x))*:
+
+```
+$ gfscript --prec 10 'y=1/(2-exp(x)); laplace(y)'
+y=1/(2-exp(x));laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
+```
+
+Alternatively, one can exploit that *y\'=2y<sup>2</sup>-y*:
+
+```
+$ gfscript --prec 10 'y = 1 + integral(2*y^2 - y); laplace(y)'
+y=1+integral(2*y^2-y);laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
+```
+
 ### Composing programs
 
 Using the special variable `stdin` we can compose programs:
@@ -112,7 +131,7 @@ $ gfscript 'REVERT(A067145)-LEFT(A067145)'
 REVERT(A067145)-LEFT(A067145) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 ```
 
-### GfScript program files
+### `gfscript` program files
 
 Sometimes it is useful be able to apply many transformations to the same
 input. One way to achieve that is to write a little program with the
@@ -135,7 +154,7 @@ f=1/(1-x);REVEGF(f) => {1,-2,9,-64,625,-7776,117649,-2097152,43046721}
 f=1/(1-x);STIRLING(f) => {1,2,5,15,52,203,877,4140,21147}
 ```
 
-N.B: As in this example, the preferred file extension for GfScript
+N.B: As in this example, the preferred file extension for `gfscript`
 program files is `.gf`.
 
 ### Tagging sequences
@@ -151,7 +170,7 @@ TAG000002 => {1,1,2,5,19,34}
 For further information on usage see the
 [man page](https://github.com/akc/gfscript/blob/master/gfscript.md).
 
-## A grammar for Gfscript programs
+## A grammar for `gfscript` programs
 
 ```
 gfscript ::= prg { "\n" prg }
@@ -204,7 +223,7 @@ cexpr4 ::= literal | cexpr0
 
 ## Issues
 
-Have you found a bug? Want to contribut to GfScript? Please open a issue
+Have you found a bug? Want to contribut to `gfscript`? Please open a issue
 at <https://github.com/akc/gfscript/issues>.
 
 ## How to cite
@@ -212,7 +231,7 @@ at <https://github.com/akc/gfscript/issues>.
 ```
 @misc{gfscript,
   author = "Anders Claesson",
-  title  = "GfScript: A scripting language for generating functions
+  title  = "gfscript: A scripting language for generating functions",
   year   =  2015,
   howpublished = "\url{http://akc.is/src/gfscript}"
 }
