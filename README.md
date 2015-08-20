@@ -78,7 +78,7 @@ f=sec(x)+tan(x);laplace(f) => {1,1,1,2,5,16,61,272,1385,7936,50521,353792}
 ### Number of ballots (ordered set partitions)
 
 This sequence most simply defined by its exponential generating function
-*y=1/(2-exp(x))*:
+*y=1/(2-e<sup>x</sup>)*:
 
 ```
 $ gfscript --prec 10 'y=1/(2-exp(x)); laplace(y)'
@@ -223,7 +223,7 @@ cexpr4 ::= literal | cexpr0
 
 ## Issues
 
-Have you found a bug? Want to contribut to `gfscript`? Please open a issue
+Have you found a bug? Want to contribute to `gfscript`? Please open an issue
 at <https://github.com/akc/gfscript/issues>.
 
 ## How to cite
