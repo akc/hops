@@ -4,13 +4,19 @@ Hackable Operations on Power Series.
 
 ## Install
 
-If using the [nix](https://nixos.org/nix/) package manager:
+The easiest way to get started is to download a prebuilt binary. Such
+binaries can be found on the
+[releases page](https://github.com/akc/hops/releases).
+The binaries are statically linked and should work on any Linux system.
+
+Alternative ways of installing `hops` include
+using the [nix](https://nixos.org/nix/) package manager:
 
 ```
 $ nix-env -f "<nixpkgs>" -iA haskellPackages.hops
 ```
 
-Otherwise, use [cabal](https://www.haskell.org/cabal/):
+Or [cabal](https://www.haskell.org/cabal/):
 
 ```
 $ cabal install hops
