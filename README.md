@@ -1,6 +1,6 @@
-# `hops` [![Build Status](https://travis-ci.org/akc/hops.svg)](https://travis-ci.org/akc/hops)
+# ![HOPS](https://github.com/akc/akc.github.io/raw/master/src/hops/images/hops.png) HOPS [![Build Status](https://travis-ci.org/akc/hops.svg)](https://travis-ci.org/akc/hops)
 
-A scripting language for generating functions.
+Hackable Operations on Power Series.
 
 ## Install
 
