@@ -1,38 +1,38 @@
-Name:                gfscript
+Name:                hops
 Version:             0.0.1
-Synopsis:            A language for generating functions
-Homepage:            http://github.com/akc/gfscript
+Synopsis:            Hackable Operations on Power Series
+Homepage:            http://github.com/akc/hops
 License:             BSD3
 License-file:        LICENSE
 Author:              Anders Claesson
 Maintainer:          anders.claesson@gmail.com
 Category:            Math
 Build-type:          Custom
-Extra-Source-Files:  README.md gfscript.1
+Extra-Source-Files:  README.md hops.1
 
 Cabal-version:       >=1.9.2
 
 source-repository head
   type:                git
-  location:            git://github.com/akc/gfscript.git
+  location:            git://github.com/akc/hops.git
 
-Executable gfscript
-  Main-is:             gfscript.hs
+Executable hops
+  Main-is:             hops.hs
 
-  Other-Modules:       GfScript.Config
-                       GfScript.DB
-                       GfScript.Download
-                       GfScript.Entry
-                       GfScript.Matrix
-                       GfScript.OEIS
-                       GfScript.Options
-                       GfScript.Utils
-                       GfScript.Gf
-                       GfScript.Gf.Const
-                       GfScript.Gf.Rat
-                       GfScript.Gf.Rats
-                       GfScript.Gf.Series
-                       GfScript.Gf.Transform
+  Other-Modules:       HOPS.Config
+                       HOPS.DB
+                       HOPS.Download
+                       HOPS.Entry
+                       HOPS.Matrix
+                       HOPS.OEIS
+                       HOPS.Options
+                       HOPS.Utils
+                       HOPS.GF
+                       HOPS.GF.Const
+                       HOPS.GF.Rat
+                       HOPS.GF.Rats
+                       HOPS.GF.Series
+                       HOPS.GF.Transform
 
   ghc-options:         -Wall -fno-warn-unused-do-bind -fno-warn-missing-signatures
                        -threaded -O2 -with-rtsopts=-N

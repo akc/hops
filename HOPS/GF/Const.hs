@@ -9,7 +9,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.Gf.Const
+module HOPS.GF.Const
     ( Expr
     , Expr0 (..)
     , Expr1 (..)
@@ -29,8 +29,8 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
-import GfScript.Gf.Series
-import GfScript.Utils
+import HOPS.GF.Series
+import HOPS.Utils
 
 -- | Similar to the `Show` class, but uses `ByteString`s rather than
 -- `String`s.

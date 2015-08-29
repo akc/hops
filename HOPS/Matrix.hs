@@ -5,7 +5,7 @@
 --
 -- Bare-bones matrix library; just enough to compute determinants.
 
-module GfScript.Matrix
+module HOPS.Matrix
     ( Matrix
     , matrix
     , det

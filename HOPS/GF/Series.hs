@@ -19,8 +19,8 @@
 --     * D. Piponi (sigfpe) "A Small Combinatorial Library",
 --       <http://blog.sigfpe.com/2007/11/small-combinatorial-library.html>.
 
-module GfScript.Gf.Series
-    ( module GfScript.Gf.Rat
+module HOPS.GF.Series
+    ( module HOPS.GF.Rat
     , Series (..)
     -- * Constructions
     , polynomial
@@ -50,7 +50,7 @@ import Data.Ratio
 import Data.Maybe
 import Data.Vector (Vector, (!), (//))
 import qualified Data.Vector as V
-import GfScript.Gf.Rat
+import HOPS.GF.Rat
 
 -- | A truncated power series is represented as a (dense) vector of
 -- coefficients. The precision (maximum number of coefficients) is

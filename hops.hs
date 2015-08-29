@@ -27,18 +27,18 @@ import Control.Monad
 import Control.Parallel.Strategies
 import System.Directory
 import System.IO
-import GfScript.Entry
-import GfScript.OEIS
-import GfScript.Options
-import GfScript.Config
-import GfScript.Download
-import GfScript.Utils
-import GfScript.DB
-import GfScript.Gf
-import GfScript.Gf.Series
-import GfScript.Gf.Transform
+import HOPS.Entry
+import HOPS.OEIS
+import HOPS.Options
+import HOPS.Config
+import HOPS.Download
+import HOPS.Utils
+import HOPS.DB
+import HOPS.GF
+import HOPS.GF.Series
+import HOPS.GF.Transform
 
-nameVer  = "gfscript 0.0.1"               :: String
+nameVer  = "hops 0.0.1"               :: String
 strpdURL = "https://oeis.org/stripped.gz" :: URL
 
 type Prec   = Int
@@ -84,7 +84,7 @@ readInput opts cfg
         . unDB <$> readSeqDB cfg
 
     | update opts =
-        return $ UpdateDBs (gfscriptDir cfg) (seqDBPath cfg)
+        return $ UpdateDBs (hopsDir cfg) (seqDBPath cfg)
 
     | listTransforms opts = return $ ListTransforms transforms
 
@@ -123,8 +123,8 @@ runPrgs k es ps =
     let getCoeffs = packSeq . take k . rationalPrefix . snd
     in concat ([ getCoeffs <$> evalPrgs e ps | e <- es] `using` parbuf256)
 
-gfscript :: KnownNat n => Proxy n -> Input n -> IO Output
-gfscript n inp =
+hops :: KnownNat n => Proxy n -> Input n -> IO Output
+hops n inp =
     case inp of
 
       DumpSeqDB precn es ->
@@ -135,8 +135,8 @@ gfscript n inp =
               , not (null t)
               ]
 
-      UpdateDBs gfscriptdir sdbPath -> do
-          createDirectoryIfMissing False gfscriptdir
+      UpdateDBs hopsdir sdbPath -> do
+          createDirectoryIfMissing False hopsdir
           let msg1 = "Downloading " ++ strpdURL ++ ": "
           putStr msg1 >> hFlush stdout
           download (length msg1) strpdURL sdbPath >> putStrLn ""
@@ -166,25 +166,25 @@ gfscript n inp =
                   , map (stdEnv n env . getSeq) entries
                   )
 
--- | Main function and entry point for gfscript.
+-- | Main function and entry point for hops.
 main :: IO ()
 main = do
     c <- getConfig
     t <- getOptions
     case prec t of
-      p | p <    4  -> readInput t c >>= gfscript (Proxy :: Proxy    4) >>= printOutput
-        | p <    8  -> readInput t c >>= gfscript (Proxy :: Proxy    8) >>= printOutput
-        | p <   12  -> readInput t c >>= gfscript (Proxy :: Proxy   12) >>= printOutput
-        | p <   16  -> readInput t c >>= gfscript (Proxy :: Proxy   16) >>= printOutput
-        | p <   20  -> readInput t c >>= gfscript (Proxy :: Proxy   20) >>= printOutput
-        | p <   24  -> readInput t c >>= gfscript (Proxy :: Proxy   24) >>= printOutput
-        | p <   28  -> readInput t c >>= gfscript (Proxy :: Proxy   28) >>= printOutput
-        | p <   32  -> readInput t c >>= gfscript (Proxy :: Proxy   32) >>= printOutput
-        | p <   64  -> readInput t c >>= gfscript (Proxy :: Proxy   64) >>= printOutput
-        | p <   96  -> readInput t c >>= gfscript (Proxy :: Proxy   96) >>= printOutput
-        | p <  128  -> readInput t c >>= gfscript (Proxy :: Proxy  128) >>= printOutput
-        | p <  256  -> readInput t c >>= gfscript (Proxy :: Proxy  256) >>= printOutput
-        | p <  512  -> readInput t c >>= gfscript (Proxy :: Proxy  512) >>= printOutput
-        | p < 1024  -> readInput t c >>= gfscript (Proxy :: Proxy 1024) >>= printOutput
-        | p < 2048  -> readInput t c >>= gfscript (Proxy :: Proxy 2048) >>= printOutput
+      p | p <    4  -> readInput t c >>= hops (Proxy :: Proxy    4) >>= printOutput
+        | p <    8  -> readInput t c >>= hops (Proxy :: Proxy    8) >>= printOutput
+        | p <   12  -> readInput t c >>= hops (Proxy :: Proxy   12) >>= printOutput
+        | p <   16  -> readInput t c >>= hops (Proxy :: Proxy   16) >>= printOutput
+        | p <   20  -> readInput t c >>= hops (Proxy :: Proxy   20) >>= printOutput
+        | p <   24  -> readInput t c >>= hops (Proxy :: Proxy   24) >>= printOutput
+        | p <   28  -> readInput t c >>= hops (Proxy :: Proxy   28) >>= printOutput
+        | p <   32  -> readInput t c >>= hops (Proxy :: Proxy   32) >>= printOutput
+        | p <   64  -> readInput t c >>= hops (Proxy :: Proxy   64) >>= printOutput
+        | p <   96  -> readInput t c >>= hops (Proxy :: Proxy   96) >>= printOutput
+        | p <  128  -> readInput t c >>= hops (Proxy :: Proxy  128) >>= printOutput
+        | p <  256  -> readInput t c >>= hops (Proxy :: Proxy  256) >>= printOutput
+        | p <  512  -> readInput t c >>= hops (Proxy :: Proxy  512) >>= printOutput
+        | p < 1024  -> readInput t c >>= hops (Proxy :: Proxy 1024) >>= printOutput
+        | p < 2048  -> readInput t c >>= hops (Proxy :: Proxy 2048) >>= printOutput
         | otherwise -> error "max-precision is 2047"

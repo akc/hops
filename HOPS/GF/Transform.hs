@@ -8,7 +8,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.Gf.Transform
+module HOPS.GF.Transform
     ( Transform
     , lookupTransform
     , transforms
@@ -23,8 +23,8 @@ import qualified Data.Vector as V
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.ByteString.Char8 (ByteString)
-import GfScript.Gf.Series
-import GfScript.Matrix
+import HOPS.GF.Series
+import HOPS.Matrix
 
 -- | A `Transform` takes a `Series` to another `Series`.
 type Transform n = Series n -> Series n

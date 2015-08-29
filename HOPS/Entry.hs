@@ -8,7 +8,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.Entry
+module HOPS.Entry
     ( Entry (..)
     , PackedEntry (..)
     , parsePackedEntryErr
@@ -27,9 +27,9 @@ import Control.Monad
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 #endif
-import GfScript.Utils
-import GfScript.Gf
-import GfScript.OEIS
+import HOPS.Utils
+import HOPS.GF
+import HOPS.OEIS
 
 -- | An entry consists of a program together with a list of rational
 -- numbers.

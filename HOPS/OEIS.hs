@@ -8,7 +8,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.OEIS
+module HOPS.OEIS
     (
     -- * Types
       URL
@@ -45,7 +45,7 @@ import Data.Attoparsec.ByteString.Char8
 import Control.DeepSeq
 import Control.Monad
 import Control.Applicative
-import GfScript.Utils
+import HOPS.Utils
 
 -- | The name of an OEIS entry is a short description of the
 -- sequence. Here represented as a `ByteString`.

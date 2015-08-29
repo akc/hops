@@ -5,8 +5,8 @@ cabal-dev
 *.hi
 *.chi
 *.chs.h
-gfscript.1
-gfscript.html
+hops.1
+hops.html
 README.html
 TODO.md
 result
@@ -15,4 +15,4 @@ default.nix
 tests/Properties
 notes.txt
 TAGS
-gfscript
+hops

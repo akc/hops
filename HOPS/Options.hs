@@ -3,9 +3,9 @@
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
--- Command line options for gfscript.
+-- Command line options for hops.
 
-module GfScript.Options
+module HOPS.Options
     ( Options (..)
     , getOptions
     ) where

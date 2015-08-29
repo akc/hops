@@ -9,7 +9,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.DB
+module HOPS.DB
     ( DB (..), Sequences
     , readSeqDB
     , readANumDB
@@ -26,9 +26,9 @@ import qualified Data.Vector as V
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
 import System.Directory
-import GfScript.Gf.Series
-import GfScript.OEIS
-import GfScript.Config
+import HOPS.GF.Series
+import HOPS.OEIS
+import HOPS.Config
 
 -- | An empty data declaration used with the phantom `DB` data type.
 data Sequences
@@ -40,7 +40,7 @@ newtype DB a = DB {unDB :: ByteString} deriving Show
 readDB :: FilePath -> IO (DB a)
 readDB fpath = doesFileExist fpath >>= \b ->
     if b then DB <$> B.readFile fpath
-         else error "No local A-number database; run 'gfscript --update' first."
+         else error "No local A-number database; run 'hops --update' first."
 
 -- | Read the sequence DB (derived from \"stripped.gz\").
 readSeqDB :: Config -> IO (DB Sequences)

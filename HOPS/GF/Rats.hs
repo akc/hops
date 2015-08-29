@@ -11,7 +11,7 @@
 --
 -- Expressions defining sequences of rational numbers.
 
-module GfScript.Gf.Rats
+module HOPS.GF.Rats
     ( Linear (..)
     , Fun
     , Term (..)
@@ -29,8 +29,8 @@ import Data.Foldable (find)
 import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
-import GfScript.Gf.Const
-import GfScript.Gf.Series
+import HOPS.GF.Const
+import HOPS.GF.Series
 
 data Linear a = a :+ a deriving (Show, Eq)
 

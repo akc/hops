@@ -6,7 +6,7 @@
 -- Rational numbers extended with two elements representing a finite but
 -- indeterminate value and divison by zero, respectively.
 
-module GfScript.Gf.Rat
+module HOPS.GF.Rat
     ( Rat (..)
     , maybeRational
     , isRational

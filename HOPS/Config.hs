@@ -5,7 +5,7 @@
 --
 -- Constants determined at runtime such as the home directory.
 
-module GfScript.Config
+module HOPS.Config
     ( Config (..)
     , getConfig
     ) where
@@ -17,19 +17,19 @@ import System.Directory
 data Config = Config
     {
     -- | The home directory
-      home        :: FilePath
-    -- | Path to the '.gfscript' directory.
-    , gfscriptDir :: FilePath
+      home      :: FilePath
+    -- | Path to the '.hops' directory.
+    , hopsDir   :: FilePath
     -- | Path to 'stripped' file.
-    , seqDBPath   :: FilePath
+    , seqDBPath :: FilePath
     }
 
 -- | Get configuration.
 getConfig :: IO Config
 getConfig = do
     h <- getHomeDirectory
-    let c = Config { home        = h
-                   , gfscriptDir = h </> ".gfscript"
-                   , seqDBPath   = gfscriptDir c </> "stripped"
+    let c = Config { home      = h
+                   , hopsDir   = h </> ".hops"
+                   , seqDBPath = hopsDir c </> "stripped"
                    }
     return c

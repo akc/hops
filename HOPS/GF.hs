@@ -10,7 +10,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.Gf
+module HOPS.GF
     ( Expr0 (..)
     , Expr1 (..)
     , Expr2 (..)
@@ -49,12 +49,12 @@ import Data.Attoparsec.ByteString.Char8 hiding (take, takeWhile)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Control.Monad
 import Control.Applicative
-import GfScript.Utils
-import GfScript.OEIS
-import GfScript.Gf.Series
-import GfScript.Gf.Transform
-import GfScript.Gf.Const (Pretty(..))
-import GfScript.Gf.Rats
+import HOPS.Utils
+import HOPS.OEIS
+import HOPS.GF.Series
+import HOPS.GF.Transform
+import HOPS.GF.Const (Pretty(..))
+import HOPS.GF.Rats
 
 -- | A compact `ByteString` representation of a `Prg`.
 newtype PackedPrg = PPrg ByteString deriving (Eq, Show, Generic)

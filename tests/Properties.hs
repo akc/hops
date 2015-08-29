@@ -27,13 +27,13 @@ import Control.Applicative
 #endif
 import Control.Monad
 import Test.QuickCheck
-import GfScript.Matrix
-import GfScript.OEIS (Name)
-import GfScript.Gf
-import qualified GfScript.Gf.Const as C
-import GfScript.Gf.Rats
-import GfScript.Gf.Series
-import GfScript.Gf.Transform
+import HOPS.Matrix
+import HOPS.OEIS (Name)
+import HOPS.GF
+import qualified HOPS.GF.Const as C
+import HOPS.GF.Rats
+import HOPS.GF.Series
+import HOPS.GF.Transform
 
 alpha :: String
 alpha = ['A'..'Z'] ++ ['a'..'z']

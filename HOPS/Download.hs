@@ -4,7 +4,7 @@
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
-module GfScript.Download (download, requestPage) where
+module HOPS.Download (download, requestPage) where
 
 import Numeric
 import Data.ByteString.Char8 (ByteString)
@@ -19,7 +19,7 @@ import Control.Monad.IO.Class (liftIO)
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative
 #endif
-import GfScript.OEIS (URL)
+import HOPS.OEIS (URL)
 import System.Console.ANSI
 import System.IO
 

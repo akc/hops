@@ -6,7 +6,7 @@
 -- License     : BSD-3
 --
 
-module GfScript.Utils
+module HOPS.Utils
     ( pad
     , parens
     , oneOf
