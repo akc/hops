@@ -1,6 +1,6 @@
-# ![HOPS](https://github.com/akc/akc.github.io/raw/master/src/hops/images/hops.png) HOPS
+# ![HOPS](https://github.com/akc/akc.github.io/raw/master/src/hops/images/hops.png) HOPS [![Build Status](https://travis-ci.org/akc/hops.svg)](https://travis-ci.org/akc/hops)
 
-Hackable Operations on Power Series [![Build Status](https://travis-ci.org/akc/hops.svg)](https://travis-ci.org/akc/hops)
+Hackable Operations on Power Series.
 
 ## Install
 
