@@ -113,8 +113,8 @@ f=1+(x+x^2)*f;g=1+2*x*g;g/(1-x*f) => {1,3,8,21,54,137,344,857,2122,5229,12836}
 
 ### Misc transformations
 
-`hops` knows about many of the transformations used by OEIS
-<https://oeis.org/transforms.html>
+HOPS knows about many of the transformations used by OEIS
+<https://oeis.org/transforms.html>.
 
 As an example, the sequences `A067145` claims to shift left under
 reversion:
@@ -136,7 +136,7 @@ REVERT(A067145)-LEFT(A067145) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 Sometimes it is useful be able to apply many transformations to the same
 input. One way to achieve that is to write a little program with the
 transformations we are interested in. E.g. if we create a file
-`transforms.gf` containing
+`transforms.hops` containing
 
 ```
 BINOMIAL(stdin)
@@ -147,15 +147,15 @@ STIRLING(stdin)
 then we can apply all of these transforms to `1/(1-x)` as follows:
 
 ```
-$ hops '1/(1-x)' | hops --prec=9 -f transforms.gf
+$ hops '1/(1-x)' | hops --prec=9 -f transforms.hops
 f=1/(1-x);BINOMIAL(f) => {1,2,4,8,16,32,64,128,256}
 f=1/(1-x);EULER(f) => {1,2,3,5,7,11,15,22,30}
 f=1/(1-x);REVEGF(f) => {1,-2,9,-64,625,-7776,117649,-2097152,43046721}
 f=1/(1-x);STIRLING(f) => {1,2,5,15,52,203,877,4140,21147}
 ```
 
-N.B: As in this example, the preferred file extension for `hops`
-program files is `.gf`.
+N.B: As in this example, the preferred file extension for HOPS
+program files is `.hops`.
 
 ### Tagging sequences
 
@@ -170,7 +170,7 @@ TAG000002 => {1,1,2,5,19,34}
 For further information on usage see the
 [man page](https://github.com/akc/hops/blob/master/hops.md).
 
-## A grammar for `hops` programs
+## A grammar for HOPS programs
 
 ```
 hops ::= prg { "\n" prg }
