@@ -29,7 +29,7 @@ $ hops 'f=1+(x+x^2)*f'
 f=1+(x+x^2)*f => {1,1,2,3,5,8,13,21,34,55,89,144,233,377,610}
 ```
 
-Alternatively, we could first solve for $f$ in *f=1+(x+x<sup>2</sup>)f*
+Alternatively, we could first solve for *f* in *f=1+(x+x<sup>2</sup>)f*
 and let `hops` expand that expression:
 
 ```
