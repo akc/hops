@@ -19,7 +19,7 @@ hops - Hackable Operations on Power Series.
 
 With `hops` one can generate integer (or rational) sequences from
 programs containing power series and functional equations. See
-<http://akc.is/src/hops> for more information about the HOPS
+<http://akc.is/hops> for more information about the HOPS
 language and how to program in it.
 
 # EXAMPLES
@@ -71,7 +71,7 @@ f=1/(1-x);f^2 => {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
 :   Briefly describe the available options.
 
 # SEE ALSO
-<http://akc.is/src/hops>
+<http://akc.is/hops>
 
 # AUTHOR
 
