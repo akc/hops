@@ -38,10 +38,10 @@ import HOPS.GF
 import HOPS.GF.Series
 import HOPS.GF.Transform
 
-nameVer  = "hops 0.0.1"               :: String
+nameVer = "hops 0.0.1" :: String
 strpdURL = "https://oeis.org/stripped.gz" :: URL
 
-type Prec   = Int
+type Prec = Int
 type TrName = B.ByteString
 
 data Input (n :: Nat)
