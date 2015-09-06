@@ -10,5 +10,5 @@ else
     cd hops
 fi
 
-ghc --make -O2 -optl-static hops.hs
+ghc --make -threaded -O2 -with-rtsopts=-N -optl-static hops.hs
 strip -s hops
