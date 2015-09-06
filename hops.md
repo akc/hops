@@ -1,19 +1,19 @@
 ---
 title: HOPS(1) User Manual | Version 0.0.1
-date: 17 Aug 2015
+date: 6 Sep 2015
 ---
 
 # NAME
 
-hops - Hackable Operations on Power Series.
+hops - hackable operations on power series.
 
 # SYNOPSIS
 
-**hops** `[--prec N] PROGRAMS...`  
-**hops** `[--prec N] (-f|--script) FILENAME`  
-**hops** `--tag N`  
-**hops** `(--to-json|--from-json)`  
-**hops** `(--list-transforms|--dump|--update|--version|--help)`
+`hops [--prec N] PROGRAMS...`  
+`hops [--prec N] (-f|--script) FILENAME`  
+`hops --tag N`  
+`hops (--to-json|--from-json)`  
+`hops (--list-transforms|--dump|--update|--version|--help)`
 
 # DESCRIPTION
 
