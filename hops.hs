@@ -60,18 +60,18 @@ data Output
     | Transforms [TrName]
     | NOP
 
-nonEmptyLines :: BL.ByteString -> [B.ByteString]
-nonEmptyLines = map BL.toStrict . filter (not . BL.null) . BL.lines
+lines' :: BL.ByteString -> [B.ByteString]
+lines' = filter (not . B.null) . map BL.toStrict . BL.lines
 
 readStdin :: IO [B.ByteString]
-readStdin = nonEmptyLines <$> BL.getContents
+readStdin = lines' <$> BL.getContents
 
 readPrgs :: Options -> IO [Prg Integer]
 readPrgs opts =
     map parsePrgErr <$>
         if script opts == ""
             then return (map B.pack (terms opts))
-            else nonEmptyLines <$> BL.readFile (script opts)
+            else lines' <$> BL.readFile (script opts)
 
 readInput :: KnownNat n => Options -> Config -> IO (Input n)
 readInput opts cfg

@@ -442,7 +442,11 @@ prg = Prg <$> cmd decimal `sepBy'` string ";"
 
 -- | Parse a program.
 parsePrg :: ByteString -> Maybe (Prg Integer)
-parsePrg = parse_ prg . B.takeWhile (/='#') . B.filter (/=' ')
+parsePrg = parse_ prg . B.takeWhile (/='#') . B.filter f
+  where
+    f '\t' = False
+    f ' '  = False
+    f _    = True
 
 -- | Parse a program and possibly fail with an error.
 parsePrgErr :: ByteString -> Prg Integer
