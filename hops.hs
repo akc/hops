@@ -45,7 +45,7 @@ type Prec = Int
 type TrName = B.ByteString
 
 data Input (n :: Nat)
-    = RunPrg Prec (Env n) [Prg Integer] [Entry]
+    = RunPrgs Prec (Env n) [Prg Integer] [Entry]
     | TagSeqs Int [PackedSeq]
     | DumpSeqDB Prec [PackedEntry]
     | UpdateDBs FilePath FilePath
@@ -102,7 +102,7 @@ readInput opts cfg
         prgs <- readPrgs opts
         -- NB: The next line forces the full program (prgs) to be evaluated.
         inp  <- if "stdin" `elem` (vars =<< prgs) then readStdin else return []
-        return $ RunPrg (prec opts) (Env db M.empty) prgs (map parseEntry inp)
+        return $ RunPrgs (prec opts) (Env db M.empty) prgs (map parseEntry inp)
 
 printOutput :: Output -> IO ()
 printOutput NOP = return ()
@@ -156,7 +156,7 @@ hops n inp =
 
       Empty -> putStrLn nameVer >> return NOP
 
-      RunPrg precn env prgs entries ->
+      RunPrgs precn env prgs entries ->
           return $ Entries (zipWith PackedEntry (packPrg <$> ps) results)
         where
           results = runPrgs precn envs prgs
