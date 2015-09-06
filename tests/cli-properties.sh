@@ -44,3 +44,6 @@ check "hops --prec 10 'A=sqrt(exp(x)/(2-exp(x)));laplace(A)'" \
 
 check "hops --prec 10 'A=1+integral(A^3*exp(-x));laplace(A)'" \
 "A=1+integral(A^3*exp(-x));laplace(A) => {1,1,2,7,35,226,1787,16717,180560,2211181}"
+
+check "hops --prec 12 'f=1+x*f(f-1);(f-1)/x'" \
+"f=1+x*f(f-1);(f-1)/x => {1,1,2,6,23,104,531,2982,18109,117545,808764,5862253}"
