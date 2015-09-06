@@ -68,7 +68,7 @@ readStdin = lines' <$> BL.getContents
 
 readPrgs :: Options -> IO [Prg Integer]
 readPrgs opts =
-    map parsePrgErr <$>
+    filter (not . null . commands) . map parsePrgErr <$>
         if script opts == ""
             then return (map B.pack (terms opts))
             else lines' <$> BL.readFile (script opts)
