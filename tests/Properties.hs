@@ -201,6 +201,8 @@ prop_Prg_value p = evalPrg' p == evalPrg' q
 prop_Rat_power_u :: Bool
 prop_Rat_power_u = (1/4) !^! (3/2) == Val (1 % 8)
 
+prop_Neg_power_u = areEq "{-(-1)^n}" "-1/(1+x)" []
+
 prop_LEFT_u      = areEq "LEFT      {4,3,2,1}"         "{3,2,1}"               []
 prop_RIGHT_u     = areEq "RIGHT     {4,3,2,1}"         "{1,4,3,2,1}"           []
 prop_M2_u        = areEq "M2        {5,4,3,2,1}"       "{5,8,6,4,2}"           []
@@ -795,6 +797,7 @@ tests =
     , ("Prg-monoid/associative", check 100 prop_Prg_assoc)
     , ("Prg-monoid/value",       check  20 prop_Prg_value)
     , ("unit/Rat-Power",         check   1 prop_Rat_power_u)
+    , ("unit/Neg-Power",         check   1 prop_Neg_power_u)
     , ("unit/LEFT",              check   1 prop_LEFT_u)
     , ("unit/RIGHT",             check   1 prop_RIGHT_u)
     , ("unit/M2",                check   1 prop_M2_u)
