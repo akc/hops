@@ -16,19 +16,22 @@ using the [nix](https://nixos.org/nix/) package manager:
 $ nix-env -f "<nixpkgs>" -iA haskellPackages.hops
 ```
 
-Or [cabal](https://www.haskell.org/cabal/):
+Or using [cabal](https://www.haskell.org/cabal/):
 
 ```
 $ cabal install hops
 ```
 
-## Usage examples
+## Introduction
+
+To get a feeling for the HOPS language and using its interpreter (hops)
+let us look at a few examples.
 
 ### Fibonacci numbers
 
 The generating function, *f*, for the Fibonacci numbers satisfies
-*f=1+(x+x<sup>2</sup>)f*, and using `hops` we can get the
-coefficient of *f* directly from this equation:
+*f=1+(x+x<sup>2</sup>)f*, and we can get the coefficient of *f* directly
+from that equation:
 
 ```
 $ hops 'f=1+(x+x^2)*f'
@@ -98,6 +101,58 @@ $ hops --prec 10 'y = 1 + integral(2*y^2 - y); laplace(y)'
 y=1+integral(2*y^2-y);laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
 ```
 
+### Simple sequence notation
+
+We have seen how to define a few different sequences using generating
+functions and functional equations. HOPS also supports a more naive way
+of specifying sequences. Here's a simple finite sequence:
+
+```
+$ hops '{1,2,3}'
+{1,2,3} => {1,2,3}
+```
+
+We can also use ellipses to build infinite sequences:
+
+```
+$ hops '{1,2,...}'
+{1,2,...} => {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
+```
+
+What happened in the background here is that `hops` fitted the first
+degree polynomial *p(n)=1+n* to the values *p(0)=1* and *p(1)=2*. We
+could alternatively have given this formula explicitly:
+
+```
+$ hops '{1+n}'
+{1+n} => {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
+```
+
+We are not limited to first degree polynomials either:
+
+```
+$ hops '{0,1,8,27,...}'
+{0,1,8,27,...} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
+
+$ hops '{n^3}'
+{n^3} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
+```
+
+The number of integer compositions of *n* is 1 if *n=0* and
+*2<sup>n-1</sup>* if *n>0*. Here's how we might specify that formula:
+
+```
+$ hops '{1,2^(n-1)}'
+{1,2^(n-1)} => {1,1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192}
+```
+
+Factorials are find too:
+
+```
+$ hops --prec=12 '{n!}'
+{n!} => {1,1,2,6,24,120,720,5040,40320,362880,3628800,39916800}
+```
+
 ### Composing programs
 
 Using the special variable `stdin` we can compose programs:
@@ -163,6 +218,14 @@ f=1/(1-x);STIRLING(f) => {1,2,5,15,52,203,877,4140,21147}
 N.B: As in this example, the preferred file extension for HOPS
 program files is `.hops`.
 
+## The HOPS language
+
+Each line of a HOPS script is an independent program and each
+line/program consists of a semicolon separated list of functional
+equations and generating functions. We shall now describe operations,
+functions and transformations that can be used when building such
+programs.
+
 ### Binary operations
 
 Operation | Meaning
@@ -206,7 +269,7 @@ Function       | Meaning
 `artanh(f)`    | area hyperbolic tangent function
 `laplace(f)`   | `f .* {n!}`
 `laplacei(f)`  | `f ./ {n!}`
-`revert(f)`    | compositional inverse
+`revert(f)`    | the compositional inverse of *f*
 
 ### Transforms
 
@@ -259,7 +322,54 @@ Transform      | Meaning
 
 [1] <https://oeis.org/transforms.txt>
 
-### Tagging sequences
+### A grammar for HOPS programs
+
+```
+hops = prg { "\n" prg }
+
+prg = cmd { ";" cmd }
+
+cmd = expr0 | name "=" expr0
+
+expr0 = expr0 ("+" | "-") expr0 | expr1
+
+expr1 = expr1 ("*" | "/" | ".*" | "./") expr1 | expr2
+
+expr2 = ("-" | "+") expr2 | expr3 "!" | expr3 "^" expr3 | expr3 "@" expr3 | expr3
+
+expr3 = "x" | anum | tag | name | literal | "{" { terms } "}" | name "(" expr3 ")" | expr0
+
+literal = int
+
+int = digit { digit }
+
+digit = "0" | "1" | ... | "9"
+
+alpha = "A" | "B" | ... | "Z" | "a" | "b" | ... | "z"
+
+alphanum = alpha | digit
+
+name = alphanum { alphanum | "_" }
+
+terms = cexpr0 { "," expr0 } ("..." | cexpr0 | fun)
+
+fun = the same as cexpr0 except literal = linear
+
+linear = int | int "*n"
+
+cexpr0 = cexpr0 ("+" | "-") cexpr0 | cexpr1
+
+cexpr1 = cexpr1 ("*" | "/") cexpr1 | cexpr2
+
+cexpr2 = ("+" | "-") cexpr2 | cexpr3 "!" | cexpr3 "^" cexpr3 | cexpr3
+
+cexpr3 = literal | cexpr0
+```
+
+## The man page
+
+The `hops` command has additional functionality such as the ability to
+assign tags to sequences:
 
 ```
 $ printf "1,1,2,5,17,33\n1,1,2,5,19,34\n" | hops --tag 1
@@ -267,61 +377,8 @@ TAG000001 => {1,1,2,5,17,33}
 TAG000002 => {1,1,2,5,19,34}
 ```
 
-## The man page
-
 For further information regarding command line options to `hops` see the
 [man page](https://github.com/akc/hops/blob/master/hops.md).
-
-## A grammar for HOPS programs
-
-```
-hops ::= prg { "\n" prg }
-
-prg ::= cmd { ";" cmd }
-
-cmd ::= expr0 | name "=" expr0
-
-expr0 ::= expr0 ("+" | "-") expr0 | expr1
-
-expr1 ::= expr1 ("*" | "/" | ".*" | "./") expr1 | expr2
-
-expr2 ::= expr3 "^" expr2 | expr3
-
-expr3 ::= ("-" | "+") expr3 | expr4 "!" | name "(" expr4 ")"
-          | expr4 "@" expr4
-          | expr4
-
-expr4 ::= "x" | anum | tag | name | literal | "{" { terms } "}"
-          | expr0
-
-literal ::= int
-
-int ::= digit { digit }
-
-digit ::= "0" | "1" | ... | "9"
-
-alpha ::= "A" | "B" | ... | "Z" | "a" | "b" | ... | "z"
-
-alphanum ::= alpha | digit
-
-name ::= alphanum { alphanum | "_" }
-
-terms ::= cexpr0 { "," expr0 } ("..." | cexpr0 | fun)
-
-fun ::= the same as cexpr0 except literal = linear
-
-linear ::= int | int "*n"
-
-cexpr0 ::= cexpr0 ("+" | "-") cexpr0 | cexpr1
-
-cexpr1 ::= cexpr1 ("*" | "/") cexpr1 | cexpr2
-
-cexpr2 ::= cexpr3 "^" cexpr2 | cexpr3
-
-cexpr3 ::= ("+" | "-") cexpr3 | cexpr4 "!" | cexpr4
-
-cexpr4 ::= literal | cexpr0
-```
 
 ## Issues
 
