@@ -163,6 +163,99 @@ f=1/(1-x);STIRLING(f) => {1,2,5,15,52,203,877,4140,21147}
 N.B: As in this example, the preferred file extension for HOPS
 program files is `.hops`.
 
+### Binary operations
+
+Operation | Meaning
+----------|-------------------------------------------------
+`f + g`   | sum of `f` and `g`
+`f - g`   | difference of `f` and `g`
+`f * g`   | product of `f` and `g`
+`f / g`   | quotient of `f` and `g`
+`f ^ g`   | `f` to the power `g`
+`f .* g`  | coefficient-wise/Hadamard product of `f` and `g`
+`f ./ g`  | coefficient-wise quotient of `f` and `g`
+
+### Derivative and integral
+
+Operation   | Meaning
+------------|--------------------------------------------
+D(f)        | derivative of `f`
+integral(f) | integral of `f`
+
+### Functions
+
+Function       | Meaning
+---------------|----------------------------------------
+`sqrt(f)`      | `f^(1/2)`
+`abs(f)`       | coefficient-wise absolute value
+`log(f)`       | logarithmic function
+`exp(f)`       | exponential function
+`sin(f)`       | sine function
+`cos(f)`       | cosine function
+`tan(f)`       | tangent function
+`sec(f)`       | `1/cos(f)`
+`arcsin(f)`    | arcsine function
+`arccos(f)`    | arccosine function
+`arctan(f)`    | arctangent function
+`sinh(f)`      | hyperbolic sine function
+`cosh(f)`      | hyperbolic cosine function
+`tanh(f)`      | hyperbolic tangent function
+`arsinh(f)`    | area hyperbolic sine function
+`arcosh(f)`    | area hyperbolic cosine function
+`artanh(f)`    | area hyperbolic tangent function
+`laplacei(f)`  | `f ./ {n!}`
+`laplace(f)`   | `f .* {n!}`
+`revert(f)`    | compositional inverse
+
+### Transforms
+
+Transform      | Meaning
+---------------|----------------------------------------
+`AERATE1(f)`   | `f(x^2)`
+`AERATE2(f)`   | `f(x^3)`
+`BARRY1(f)`    | `1/(1-x-x^2*f)`
+`BARRY2(f)`    | `1/(1+x+x^2*f)`
+`BINOMIAL(f)`  | `g=exp(x)*laplacei(f);laplace(g)`
+`BINOMIALi(f)` | `g=exp(-x)*laplacei(f);laplace(g)`
+`BIN1(f)`      | `g={(-1)^n/n!}*((laplacei(x*f))@(-x));LEFT(laplace(-g))`
+`BISECT0(f)`   | ...
+`BISECT1(f)`   | ...
+`BOUS2(f)`     | ...
+`BOUS2i(f)`    | ...
+`BOUS(f)`      | ...
+`CONV(f)`      | `f^2`
+`CONVi(f)`     | `sqrt(f)`
+`DIFF(f)`      | `LEFT(f)-f`
+`EULER(f)`     | ...
+`EULERi(f)`    | ...
+`EXPCONV(f)`   | ...
+`EXP(f)`       | `g={1/n!}@(laplacei(x*f));laplace(g-1)/x`
+`HANKEL(f)`    | ...
+`LAH(f)`       | `g=(laplacei(f))@(x/(1-x));laplace(g)`
+`LAHi(f)`      | `g=(laplacei(f))@(x/(1+x));laplace(g)`
+`LEFT(f)`      | ...
+`LOG(f)`       | `g=log(1+laplacei(x*f));LEFT(laplace(g))`
+`M2(f)`        | `2*f-f(0)`
+`M2i(f)`       | `(f + f(0))/2`
+`MOBIUS(f)`    | ...
+`MOBIUSi(f)`   | ...
+`NEGATE(f)`    | `(1-x/(1-x)).*f`
+`PARTITION(f)` | ...
+`POINT(f)`     | `laplace(x*D(laplacei(f)))`
+`PRODS(f)`     | ...
+`PSUM(f)`      | `f/(1-x)`
+`PSUMSIGN(f)`  | `f/(1+x)`
+`REVERT(f)`    | `LEFT(revert(x*f))`
+`REVEGF(f)`    | ...
+`RIGHT(f)`     | ...
+`STIRLING(f)`  | `g=laplacei(x*f);laplace(g@({0,1/n!}))/x`
+`STIRLINGi(f)` | `g=laplacei(x*f);laplace(g@({0,(-1)^(n+1)/n!}))/x`
+`T019(f)`      | ...
+`TRISECT0(f)`  | ...
+`TRISECT1(f)`  | ...
+`TRISECT2(f)`  | ...
+`WEIGHT(f)`    | ...
+
 ### Tagging sequences
 
 ```
@@ -173,7 +266,7 @@ TAG000002 => {1,1,2,5,19,34}
 
 ## The man page
 
-For further information on usage see the
+For further information regarding command line options to `hops` see the
 [man page](https://github.com/akc/hops/blob/master/hops.md).
 
 ## A grammar for HOPS programs
