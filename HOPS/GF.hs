@@ -15,7 +15,6 @@ module HOPS.GF
     , Expr1 (..)
     , Expr2 (..)
     , Expr3 (..)
-    , Expr4 (..)
     , Cmd (..)
     , PackedPrg (..)
     , Prg (..)
@@ -90,25 +89,21 @@ data Expr1 a
     deriving (Show, Eq)
 
 data Expr2 a
-    = Pow (Expr3 a) (Expr2 a)
+    = Neg (Expr2 a)
+    | Pos (Expr2 a)
+    | Fac (Expr3 a)
+    | Pow (Expr3 a) (Expr3 a)
+    | Comp (Expr3 a) (Expr3 a)
     | Expr3 (Expr3 a)
     deriving (Show, Eq)
 
 data Expr3 a
-    = Neg (Expr3 a)
-    | Pos (Expr3 a)
-    | Fac (Expr4 a)
-    | Tr Name (Expr4 a) -- A named transform
-    | Comp (Expr4 a) (Expr4 a)
-    | Expr4 (Expr4 a)
-    deriving (Show, Eq)
-
-data Expr4 a
     = X
     | A Int -- A-numbers
     | Tag Int
     | Var Name
     | Lit a
+    | Tr Name (Expr3 a) -- A named transform
     | Rats (Rats a)
     | Expr0 (Expr0 a)
     deriving (Show, Eq)
@@ -154,23 +149,20 @@ instance (Eq a, Num a, Pretty a) => Pretty (Expr1 a) where
     pprint (Expr2 e)     = pprint e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Expr2 a) where
-    pprint (Pow e1 e2) = pprint e1 <> "^" <> pprint e2
-    pprint (Expr3 e)   = pprint e
-
-instance (Eq a, Num a, Pretty a) => Pretty (Expr3 a) where
     pprint (Neg e) = "-" <> pprint e
     pprint (Pos e) = pprint e
     pprint (Fac e) = pprint e <> "!"
-    pprint (Tr s e) = s <> pprint e
+    pprint (Pow e1 e2) = pprint e1 <> "^" <> pprint e2
     pprint (Comp e1 e2) = pprint e1 <> "@" <> pprint e2
-    pprint (Expr4 e) = pprint e
+    pprint (Expr3 e) = pprint e
 
-instance (Eq a, Num a, Pretty a) => Pretty (Expr4 a) where
+instance (Eq a, Num a, Pretty a) => Pretty (Expr3 a) where
     pprint X = "x"
     pprint (A i) = B.cons 'A' (pad 6 i)
     pprint (Tag i) = "TAG" <> pad 6 i
     pprint (Var s) = s
     pprint (Lit x) = pprint x
+    pprint (Tr s e) = s <> pprint e
     pprint (Rats r) = pprint r
     pprint (Expr0 e) = paren $ pprint e
 
@@ -201,23 +193,20 @@ varsExpr1 (PtDiv e1 e2) = varsExpr1 e1 ++ varsExpr1 e2
 varsExpr1 (Expr2 e)     = varsExpr2 e
 
 varsExpr2 :: Expr2 a -> [Name]
-varsExpr2 (Pow e1 e2) = varsExpr3 e1 ++ varsExpr2 e2
-varsExpr2 (Expr3 e)   = varsExpr3 e
+varsExpr2 (Neg e)  = varsExpr2 e
+varsExpr2 (Pos e)  = varsExpr2 e
+varsExpr2 (Fac e)  = varsExpr3 e
+varsExpr2 (Pow e1 e2) = varsExpr3 e1 ++ varsExpr3 e2
+varsExpr2 (Comp e1 e2) = varsExpr3 e1 ++ varsExpr3 e2
+varsExpr2 (Expr3 e) = varsExpr3 e
 
 varsExpr3 :: Expr3 a -> [Name]
-varsExpr3 (Neg e)  = varsExpr3 e
-varsExpr3 (Pos e)  = varsExpr3 e
-varsExpr3 (Fac e)  = varsExpr4 e
-varsExpr3 (Tr _ e) = varsExpr4 e
-varsExpr3 (Comp e1 e2) = varsExpr4 e1 ++ varsExpr4 e2
-varsExpr3 (Expr4 e) = varsExpr4 e
-
-varsExpr4 :: Expr4 a -> [Name]
-varsExpr4 (A _) = []
-varsExpr4 (Tag _) = []
-varsExpr4 (Var s) = [s]
-varsExpr4 (Expr0 e) = varsExpr0 e
-varsExpr4 _ = []
+varsExpr3 (A _) = []
+varsExpr3 (Tag _) = []
+varsExpr3 (Var s) = [s]
+varsExpr3 (Tr _ e) = varsExpr3 e
+varsExpr3 (Expr0 e) = varsExpr0 e
+varsExpr3 _ = []
 
 varsCmd :: Cmd a -> [Name]
 varsCmd (Expr e) = varsExpr0 e
@@ -243,25 +232,22 @@ subsExpr1 f (PtDiv e1 e2) = PtDiv (subsExpr1 f e1) (subsExpr1 f e2)
 subsExpr1 f (Expr2 e)     = Expr2 (subsExpr2 f e)
 
 subsExpr2 :: Subs -> Expr2 a -> Expr2 a
-subsExpr2 f (Pow e1 e2) = Pow (subsExpr3 f e1) (subsExpr2 f e2)
-subsExpr2 f (Expr3 e)   = Expr3 (subsExpr3 f e)
+subsExpr2 f (Neg e)  = Neg (subsExpr2 f e)
+subsExpr2 f (Pos e)  = Pos (subsExpr2 f e)
+subsExpr2 f (Fac e)  = Fac (subsExpr3 f e)
+subsExpr2 f (Pow e1 e2) = Pow (subsExpr3 f e1) (subsExpr3 f e2)
+subsExpr2 f (Comp e1 e2) = Comp (subsExpr3 f e1) (subsExpr3 f e2)
+subsExpr2 f (Expr3 e) = Expr3 (subsExpr3 f e)
 
 subsExpr3 :: Subs -> Expr3 a -> Expr3 a
-subsExpr3 f (Neg e)  = Neg (subsExpr3 f e)
-subsExpr3 f (Pos e)  = Pos (subsExpr3 f e)
-subsExpr3 f (Fac e)  = Fac (subsExpr4 f e)
-subsExpr3 f (Tr s e) = Tr s (subsExpr4 f e)
-subsExpr3 f (Comp e1 e2) = Comp (subsExpr4 f e1) (subsExpr4 f e2)
-subsExpr3 f (Expr4 e) = Expr4 (subsExpr4 f e)
-
-subsExpr4 :: Subs -> Expr4 a -> Expr4 a
-subsExpr4 _ X = X
-subsExpr4 _ (A i) = A i
-subsExpr4 _ (Tag i) = Tag i
-subsExpr4 f (Var s) = Var (f s)
-subsExpr4 _ (Lit x) = Lit x
-subsExpr4 _ (Rats r) = Rats r
-subsExpr4 f (Expr0 e) = Expr0 (subsExpr0 f e)
+subsExpr3 _ X = X
+subsExpr3 _ (A i) = A i
+subsExpr3 _ (Tag i) = Tag i
+subsExpr3 f (Var s) = Var (f s)
+subsExpr3 _ (Lit x) = Lit x
+subsExpr3 f (Tr s e) = Tr s (subsExpr3 f e)
+subsExpr3 _ (Rats r) = Rats r
+subsExpr3 f (Expr0 e) = Expr0 (subsExpr0 f e)
 
 subsCmd :: Subs -> Cmd a -> Cmd a
 subsCmd f (Expr e) = Expr (subsExpr0 f e)
@@ -324,29 +310,26 @@ evalExpr1 env (PtDiv r t) = evalExpr1 env r ./ evalExpr1 env t
 evalExpr1 env (Expr2 r)   = evalExpr2 env r
 
 evalExpr2 :: KnownNat n => Env n -> Expr2 Integer -> Series n
-evalExpr2 env (Pow u e) = evalExpr3 env u ** evalExpr2 env e
-evalExpr2 env (Expr3 u) = evalExpr3 env u
+evalExpr2 env (Neg u)    = negate (evalExpr2 env u)
+evalExpr2 env (Pos u)    = evalExpr2 env u
+evalExpr2 env (Fac u)    = fac $ evalExpr3 env u
+evalExpr2 env (Pow u e)  = evalExpr3 env u ** evalExpr3 env e
+evalExpr2 env (Comp g h) = evalExpr3 env g `o` evalExpr3 env h
+evalExpr2 env (Expr3 g)  = evalExpr3 env g
 
 evalExpr3 :: KnownNat n => Env n -> Expr3 Integer -> Series n
-evalExpr3 env (Neg u)    = negate (evalExpr3 env u)
-evalExpr3 env (Pos u)    = evalExpr3 env u
-evalExpr3 env (Fac u)    = fac $ evalExpr4 env u
-evalExpr3 env (Comp g h) = evalExpr4 env g `o` evalExpr4 env h
-evalExpr3 env (Expr4 g)  = evalExpr4 env g
+evalExpr3 _    X        = polynomial (Proxy :: Proxy n) [0,1]
+evalExpr3 env (A i)     = fromMaybe nil (lookupANum i env)
+evalExpr3 _   (Tag _)   = nil
+evalExpr3 env (Var v)   = fromMaybe nil (lookupVar v env)
+evalExpr3 _   (Lit c)   = polynomial (Proxy :: Proxy n) [Val (toRational c)]
+evalExpr3 _   (Rats r)  = evalRats r
+evalExpr3 env (Expr0 e) = evalExpr0 env e
 evalExpr3 env (Tr t g)   =
-    let g' = evalExpr4 env g
+    let g' = evalExpr3 env g
     in case lookupTransform t of
          Just tr -> tr g'
          Nothing -> fromMaybe nil (lookupVar t env) `o` g'
-
-evalExpr4 :: KnownNat n => Env n -> Expr4 Integer -> Series n
-evalExpr4 _    X        = polynomial (Proxy :: Proxy n) [0,1]
-evalExpr4 env (A i)     = fromMaybe nil (lookupANum i env)
-evalExpr4 _   (Tag _)   = nil
-evalExpr4 env (Var v)   = fromMaybe nil (lookupVar v env)
-evalExpr4 _   (Lit c)   = polynomial (Proxy :: Proxy n) [Val (toRational c)]
-evalExpr4 _   (Rats r)  = evalRats r
-evalExpr4 env (Expr0 e) = evalExpr0 env e
 
 evalCmd :: KnownNat n => Env n -> Cmd Integer -> (Env n, Series n)
 evalCmd env (Expr e) = (env, evalExpr0 env e)
@@ -390,34 +373,30 @@ expr1 p = chainl1 (Expr2 <$> expr2 p) (op <$> oneOf ".* ./ * /") <?> "expr1"
     op _    = error "internal error"
 
 expr2 :: (Eq a, Num a) => Parser a -> Parser (Expr2 a)
-expr2 p = do
-    u <- expr3 p
-    Pow u <$> (string "^" *> expr2 p) <|> pure (Expr3 u) <?> "expr2"
-
-expr3 :: (Eq a, Num a) => Parser a -> Parser (Expr3 a)
-expr3 p
-     =  pm <$> oneOf "+ -" <*> expr3 p
-    <|> Tr <$> name <*> expr4 p
-    <|> (expr4 p >>= \g ->
-            Comp g <$> (string "@" *> expr4 p)
+expr2 p
+     =  pm <$> oneOf "+ -" <*> expr2 p
+    <|> (expr3 p >>= \g ->
+                Pow g <$> (string "^" *> expr3 p)
+            <|> Comp g <$> (string "@" *> expr3 p)
             <|> pure (Fac g) <* string "!"
-            <|> pure (Expr4 g))
-    <?> "expr3"
+            <|> pure (Expr3 g))
+    <?> "expr2"
   where
     pm "+" = Pos
     pm "-" = Neg
     pm _   = error "internal error"
 
-expr4 :: (Eq a, Num a) => Parser a -> Parser (Expr4 a)
-expr4 p
+expr3 :: (Eq a, Num a) => Parser a -> Parser (Expr3 a)
+expr3 p
      =  Lit     <$> p
     <|> A       <$> aNumInt
     <|> Tag     <$> tag
+    <|> Tr      <$> name <*> expr3 p
     <|> Var     <$> var
     <|> const X <$> string "x"
     <|> Rats    <$> rats p
     <|> Expr0   <$> parens (expr0 p)
-    <?> "expr4"
+    <?> "expr3"
 
 assignment :: (Eq a, Num a) => Parser a -> Parser (ByteString, Expr0 a)
 assignment p = (,) <$> var <*> (string "=" >> expr0 p)

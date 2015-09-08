@@ -15,7 +15,6 @@ module HOPS.GF.Const
     , Expr1 (..)
     , Expr2 (..)
     , Expr3 (..)
-    , Expr4 (..)
     , Pretty (..)
     , evalExpr
     , expr
@@ -54,18 +53,14 @@ data Expr1 a
     deriving (Show, Eq, Functor, Foldable)
 
 data Expr2 a
-    = Pow (Expr3 a) (Expr2 a)
+    = Neg (Expr2 a)
+    | Pos (Expr2 a)
+    | Fac (Expr3 a)
+    | Pow (Expr3 a) (Expr3 a)
     | Expr3 (Expr3 a)
     deriving (Show, Eq, Functor, Foldable)
 
 data Expr3 a
-    = Neg (Expr3 a)
-    | Pos (Expr3 a)
-    | Fac (Expr4 a)
-    | Expr4 (Expr4 a)
-    deriving (Show, Eq, Functor, Foldable)
-
-data Expr4 a
     = Lit a
     | Expr0 (Expr0 a)
     deriving (Show, Eq, Functor, Foldable)
@@ -84,16 +79,13 @@ instance Pretty a => Pretty (Expr1 a) where
     pprint (Expr2 e)   = pprint e
 
 instance Pretty a => Pretty (Expr2 a) where
+    pprint (Neg e) = "-" <> pprint e
+    pprint (Pos e) = pprint e
+    pprint (Fac e) = pprint e <> "!"
     pprint (Pow e k) = pprint e <> "^" <> pprint k
     pprint (Expr3 e) = pprint e
 
 instance Pretty a => Pretty (Expr3 a) where
-    pprint (Neg e) = "-" <> pprint e
-    pprint (Pos e) = pprint e
-    pprint (Fac e) = pprint e <> "!"
-    pprint (Expr4 e) = pprint e
-
-instance Pretty a => Pretty (Expr4 a) where
     pprint (Lit x)   = pprint x
     pprint (Expr0 e) = paren $ pprint e
 
@@ -119,18 +111,15 @@ evalExpr1 (Div r t) = evalExpr1 r / evalExpr1 t
 evalExpr1 (Expr2 r) = evalExpr2 r
 
 evalExpr2 :: Expr2 Integer -> Rat
-evalExpr2 (Pow u g) = evalExpr3 u !^! evalExpr2 g
-evalExpr2 (Expr3 u) = evalExpr3 u
+evalExpr2 (Neg u)   = negate (evalExpr2 u)
+evalExpr2 (Pos u)   = evalExpr2 u
+evalExpr2 (Fac u)   = factorial (evalExpr3 u)
+evalExpr2 (Pow u g) = evalExpr3 u !^! evalExpr3 g
+evalExpr2 (Expr3 g) = evalExpr3 g
 
 evalExpr3 :: Expr3 Integer -> Rat
-evalExpr3 (Neg u)   = negate (evalExpr3 u)
-evalExpr3 (Pos u)   = evalExpr3 u
-evalExpr3 (Fac u)   = factorial (evalExpr4 u)
-evalExpr3 (Expr4 g) = evalExpr4 g
-
-evalExpr4 :: Expr4 Integer -> Rat
-evalExpr4 (Lit c)   = Val (toRational c)
-evalExpr4 (Expr0 e) = evalExpr0 e
+evalExpr3 (Lit c)   = Val (toRational c)
+evalExpr3 (Expr0 e) = evalExpr0 e
 
 --------------------------------------------------------------------------------
 -- Parse
@@ -155,23 +144,19 @@ expr1 p = chainl1 (Expr2 <$> expr2 p) (op1 <$> oneOf "* /") <?> "expr1"
     op1 _   = error "internal error"
 
 expr2 :: Parser a -> Parser (Expr2 a)
-expr2 p =
-    do { u <- expr3 p
-       ; choice [ Pow u <$> (string "^" *> expr2 p <* skipSpace)
-                , return (Expr3 u)
-                ]
-       } <?> "expr2"
-
-expr3 :: Parser a -> Parser (Expr3 a)
-expr3 p
-     =  op3 <$> oneOf "+ -" <*> expr3 p
-    <|> Fac <$> (expr4 p <* string "!")
-    <|> Expr4 <$> expr4 p
-    <?> "expr3"
+expr2 p
+     =  op3 <$> oneOf "+ -" <*> expr2 p
+    <|> do { u <- expr3 p
+           ; choice [ return (Fac u) <* string "!"
+                    , Pow u <$> (string "^" *> expr3 p)
+                    , return (Expr3 u)
+                    ]
+           }
+    <?> "expr2"
   where
     op3 "+" = Pos
     op3 "-" = Neg
     op3 _   = error "internal error"
 
-expr4 :: Parser a -> Parser (Expr4 a)
-expr4 p = Lit <$> p <|> Expr0 <$> parens (expr0 p) <?> "expr4"
+expr3 :: Parser a -> Parser (Expr3 a)
+expr3 p = Lit <$> p <|> Expr0 <$> parens (expr0 p) <?> "expr3"

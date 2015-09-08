@@ -74,28 +74,23 @@ instance Arbitrary a => Arbitrary (Expr1 a) where
 
 instance Arbitrary a => Arbitrary (Expr2 a) where
     arbitrary = frequency
-        [ ( 2, Pow <$> arbitrary <*> arbitrary)
-        , (98, Expr3 <$> arbitrary)
-        ]
-
-instance Arbitrary a => Arbitrary (Expr3 a) where
-    arbitrary = frequency
         [ ( 1, Neg   <$> arbitrary)
         , ( 1, Pos   <$> arbitrary)
         , ( 1, Fac   <$> arbitrary)
-        , ( 1, Tr    <$> nameGen <*> arbitrary)
+        , ( 1, Pow   <$> arbitrary <*> arbitrary)
         , ( 1, Comp  <$> arbitrary <*> arbitrary)
-        , (95, Expr4 <$> arbitrary)
+        , (95, Expr3 <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (Expr4 a) where
+instance Arbitrary a => Arbitrary (Expr3 a) where
     arbitrary = frequency
         [ (19, const X <$> (arbitrary :: Gen ()))
         , (19, A       <$> arbitrary)
         , ( 3, Tag     <$> arbitrary)
         , (19, Var     <$> nameGen  )
         , (19, Lit     <$> arbitrary)
-        , (16, Rats    <$> arbitrary)
+        , ( 1, Tr      <$> nameGen <*> arbitrary)
+        , (15, Rats    <$> arbitrary)
         , ( 5, Expr0   <$> arbitrary)
         ]
 
@@ -115,19 +110,14 @@ instance Arbitrary a => Arbitrary (C.Expr1 a) where
 
 instance Arbitrary a => Arbitrary (C.Expr2 a) where
     arbitrary = frequency
-        [ ( 2, C.Pow   <$> arbitrary <*> arbitrary)
-        , (98, C.Expr3 <$> arbitrary)
-        ]
-
-instance Arbitrary a => Arbitrary (C.Expr3 a) where
-    arbitrary = frequency
         [ ( 2, C.Neg   <$> arbitrary)
         , ( 2, C.Pos   <$> arbitrary)
         , ( 1, C.Fac   <$> arbitrary)
-        , (95, C.Expr4 <$> arbitrary)
+        , ( 1, C.Pow   <$> arbitrary <*> arbitrary)
+        , (94, C.Expr3 <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (C.Expr4 a) where
+instance Arbitrary a => Arbitrary (C.Expr3 a) where
     arbitrary = frequency
         [ (90, C.Lit   <$> arbitrary)
         , (10, C.Expr0 <$> arbitrary)
@@ -629,7 +619,7 @@ prop_Unit_circle c cs = c /= 0 ==>
     runPrg (envFromList [("f", poly40 (0:c:cs))]) "cos(f)^2 + sin(f)^2" == poly40 [1]
 
 prop_Exact_sqrt c d =
-    let prg = B.pack ("sqrt({" ++ show c ++ "^2/" ++ show d ++ "^2})")
+    let prg = B.pack ("sqrt({(" ++ show c ++ ")^2/(" ++ show d ++ ")^2})")
     in runPrg empty20 prg ~= ogf20 [abs c::Integer] / ogf20 [abs d::Integer]
 
 prop_Derivative_of_sin cs = any (/=0) cs ==>
@@ -644,17 +634,17 @@ prop_Derivative_of_tan cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
     in runPrg env "D(tan(f))" ~= runPrg env "D(f)/cos(f)^2"
 
-prop_Derivative_of_asin cs = any (/=0) cs ==>
+prop_Derivative_of_arcsin cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "D(asin(f))" ~= runPrg env "D(f)/sqrt(1-f^2)"
+    in runPrg env "D(arcsin(f))" ~= runPrg env "D(f)/sqrt(1-f^2)"
 
-prop_Derivative_of_acos cs = any (/=0) cs ==>
+prop_Derivative_of_arccos cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "D(acos(f))" ~= runPrg env "-D(f)/sqrt(1-f^2)"
+    in runPrg env "D(arccos(f))" ~= runPrg env "-D(f)/sqrt(1-f^2)"
 
-prop_Derivative_of_atan cs = any (/=0) cs ==>
+prop_Derivative_of_arctan cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "D(atan(f))" ~= runPrg env "D(f)/(1+f^2)"
+    in runPrg env "D(arctan(f))" ~= runPrg env "D(f)/(1+f^2)"
 
 prop_Derivative_of_sinh cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
@@ -668,17 +658,17 @@ prop_Derivative_of_tanh cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
     in runPrg env "D(tanh(f))" ~= runPrg env "D(f)*(1-tanh(f)^2)"
 
-prop_Derivative_of_asinh cs = any (/=0) cs ==>
+prop_Derivative_of_arsinh cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "D(asinh(f))" ~= runPrg env "D(f)/sqrt(1+f^2)"
+    in runPrg env "D(arsinh(f))" ~= runPrg env "D(f)/sqrt(1+f^2)"
 
-prop_Derivative_of_acosh cs = any (/=0) cs ==>
+prop_Derivative_of_arcosh cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "D(acosh(f))" ~= runPrg env "D(f)/sqrt(f^2-1)"
+    in runPrg env "D(arcosh(f))" ~= runPrg env "D(f)/sqrt(f^2-1)"
 
-prop_Derivative_of_atanh cs = any (/=0) cs ==>
+prop_Derivative_of_artanh cs = any (/=0) cs ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "D(atanh(f))" ~= runPrg env "D(f)/(1-f^2)"
+    in runPrg env "D(artanh(f))" ~= runPrg env "D(f)/(1-f^2)"
 
 prop_sinh cs =
     let env = envFromList [("f", poly20 (0:cs))]
@@ -695,13 +685,13 @@ prop_tanh cs =
 prop_Hyperbolic_unit cs =
     runPrg (envFromList [("f", poly40 (0:cs))]) "cosh(f)^2 - sinh(f)^2" == poly40 [1]
 
-prop_asinh cs =
+prop_arsinh cs = not (null cs) ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "asinh(f)" ~= runPrg env "log(f + sqrt(f^2 + 1))"
+    in runPrg env "arsinh(f)" ~= runPrg env "log(f + sqrt(f^2 + 1))"
 
-prop_atanh cs =
+prop_artanh cs = not (null cs) ==>
     let env = envFromList [("f", poly20 (0:cs))]
-    in runPrg env "atanh(f)" ~= runPrg env "(log(1+f) - log(1-f))/2"
+    in runPrg env "artanh(f)" ~= runPrg env "(log(1+f) - log(1-f))/2"
 
 a012259 =
     [ 1, 1, 1, 5, 17, 121, 721, 6845, 58337, 698161, 7734241, 111973685, 1526099057
@@ -712,7 +702,7 @@ a012259 =
 
 prop_A012259_1 = take (length a012259) (coeffs f) == a012259
   where
-    f = runPrg empty40 "exp(atanh(tan(x))) .* {n!}"
+    f = runPrg empty40 "exp(artanh(tan(x))) .* {n!}"
 
 prop_A012259_2 = take (length a012259) (coeffs f) == a012259
   where
@@ -942,21 +932,21 @@ tests =
     , ("Derivative of sin",      check  50 prop_Derivative_of_sin)
     , ("Derivative of cos",      check  50 prop_Derivative_of_cos)
     , ("Derivative of tan",      check  50 prop_Derivative_of_tan)
-    , ("Derivative of asin",     check  50 prop_Derivative_of_asin)
-    , ("Derivative of acos",     check  50 prop_Derivative_of_acos)
-    , ("Derivative of atan",     check  50 prop_Derivative_of_atan)
+    , ("Derivative of arcsin",   check  50 prop_Derivative_of_arcsin)
+    , ("Derivative of arccos",   check  50 prop_Derivative_of_arccos)
+    , ("Derivative of arctan",   check  50 prop_Derivative_of_arctan)
     , ("Derivative of sinh",     check  50 prop_Derivative_of_sinh)
     , ("Derivative of cosh",     check  50 prop_Derivative_of_cosh)
     , ("Derivative of tanh",     check  50 prop_Derivative_of_tanh)
-    , ("Derivative of asinh",    check   5 prop_Derivative_of_asinh)
-    , ("Derivative of acosh",    check   5 prop_Derivative_of_acosh)
-    , ("Derivative of atanh",    check  50 prop_Derivative_of_atanh)
+    , ("Derivative of arsinh",   check   5 prop_Derivative_of_arsinh)
+    , ("Derivative of arcosh",   check   5 prop_Derivative_of_arcosh)
+    , ("Derivative of artanh",   check  50 prop_Derivative_of_artanh)
     , ("sinh",                   check  50 prop_sinh)
     , ("cosh",                   check  50 prop_cosh)
     , ("tanh",                   check  50 prop_tanh)
     , ("Hyperbolic unit",        check  50 prop_Hyperbolic_unit)
-    , ("asinh",                  check  50 prop_asinh)
-    , ("atanh",                  check  50 prop_atanh)
+    , ("arsinh",                 check  50 prop_arsinh)
+    , ("artanh",                 check  50 prop_artanh)
     , ("A012259-1",              check   1 prop_A012259_1)
     , ("A012259-2",              check   1 prop_A012259_2)
     , ("A012259-3",              check   1 prop_A012259_3)
