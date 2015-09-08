@@ -220,30 +220,30 @@ Transform      | Meaning
 `BINOMIALi(f)` | `g=exp(-x)*laplacei(f);laplace(g)`
 `BIN1(f)`      | `g={(-1)^n/n!}*((laplacei(x*f))@(-x));LEFT(laplace(-g))`
 `BISECT0(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT0(f)={a0,a2,a4,...}`
-`BISECT1(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT0(f)={a1,a3,a5,...}`
-`BOUS2(f)`     | ...
-`BOUS2i(f)`    | ...
-`BOUS(f)`      | ...
+`BISECT1(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT1(f)={a1,a3,a5,...}`
+`BOUS2(f)`     | See [[1](https://oeis.org/transforms.txt)]
+`BOUS2i(f)`    | See [[1](https://oeis.org/transforms.txt)]
+`BOUS(f)`      | See [[1](https://oeis.org/transforms.txt)]
 `CONV(f)`      | `f^2`
 `CONVi(f)`     | `sqrt(f)`
 `DIFF(f)`      | `LEFT(f)-f`
-`EULER(f)`     | ...
-`EULERi(f)`    | ...
+`EULER(f)`     | [Euler transform](http://mathworld.wolfram.com/EulerTransform.html)
+`EULERi(f)`    | inverse [Euler transform](http://mathworld.wolfram.com/EulerTransform.html)
 `EXPCONV(f)`   | `g=laplacei(f);laplace(g*g)`
 `EXP(f)`       | `g={1/n!}@(laplacei(x*f));laplace(g-1)/x`
-`HANKEL(f)`    | ...
+`HANKEL(f)`    | [Hankel transform](https://cs.uwaterloo.ca/journals/JIS/VOL4/LAYMAN/hankel.html)
 `LAH(f)`       | `g=(laplacei(f))@(x/(1-x));laplace(g)`
 `LAHi(f)`      | `g=(laplacei(f))@(x/(1+x));laplace(g)`
-`LEFT(f)`      | ...
+`LEFT(f)`      | if `f={a0,a1,a2,a3,a4,...}` then `LEFT(f)={a1,a2,a3,...}`
 `LOG(f)`       | `g=log(1+laplacei(x*f));LEFT(laplace(g))`
 `M2(f)`        | `2*f-f(0)`
 `M2i(f)`       | `(f + f(0))/2`
-`MOBIUS(f)`    | ...
-`MOBIUSi(f)`   | ...
+`MOBIUS(f)`    | See [[1](https://oeis.org/transforms.txt)]
+`MOBIUSi(f)`   | See [[1](https://oeis.org/transforms.txt)]
 `NEGATE(f)`    | `(1-x/(1-x)).*f`
-`PARTITION(f)` | ...
+`PARTITION(f)` | See [[1](https://oeis.org/transforms.txt)]
 `POINT(f)`     | `laplace(x*D(laplacei(f)))`
-`PRODS(f)`     | ...
+`PRODS(f)`     | if `f = {a0,a1,a2,...}` then `PRODS(f)={a0,a0*a1,a0*a1*a2,...}`
 `PSUM(f)`      | `f/(1-x)`
 `PSUMSIGN(f)`  | `f/(1+x)`
 `REVERT(f)`    | `LEFT(revert(x*f))`
@@ -251,11 +251,13 @@ Transform      | Meaning
 `RIGHT(f)`     | `1+x*f`
 `STIRLING(f)`  | `g=laplacei(x*f);laplace(g@({0,1/n!}))/x`
 `STIRLINGi(f)` | `g=laplacei(x*f);laplace(g@({0,(-1)^(n+1)/n!}))/x`
-`T019(f)`      | ...
+`T019(f)`      | if `f={a[n]}` then `{a[n+2]-2*a[n+1]+a[n]}`
 `TRISECT0(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a0,a3,a6,...}`
 `TRISECT1(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a1,a4,a7,...}`
 `TRISECT2(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a2,a5,a8,...}`
-`WEIGHT(f)`    | ...
+`WEIGHT(f)`    | if `f={a0,a1,a2,...}` then `WEIGHT(f)=(1+x^n)^a0*(1+x^n)^a1*...`
+
+[1] <https://oeis.org/transforms.txt>
 
 ### Tagging sequences
 
