@@ -167,20 +167,21 @@ program files is `.hops`.
 
 Operation | Meaning
 ----------|-------------------------------------------------
-`f + g`   | sum of `f` and `g`
-`f - g`   | difference of `f` and `g`
-`f * g`   | product of `f` and `g`
-`f / g`   | quotient of `f` and `g`
-`f ^ g`   | `f` to the power `g`
-`f .* g`  | coefficient-wise/Hadamard product of `f` and `g`
-`f ./ g`  | coefficient-wise quotient of `f` and `g`
+`f + g`   | sum of *f* and *g*
+`f - g`   | difference of *f* and *g*
+`f ^ g`   | *f* to the power *g*
+`f @ g`   | *f* composed with *g*
+`f * g`   | product of *f* and *g*
+`f / g`   | quotient of *f* and *g*
+`f .* g`  | coefficient-wise/Hadamard product of *f* and *g*
+`f ./ g`  | coefficient-wise quotient of *f* and *g*
 
 ### Derivative and integral
 
 Operation   | Meaning
 ------------|--------------------------------------------
-D(f)        | derivative of `f`
-integral(f) | integral of `f`
+D(f)        | derivative of *f*
+integral(f) | integral of *f*
 
 ### Functions
 
@@ -203,8 +204,8 @@ Function       | Meaning
 `arsinh(f)`    | area hyperbolic sine function
 `arcosh(f)`    | area hyperbolic cosine function
 `artanh(f)`    | area hyperbolic tangent function
-`laplacei(f)`  | `f ./ {n!}`
 `laplace(f)`   | `f .* {n!}`
+`laplacei(f)`  | `f ./ {n!}`
 `revert(f)`    | compositional inverse
 
 ### Transforms
@@ -218,8 +219,8 @@ Transform      | Meaning
 `BINOMIAL(f)`  | `g=exp(x)*laplacei(f);laplace(g)`
 `BINOMIALi(f)` | `g=exp(-x)*laplacei(f);laplace(g)`
 `BIN1(f)`      | `g={(-1)^n/n!}*((laplacei(x*f))@(-x));LEFT(laplace(-g))`
-`BISECT0(f)`   | ...
-`BISECT1(f)`   | ...
+`BISECT0(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT0(f)={a0,a2,a4,...}`
+`BISECT1(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT0(f)={a1,a3,a5,...}`
 `BOUS2(f)`     | ...
 `BOUS2i(f)`    | ...
 `BOUS(f)`      | ...
@@ -228,7 +229,7 @@ Transform      | Meaning
 `DIFF(f)`      | `LEFT(f)-f`
 `EULER(f)`     | ...
 `EULERi(f)`    | ...
-`EXPCONV(f)`   | ...
+`EXPCONV(f)`   | `g=laplacei(f);laplace(g*g)`
 `EXP(f)`       | `g={1/n!}@(laplacei(x*f));laplace(g-1)/x`
 `HANKEL(f)`    | ...
 `LAH(f)`       | `g=(laplacei(f))@(x/(1-x));laplace(g)`
@@ -246,14 +247,14 @@ Transform      | Meaning
 `PSUM(f)`      | `f/(1-x)`
 `PSUMSIGN(f)`  | `f/(1+x)`
 `REVERT(f)`    | `LEFT(revert(x*f))`
-`REVEGF(f)`    | ...
-`RIGHT(f)`     | ...
+`REVEGF(f)`    | `LEFT(laplace(revert((x*f)./(1+x*laplace(1/(1-x))))))`
+`RIGHT(f)`     | `1+x*f`
 `STIRLING(f)`  | `g=laplacei(x*f);laplace(g@({0,1/n!}))/x`
 `STIRLINGi(f)` | `g=laplacei(x*f);laplace(g@({0,(-1)^(n+1)/n!}))/x`
 `T019(f)`      | ...
-`TRISECT0(f)`  | ...
-`TRISECT1(f)`  | ...
-`TRISECT2(f)`  | ...
+`TRISECT0(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a0,a3,a6,...}`
+`TRISECT1(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a1,a4,a7,...}`
+`TRISECT2(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a2,a5,a8,...}`
 `WEIGHT(f)`    | ...
 
 ### Tagging sequences
