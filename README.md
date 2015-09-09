@@ -19,7 +19,7 @@ $ nix-env -f "<nixpkgs>" -iA haskellPackages.hops
 Or using [cabal](https://www.haskell.org/cabal/):
 
 ```
-$ cabal install hops
+$ cabal update && cabal install hops
 ```
 
 ## Introduction
@@ -139,18 +139,20 @@ $ hops '{n^3}'
 ```
 
 The number of integer compositions of *n* is 1 if *n=0* and
-*2<sup>n-1</sup>* if *n>0*. Here's how we might specify that formula:
+*2<sup>n-1</sup>* if *n>0*; see [A011782](https://oeis.org/A011782).
+Here's how we might specify that formula:
 
 ```
 $ hops '{1,2^(n-1)}'
 {1,2^(n-1)} => {1,1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192}
 ```
 
-Factorials are find too:
+Factorials are fine too. Here's the order of the alternating group
+([A001710](https://oeis.org/A001710)):
 
 ```
-$ hops --prec=12 '{n!}'
-{n!} => {1,1,2,6,24,120,720,5040,40320,362880,3628800,39916800}
+$ hops --prec=12 '{1,1,n!/2}'
+{1,1,n!/2} => {1,1,1,3,12,60,360,2520,20160,181440,1814400,19958400}
 ```
 
 ### Composing programs
@@ -233,7 +235,7 @@ Operation | Meaning
 `f + g`   | sum of *f* and *g*
 `f - g`   | difference of *f* and *g*
 `f ^ g`   | *f* to the power *g*
-`f @ g`   | *f* composed with *g*
+`f @ g`   | *f* composed with *g* (can also be written *f(g)* when *f* is a name)
 `f * g`   | product of *f* and *g*
 `f / g`   | quotient of *f* and *g*
 `f .* g`  | coefficient-wise/Hadamard product of *f* and *g*
