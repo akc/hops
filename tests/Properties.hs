@@ -218,6 +218,8 @@ prop_BOUS_u      = areEq "BOUS      {5,4,3,2,1}"       "{1,6,15,32,83,262}"    [
 prop_BOUS2_u     = areEq "BOUS2     {5,4,3,2,1}"       "{5,9,16,33,84}"        []
 prop_BOUS2i_u    = areEq "BOUS2i    {5,4,3,2,1}"       "{5,-1,0,-5,4}"         []
 prop_DIFF_u      = areEq "DIFF      {9,4,1,0,1,4,9}"   "{-5,-3,-1,1,3,5}"      []
+prop_INVERT_u    = areEq "INVERT    {1,2,3,4,5}"       "{1,3,8,21,55}"         []
+prop_INVERTi_u   = areEq "INVERTi   {1,3,8,21,55}"     "{1,2,3,4,5}"           []
 prop_MOBIUS_u    = areEq "MOBIUS    {1,3,4,7,6,12}"    "{1,2,3,4,5,6}"         []
 prop_MOBIUSi_u   = areEq "MOBIUSi   {1,2,3,4,5,6}"     "{1,3,4,7,6,12}"        []
 prop_EULER_u     = areEq "EULER     {1,1,0,0,0,0,0}"   "{1,2,2,3,3,4,4}"       []
@@ -252,6 +254,8 @@ prop_BINOMIALi_BINOMIAL    = areEq "BINOMIALi(BINOMIAL(f))" "f"
 prop_BINOMIAL_BINOMIALi    = areEq "BINOMIAL(BINOMIALi(f))" "f"
 prop_BOUS2i_BOUS2          = areEq "BOUS2i(BOUS2(f))" "f"
 prop_BOUS2_BOUS2i          = areEq "BOUS2(BOUS2i(f))" "f"
+prop_INVERTi_INVERT     cs = areEq "INVERTi(INVERT(f))" "f" (take 19 cs)
+prop_INVERT_INVERTi     cs = areEq "INVERT(INVERTi(f))" "f" (take 19 cs)
 prop_LAHi_LAH           cs = areEq "LAHi(LAH(f))" "f" (take 10 cs)
 prop_LAH_LAHi           cs = areEq "LAH(LAHi(f))" "f" (take 10 cs)
 prop_EULERi_EULER       cs = areEq "EULERi(EULER(f))" "f" (take 6 cs)
@@ -277,6 +281,8 @@ prop_BINOMIAL  = areEq "BINOMIAL(f)"  "(f ./ {n!}) * {1/n!} .* {n!}"
 prop_BINOMIALi = areEq "BINOMIALi(f)" "(f ./ {n!}) * {(-1)^n/n!} .* {n!}"
 prop_BIN1      = areEq "BIN1(f)" "LEFT((-{(-1)^n/n!} * (((x*f) ./ {n!})@(-x))) .* {n!})"
 prop_DIFF      = areEq "DIFF(f)"      "(D(f./{n!}) .* {n!} - f)"
+prop_INVERT    = areEq "INVERT(f)"    "g=1/(1-x*f);LEFT(g)"
+prop_INVERTi   = areEq "INVERTi(f)"   "g=-1/(1+x*f);LEFT(g)"
 prop_LAH       = areEq "LAH(f)"       "(f./{n!})@(x/(1-x)) .* {n!}"
 prop_LAHi      = areEq "LAHi(f)"      "(f./{n!})@(x/(1+x)) .* {n!}"
 prop_EXP       = areEq "EXP(f)"       "(({1/n!}@(x*f./{n!}) - 1) .* {n!})/x"
@@ -810,6 +816,8 @@ tests =
     , ("unit/BISECT0",           check   1 prop_BISECT0_u)
     , ("unit/BISECT1",           check   1 prop_BISECT1_u)
     , ("unit/DIFF",              check   1 prop_DIFF_u)
+    , ("unit/INVERT",            check   1 prop_INVERT_u)
+    , ("unit/INVERTi",           check   1 prop_INVERTi_u)
     , ("unit/MOBIUS",            check   1 prop_MOBIUS_u)
     , ("unit/MOBIUSi",           check   1 prop_MOBIUSi_u)
     , ("unit/BOUS",              check   1 prop_BOUS_u)
@@ -817,6 +825,8 @@ tests =
     , ("unit/BOUS2i",            check   1 prop_BOUS2i_u)
     , ("unit/EULER",             check   1 prop_EULER_u)
     , ("unit/EULERi",            check   1 prop_EULERi_u)
+    , ("unit/INVERT",            check   1 prop_INVERT_u)
+    , ("unit/INVERTi",           check   1 prop_INVERTi_u)
     , ("unit/LAH",               check   1 prop_LAH_u)
     , ("unit/LAHi",              check   1 prop_LAHi_u)
     , ("unit/EXP",               check   1 prop_EXP_u)
@@ -846,6 +856,8 @@ tests =
     , ("BINOMIAL.BINOMIALi=id",  check  40 prop_BINOMIAL_BINOMIALi)
     , ("BOUS2i.BOUS2=id",        check  20 prop_BOUS2i_BOUS2)
     , ("BOUS2.BOUS2i=id",        check  20 prop_BOUS2_BOUS2i)
+    , ("INVERTi.INVERT=id",      check   5 prop_INVERTi_INVERT)
+    , ("INVERT.INVERTi=id",      check   5 prop_INVERT_INVERTi)
     , ("LAHi.LAH=id",            check   5 prop_LAHi_LAH)
     , ("LAH.LAHi=id",            check   5 prop_LAH_LAHi)
     , ("EULERi.EULER=id",        check   5 prop_EULERi_EULER)

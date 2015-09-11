@@ -231,6 +231,8 @@ associations =
     , ("EXPCONV",    \f -> let g = laplacei f in laplace(g * g))
     , ("EXP",        \f -> shiftLeft $ laplace (exp (laplacei (x*f))))
     , ("HANKEL",     lift hankel)
+    , ("INVERTi",    \f -> shiftLeft $ -1/(1+x*f))
+    , ("INVERT",     \f -> shiftLeft $ 1/(1-x*f))
     , ("LAHi",       \f -> laplace(laplacei f `o` (x/(1+x))))
     , ("LAH",        \f -> laplace(laplacei f `o` (x/(1-x))))
     , ("LEFT",       shiftLeft)
