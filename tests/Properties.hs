@@ -246,6 +246,7 @@ prop_POINT_u     = areEq "POINT     {1,1,4,27,256}"    "{0,1,8,81,1024}"       [
 prop_WEIGHT_u    = areEq "WEIGHT    {1,1,1,1,1,1,1,1}" "{1,1,2,2,3,4,5,6}"     []
 prop_PARTITION_u = areEq "PARTITION {1,3,5,13}"        "{1,1,2,2}"             []
 prop_HANKEL_u    = areEq "HANKEL    {6,5,4,3,2,1}"     "{6,-1,0,0}"            []
+prop_lHANKEL_u   = areEq "lHANKEL   {1,4,9,16,25,36}"  "{7,17,31,49}"          []
 
 prop_LEFT                  = areEq "LEFT(f)" "D(f./{n!}) .* {n!}"
 prop_RIGHT              cs = not (null cs) ==> areEq "RIGHT(f)" "1 + x*f" cs
@@ -849,6 +850,7 @@ tests =
     , ("unit/WEIGHT",            check   1 prop_WEIGHT_u)
     , ("unit/PARTITION",         check   1 prop_PARTITION_u)
     , ("unit/HANKEL",            check   1 prop_HANKEL_u)
+    , ("unit/lHANKEL",           check   1 prop_lHANKEL_u)
     , ("LEFT",                   check 100 prop_LEFT)
     , ("RIGHT",                  check 100 prop_RIGHT)
     , ("M2i.M2=id",              check 100 prop_M2i_M2)

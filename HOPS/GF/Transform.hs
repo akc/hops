@@ -230,6 +230,7 @@ associations =
     , ("EULER",      euler)
     , ("EXPCONV",    \f -> let g = laplacei f in laplace(g * g))
     , ("EXP",        \f -> shiftLeft $ laplace (exp (laplacei (x*f))))
+    , ("lHANKEL",    \f -> let g = f.*f-(shiftLeft f).*(shiftRight f) in shiftLeft g)
     , ("HANKEL",     lift hankel)
     , ("INVERTi",    \f -> shiftLeft $ -1/(1+x*f))
     , ("INVERT",     \f -> shiftLeft $ 1/(1-x*f))
