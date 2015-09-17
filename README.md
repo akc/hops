@@ -194,10 +194,10 @@ $ hops 'REVERT(A067145)-LEFT(A067145)'
 REVERT(A067145)-LEFT(A067145) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 ```
 
-### HOPS program files
+### HOPS scripts
 
 Sometimes it is useful be able to apply many transformations to the same
-input. One way to achieve that is to write a little program with the
+input. One way to achieve that is to write a script with the
 transformations we are interested in. E.g. if we create a file
 `transforms.hops` containing
 
@@ -327,24 +327,40 @@ Transform      | Meaning
 
 [1] <https://oeis.org/transforms.txt>
 
-### A grammar for HOPS programs
+### A grammar for HOPS scripts
+
+A HOPS script is a list of independent programs (`prg`) - one program
+per line:
 
 ```
 hops = prg { "\n" prg }
+```
 
+A program is a list of semicolon separated commands (`cmd`):
+
+```
 prg = cmd { ";" cmd }
+```
 
+A command is a generating function expression (`expr0`) or an assignment:
+
+```
 cmd = expr0 | name "=" expr0
+```
 
+We use the precedence climbing method to define generating function
+expressions:
+
+```
 expr0 = expr0 ("+" | "-") expr0 | expr1
 
 expr1 = expr1 ("*" | "/" | ".*" | "./") expr1 | expr2
 
 expr2 = ("-" | "+") expr2 | expr3 "!" | expr3 "^" expr3 | expr3 "@" expr3 | expr3
 
-expr3 = "x" | anum | tag | name | literal | "{" { terms } "}" | name "(" expr3 ")" | expr0
+expr3 = "x" | anum | tag | name | lit | "{" { terms } "}" | name "(" expr3 ")" | expr0
 
-literal = int
+lit = int
 
 int = digit { digit }
 
@@ -358,7 +374,7 @@ name = alphanum { alphanum | "_" }
 
 terms = cexpr0 { "," expr0 } ("..." | cexpr0 | fun)
 
-fun = the same as cexpr0 except literal = linear
+fun = the same as cexpr0 except lit = linear
 
 linear = int | int "*n"
 
@@ -368,7 +384,7 @@ cexpr1 = cexpr1 ("*" | "/") cexpr1 | cexpr2
 
 cexpr2 = ("+" | "-") cexpr2 | cexpr3 "!" | cexpr3 "^" cexpr3 | cexpr3
 
-cexpr3 = literal | cexpr0
+cexpr3 = lit | cexpr0
 ```
 
 ## The man page
