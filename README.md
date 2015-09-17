@@ -297,6 +297,9 @@ Transform      | Meaning
 `EXPCONV(f)`   | `g=laplacei(f);laplace(g*g)`
 `EXP(f)`       | `g={1/n!}@(laplacei(x*f));laplace(g-1)/x`
 `HANKEL(f)`    | [Hankel transform](https://cs.uwaterloo.ca/journals/JIS/VOL4/LAYMAN/hankel.html)
+`lHANKEL(f)`   | `g=f.*f-LEFT(f).*RIGHT(f);LEFT(g)`
+`INVERT(f)`    | `LEFT(1/(1-x*f))`
+`INVERTi(f)`   | `LEFT(-1/(1+x*f))`
 `LAH(f)`       | `g=(laplacei(f))@(x/(1-x));laplace(g)`
 `LAHi(f)`      | `g=(laplacei(f))@(x/(1+x));laplace(g)`
 `LEFT(f)`      | if `f={a0,a1,a2,a3,a4,...}` then `LEFT(f)={a1,a2,a3,...}`
