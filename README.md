@@ -51,7 +51,7 @@ f=1/(1-x-x^2) => {1,1,2,3,5,8,13,21,34,55,89,144,233,377,610}
 It could hardly be easier:
 
 ```
-$ hops C=1+x*C^2
+$ hops 'C=1+x*C^2'
 C=1+x*C^2 => {1,1,2,5,14,42,132,429,1430,4862,16796,58786,208012,742900,2674440}
 ```
 
@@ -86,18 +86,18 @@ f=sec(x)+tan(x);laplace(f) => {1,1,1,2,5,16,61,272,1385,7936,50521,353792}
 
 ### Number of ballots (ordered set partitions)
 
-This sequence most simply defined by its exponential generating function
+This sequence is most simply defined by its exponential generating function
 *y=1/(2-e<sup>x</sup>)*:
 
 ```
-$ hops --prec 10 'y=1/(2-exp(x)); laplace(y)'
+$ hops --prec 10 'y=1/(2-exp(x));laplace(y)'
 y=1/(2-exp(x));laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
 ```
 
 Alternatively, one can exploit that *y'=2y<sup>2</sup>-y*:
 
 ```
-$ hops --prec 10 'y = 1 + integral(2*y^2 - y); laplace(y)'
+$ hops --prec 10 'y=1+integral(2*y^2-y);laplace(y)'
 y=1+integral(2*y^2-y);laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
 ```
 
@@ -164,7 +164,7 @@ $ hops 'f=1+(x+x^2)*f' | hops 'stdin/(1-x)'
 f=1+(x+x^2)*f;f/(1-x) => {1,2,4,7,12,20,33,54,88,143,232,376,609,986,1596}
 ```
 
-As a side note, one can show that our programs form a monoid under this
+As a side note, one can show that HOPS programs form a monoid under this
 type of composition.
 
 Be aware that `hops` may have to rename variables when composing programs:
@@ -174,13 +174,26 @@ $ hops --prec=10 'f=1+(x+x^2)*f' | hops 'f=1/(1-2*x);f/(1-x*stdin)'
 f=1+(x+x^2)*f;g=1+2*x*g;g/(1-x*f) => {1,3,8,21,54,137,344,857,2122,5229,12836}
 ```
 
+### OEIS A-numbers
+
+OEIS A-numbers can be used directly in HOPS programs and they are
+interpreted as ordinary generating functions. E.g. this is the
+difference between the Catalan numbers
+([A000108](https://oeis.org/A000108)) and the Motzkin numbers
+([A001006](https://oeis.org/A001006)):
+
+```
+$ hops 'A000108-A001006'
+A000108-A001006 => {0,0,0,1,5,21,81,302,1107,4027,14608,52988,192501,701065,2560806}
+```
+
 ### Misc transformations
 
 HOPS knows about many of the transformations used by OEIS
 <https://oeis.org/transforms.html>.
 
-As an example, the sequences `A067145` claims to shift left under
-reversion:
+As an example, the sequence [A067145](https://oeis.org/A067145)
+claims to shift left under reversion:
 
 ```
 S A067145 1,1,-1,3,-13,69,-419,2809,-20353,157199,-1281993,10963825,-97828031,
