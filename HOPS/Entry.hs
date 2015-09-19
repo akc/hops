@@ -22,7 +22,7 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Attoparsec.ByteString.Char8 as Ch
 import Data.Attoparsec.ByteString.Char8
-import Data.Aeson
+import Data.Aeson (FromJSON (..), ToJSON(..), Value (..), object, (.=), (.:))
 import Control.Monad
 #if __GLASGOW_HASKELL__ < 710
 import Control.Applicative

@@ -38,7 +38,7 @@ import Data.Ratio
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
-import Data.Aeson
+import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import qualified Data.Attoparsec.ByteString as A
 import qualified Data.Attoparsec.ByteString.Char8 as Ch
 import Data.Attoparsec.ByteString.Char8

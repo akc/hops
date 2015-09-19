@@ -38,7 +38,7 @@ import Data.Proxy
 import Data.Maybe
 import Data.List
 import Data.Monoid
-import Data.Aeson
+import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
 import Data.Map.Lazy (Map)
