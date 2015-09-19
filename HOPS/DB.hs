@@ -13,6 +13,7 @@ module HOPS.DB
     ( DB (..), Sequences
     , readSeqDB
     , readANumDB
+    , emptyANumDB
     ) where
 
 #if __GLASGOW_HASKELL__ < 710
@@ -56,3 +57,7 @@ readANumDB cfg =
              . map fromIntegral
              . fromMaybe (error "cannot parse local database")
              . parseIntegerSeq . unPSeq . snd
+
+-- | An empty A-number database
+emptyANumDB :: KnownNat n => Vector (Series n)
+emptyANumDB = V.empty

@@ -21,6 +21,7 @@ module HOPS.GF
     , Pretty (..)
     , packPrg
     , vars
+    , anums
     , insertVar
     -- Eval
     , Env (..)
@@ -218,6 +219,45 @@ varsPrg = nub . (>>= varsCmd) . commands
 -- | The list of variables in a program.
 vars :: Prg a -> [Name]
 vars = varsPrg
+
+anumsExpr0 :: Expr0 a -> [Int]
+anumsExpr0 (Add e1 e2) = anumsExpr0 e1 ++ anumsExpr0 e2
+anumsExpr0 (Sub e1 e2) = anumsExpr0 e1 ++ anumsExpr0 e2
+anumsExpr0 (Expr1 e)   = anumsExpr1 e
+
+anumsExpr1 :: Expr1 a -> [Int]
+anumsExpr1 (Mul e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
+anumsExpr1 (Div e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
+anumsExpr1 (PtMul e1 e2) = anumsExpr1 e1 ++ anumsExpr1 e2
+anumsExpr1 (PtDiv e1 e2) = anumsExpr1 e1 ++ anumsExpr1 e2
+anumsExpr1 (Expr2 e)     = anumsExpr2 e
+
+anumsExpr2 :: Expr2 a -> [Int]
+anumsExpr2 (Neg e)  = anumsExpr2 e
+anumsExpr2 (Pos e)  = anumsExpr2 e
+anumsExpr2 (Fac e)  = anumsExpr3 e
+anumsExpr2 (Pow e1 e2) = anumsExpr3 e1 ++ anumsExpr3 e2
+anumsExpr2 (Comp e1 e2) = anumsExpr3 e1 ++ anumsExpr3 e2
+anumsExpr2 (Expr3 e) = anumsExpr3 e
+
+anumsExpr3 :: Expr3 a -> [Int]
+anumsExpr3 (A i) = [i]
+anumsExpr3 (Tag _) = []
+anumsExpr3 (Var _) = []
+anumsExpr3 (Tr _ e) = anumsExpr3 e
+anumsExpr3 (Expr0 e) = anumsExpr0 e
+anumsExpr3 _ = []
+
+anumsCmd :: Cmd a -> [Int]
+anumsCmd (Expr e) = anumsExpr0 e
+anumsCmd (Asgmt _ e) = anumsExpr0 e
+
+anumsPrg :: Prg a -> [Int]
+anumsPrg = nub . (>>= anumsCmd) . commands
+
+-- | The list of A-numbers in a program.
+anums :: Prg a -> [Int]
+anums = anumsPrg
 
 subsExpr0 :: Subs -> Expr0 a -> Expr0 a
 subsExpr0 f (Add e1 e2) = Add (subsExpr0 f e1) (subsExpr0 f e2)

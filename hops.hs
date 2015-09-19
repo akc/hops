@@ -98,10 +98,9 @@ readInput opts cfg
         TagSeqs (fromJust (tagSeqs opts)) . map PSeq <$> readStdin
 
     | otherwise = do
-        db   <- readANumDB cfg
         prgs <- readPrgs opts
-        -- NB: The next line forces the full program (prgs) to be evaluated.
         inp  <- if "stdin" `elem` (vars =<< prgs) then readStdin else return []
+        db   <- if null (anums =<< prgs) then return emptyANumDB else readANumDB cfg
         return $ RunPrgs (prec opts) (Env db M.empty) prgs (map parseEntry inp)
 
 printOutput :: Output -> IO ()
