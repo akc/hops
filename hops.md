@@ -5,7 +5,7 @@ date: 6 Sep 2015
 
 # NAME
 
-hops - hackable operations on power series.
+hops - handy operations on power series.
 
 # SYNOPSIS
 

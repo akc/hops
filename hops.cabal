@@ -1,6 +1,6 @@
 Name:                hops
 Version:             0.1.0
-Synopsis:            Hackable Operations on Power Series
+Synopsis:            Handy Operations on Power Series
 Homepage:            http://github.com/akc/hops
 License:             BSD3
 License-file:        LICENSE

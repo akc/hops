@@ -1,6 +1,6 @@
 # ![HOPS](https://github.com/akc/akc.github.io/raw/master/hops/images/hops.png) HOPS [![Build Status](https://travis-ci.org/akc/hops.svg)](https://travis-ci.org/akc/hops)
 
-Hackable Operations on Power Series.
+Handy Operations on Power Series.
 
 ## Install
 
@@ -424,7 +424,7 @@ at <https://github.com/akc/hops/issues>.
 ```
 @misc{hops,
   author = "Anders Claesson",
-  title  = "HOPS: Hackable Operations on Power Series",
+  title  = "HOPS: Handy Operations on Power Series",
   year   =  2015,
   howpublished = "\url{http://akc.is/hops}"
 }
