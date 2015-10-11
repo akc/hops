@@ -57,7 +57,7 @@ Executable hops
                        vector >=0.10,
                        resourcet >=1.1
 
-Test-Suite Properties
+Test-Suite Props
   type:                exitcode-stdio-1.0
   Main-is:             tests/Properties.hs
   Build-depends:       aeson >=0.8,
@@ -69,3 +69,9 @@ Test-Suite Properties
                        text >=0.11,
                        vector >=0.10,
                        QuickCheck >=2.7
+
+Test-Suite CLI-Props
+  type:                exitcode-stdio-1.0
+  Main-is:             tests/CLIProperties.hs
+  Build-depends:       base >=4 && <5,
+                       process >=1.2
