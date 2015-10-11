@@ -12,6 +12,9 @@ fi
 
 cabal update
 cabal install --only-dependencies
+cabal build
 
-ghc --make -threaded -O2 -with-rtsopts=-N -optl-static hops.hs
+ghc --make -threaded -O2 -with-rtsopts=-N -optl-static \
+    -optP-include -optPdist/build/autogen/cabal_macros.h hops.hs
+
 strip -s hops

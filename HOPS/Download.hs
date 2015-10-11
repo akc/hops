@@ -18,7 +18,7 @@ import HOPS.OEIS (URL)
 import System.Console.ANSI
 import System.IO
 
-#if MIN_VERSION_http_conduit(2,1,5)
+#if MIN_VERSION_http_conduit(2,1,7)
 
 import Control.Monad.Trans.Resource (runResourceT)
 
