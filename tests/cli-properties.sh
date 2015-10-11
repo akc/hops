@@ -18,6 +18,8 @@ check () {
   fi
 }
 
+[ -f ~/.hops/stripped ] || $hops --update
+
 check "$hops --prec=12 'f=tanh(log(1+x)); laplace(f)'" "`cat <<EOF
 f=tanh(log(1+x));laplace(f) => {0,1,-1,0,6,-30,90,0,-2520,22680,-113400,0}
 EOF`"
