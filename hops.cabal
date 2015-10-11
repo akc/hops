@@ -8,7 +8,7 @@ Author:              Anders Claesson
 Maintainer:          anders.claesson@gmail.com
 Category:            Math
 Build-type:          Custom
-Extra-Source-Files:  README.md hops.1
+Extra-Source-Files:  README.md hops.1 tests/cli-properties.sh
 
 Cabal-version:       >=1.9.2
 
