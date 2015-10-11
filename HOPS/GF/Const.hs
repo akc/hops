@@ -21,7 +21,7 @@ module HOPS.GF.Const
     ) where
 
 import Data.Monoid
-#if __GLASGOW_HASKELL__ < 710
+#if !MIN_VERSION_base(4,8,0)
 import Data.Foldable
 #endif
 import Data.ByteString.Char8 (ByteString)

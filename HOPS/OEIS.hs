@@ -30,7 +30,7 @@ module HOPS.OEIS
 
 import GHC.Generics (Generic)
 import Data.Maybe
-#if __GLASGOW_HASKELL__ < 710
+#if !MIN_VERSION_base(4,8,0)
 import Data.Monoid
 #endif
 import Data.String

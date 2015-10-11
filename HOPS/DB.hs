@@ -16,7 +16,7 @@ module HOPS.DB
     , emptyANumDB
     ) where
 
-#if __GLASGOW_HASKELL__ < 710
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
 #endif
 import GHC.TypeLits

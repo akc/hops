@@ -10,5 +10,8 @@ else
     cd hops
 fi
 
+cabal update
+cabal install --only-dependencies
+
 ghc --make -threaded -O2 -with-rtsopts=-N -optl-static hops.hs
 strip -s hops

@@ -24,7 +24,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as Ch
 import Data.Attoparsec.ByteString.Char8
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..), object, (.=), (.:))
 import Control.Monad
-#if __GLASGOW_HASKELL__ < 710
+#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
 #endif
 import HOPS.Utils
