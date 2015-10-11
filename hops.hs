@@ -171,19 +171,24 @@ main = do
     c <- getConfig
     t <- getOptions
     case prec t of
-      p | p <    4  -> readInput t c >>= hops (Proxy :: Proxy    4) >>= printOutput
-        | p <    8  -> readInput t c >>= hops (Proxy :: Proxy    8) >>= printOutput
-        | p <   12  -> readInput t c >>= hops (Proxy :: Proxy   12) >>= printOutput
-        | p <   16  -> readInput t c >>= hops (Proxy :: Proxy   16) >>= printOutput
-        | p <   20  -> readInput t c >>= hops (Proxy :: Proxy   20) >>= printOutput
-        | p <   24  -> readInput t c >>= hops (Proxy :: Proxy   24) >>= printOutput
-        | p <   28  -> readInput t c >>= hops (Proxy :: Proxy   28) >>= printOutput
-        | p <   32  -> readInput t c >>= hops (Proxy :: Proxy   32) >>= printOutput
-        | p <   64  -> readInput t c >>= hops (Proxy :: Proxy   64) >>= printOutput
-        | p <   96  -> readInput t c >>= hops (Proxy :: Proxy   96) >>= printOutput
-        | p <  128  -> readInput t c >>= hops (Proxy :: Proxy  128) >>= printOutput
-        | p <  256  -> readInput t c >>= hops (Proxy :: Proxy  256) >>= printOutput
-        | p <  512  -> readInput t c >>= hops (Proxy :: Proxy  512) >>= printOutput
-        | p < 1024  -> readInput t c >>= hops (Proxy :: Proxy 1024) >>= printOutput
-        | p < 2048  -> readInput t c >>= hops (Proxy :: Proxy 2048) >>= printOutput
-        | otherwise -> error "max-precision is 2047"
+      p | p <     4 -> readInput t c >>= hops (Proxy :: Proxy     4) >>= printOutput
+        | p <     8 -> readInput t c >>= hops (Proxy :: Proxy     8) >>= printOutput
+        | p <    12 -> readInput t c >>= hops (Proxy :: Proxy    12) >>= printOutput
+        | p <    16 -> readInput t c >>= hops (Proxy :: Proxy    16) >>= printOutput
+        | p <    20 -> readInput t c >>= hops (Proxy :: Proxy    20) >>= printOutput
+        | p <    24 -> readInput t c >>= hops (Proxy :: Proxy    24) >>= printOutput
+        | p <    28 -> readInput t c >>= hops (Proxy :: Proxy    28) >>= printOutput
+        | p <    32 -> readInput t c >>= hops (Proxy :: Proxy    32) >>= printOutput
+        | p <    64 -> readInput t c >>= hops (Proxy :: Proxy    64) >>= printOutput
+        | p <    96 -> readInput t c >>= hops (Proxy :: Proxy    96) >>= printOutput
+        | p <   128 -> readInput t c >>= hops (Proxy :: Proxy   128) >>= printOutput
+        | p <   256 -> readInput t c >>= hops (Proxy :: Proxy   256) >>= printOutput
+        | p <   512 -> readInput t c >>= hops (Proxy :: Proxy   512) >>= printOutput
+        | p <  1024 -> readInput t c >>= hops (Proxy :: Proxy  1024) >>= printOutput
+        | p <  2048 -> readInput t c >>= hops (Proxy :: Proxy  2048) >>= printOutput
+        | p <  4096 -> readInput t c >>= hops (Proxy :: Proxy  4096) >>= printOutput
+        | p <  8192 -> readInput t c >>= hops (Proxy :: Proxy  8192) >>= printOutput
+        | p < 16384 -> readInput t c >>= hops (Proxy :: Proxy 16384) >>= printOutput
+        | p < 32768 -> readInput t c >>= hops (Proxy :: Proxy 32768) >>= printOutput
+        | p < 65536 -> readInput t c >>= hops (Proxy :: Proxy 65536) >>= printOutput
+        | otherwise -> error "max-precision is 65535"
