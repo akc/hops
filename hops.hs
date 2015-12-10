@@ -38,14 +38,14 @@ import HOPS.GF
 import HOPS.GF.Series
 import HOPS.GF.Transform
 
-nameVer = "hops 0.1.3" :: String
+nameVer = "hops 0.2.0" :: String
 strpdURL = "https://oeis.org/stripped.gz" :: URL
 
 type Prec = Int
 type TrName = B.ByteString
 
 data Input (n :: Nat)
-    = RunPrgs Prec (Env n) [Prg Integer] [Entry]
+    = RunPrgs (Env n) [Prg Integer] [Entry]
     | TagSeqs Int [PackedSeq]
     | DumpSeqDB Prec [PackedEntry]
     | UpdateDBs FilePath FilePath
@@ -101,7 +101,7 @@ readInput opts cfg
         prgs <- readPrgs opts
         inp  <- if "stdin" `elem` (vars =<< prgs) then readStdin else return []
         db   <- if null (anums =<< prgs) then return emptyANumDB else readANumDB cfg
-        return $ RunPrgs (prec opts) (Env db M.empty) prgs (map parseEntry inp)
+        return $ RunPrgs (Env db M.empty) prgs (map parseEntry inp)
 
 printOutput :: Output -> IO ()
 printOutput NOP = return ()
@@ -117,9 +117,9 @@ stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 parbuf256 :: NFData a => Strategy [a]
 parbuf256 = parBuffer 256 rdeepseq
 
-runPrgs :: KnownNat n => Int -> [Env n] -> [Prg Integer] -> [PackedSeq]
-runPrgs k es ps =
-    let getCoeffs = packSeq . take k . rationalPrefix . snd
+runPrgs :: KnownNat n => [Env n] -> [Prg Integer] -> [PackedSeq]
+runPrgs es ps =
+    let getCoeffs = packSeq . rationalPrefix . snd
     in concat ([ getCoeffs <$> evalPrgs e ps | e <- es] `using` parbuf256)
 
 hops :: KnownNat n => Proxy n -> Input n -> IO Output
@@ -155,10 +155,10 @@ hops n inp =
 
       Empty -> putStrLn nameVer >> return NOP
 
-      RunPrgs precn env prgs entries ->
+      RunPrgs env prgs entries ->
           return $ Entries (zipWith PackedEntry (packPrg <$> ps) results)
         where
-          results = runPrgs precn envs prgs
+          results = runPrgs envs prgs
           (ps, envs) = case entries of
             [] -> ( prgs, [env] )
             _  -> ( concat [[ q <> p | p <- prgs ] | e <- entries, let q = getPrg e]
@@ -171,24 +171,36 @@ main = do
     c <- getConfig
     t <- getOptions
     case prec t of
-      p | p <     4 -> readInput t c >>= hops (Proxy :: Proxy     4) >>= printOutput
-        | p <     8 -> readInput t c >>= hops (Proxy :: Proxy     8) >>= printOutput
-        | p <    12 -> readInput t c >>= hops (Proxy :: Proxy    12) >>= printOutput
-        | p <    16 -> readInput t c >>= hops (Proxy :: Proxy    16) >>= printOutput
-        | p <    20 -> readInput t c >>= hops (Proxy :: Proxy    20) >>= printOutput
-        | p <    24 -> readInput t c >>= hops (Proxy :: Proxy    24) >>= printOutput
-        | p <    28 -> readInput t c >>= hops (Proxy :: Proxy    28) >>= printOutput
-        | p <    32 -> readInput t c >>= hops (Proxy :: Proxy    32) >>= printOutput
-        | p <    64 -> readInput t c >>= hops (Proxy :: Proxy    64) >>= printOutput
-        | p <    96 -> readInput t c >>= hops (Proxy :: Proxy    96) >>= printOutput
-        | p <   128 -> readInput t c >>= hops (Proxy :: Proxy   128) >>= printOutput
-        | p <   256 -> readInput t c >>= hops (Proxy :: Proxy   256) >>= printOutput
-        | p <   512 -> readInput t c >>= hops (Proxy :: Proxy   512) >>= printOutput
-        | p <  1024 -> readInput t c >>= hops (Proxy :: Proxy  1024) >>= printOutput
-        | p <  2048 -> readInput t c >>= hops (Proxy :: Proxy  2048) >>= printOutput
-        | p <  4096 -> readInput t c >>= hops (Proxy :: Proxy  4096) >>= printOutput
-        | p <  8192 -> readInput t c >>= hops (Proxy :: Proxy  8192) >>= printOutput
-        | p < 16384 -> readInput t c >>= hops (Proxy :: Proxy 16384) >>= printOutput
-        | p < 32768 -> readInput t c >>= hops (Proxy :: Proxy 32768) >>= printOutput
-        | p < 65536 -> readInput t c >>= hops (Proxy :: Proxy 65536) >>= printOutput
-        | otherwise -> error "max-precision is 65535"
+      p | p <=     1 -> readInput t c >>= hops (Proxy :: Proxy     1) >>= printOutput
+        | p <=     2 -> readInput t c >>= hops (Proxy :: Proxy     2) >>= printOutput
+        | p <=     3 -> readInput t c >>= hops (Proxy :: Proxy     3) >>= printOutput
+        | p <=     4 -> readInput t c >>= hops (Proxy :: Proxy     4) >>= printOutput
+        | p <=     5 -> readInput t c >>= hops (Proxy :: Proxy     5) >>= printOutput
+        | p <=     6 -> readInput t c >>= hops (Proxy :: Proxy     6) >>= printOutput
+        | p <=     7 -> readInput t c >>= hops (Proxy :: Proxy     7) >>= printOutput
+        | p <=     8 -> readInput t c >>= hops (Proxy :: Proxy     8) >>= printOutput
+        | p <=     9 -> readInput t c >>= hops (Proxy :: Proxy     9) >>= printOutput
+        | p <=    10 -> readInput t c >>= hops (Proxy :: Proxy    10) >>= printOutput
+        | p <=    11 -> readInput t c >>= hops (Proxy :: Proxy    11) >>= printOutput
+        | p <=    12 -> readInput t c >>= hops (Proxy :: Proxy    12) >>= printOutput
+        | p <=    13 -> readInput t c >>= hops (Proxy :: Proxy    13) >>= printOutput
+        | p <=    14 -> readInput t c >>= hops (Proxy :: Proxy    14) >>= printOutput
+        | p <=    15 -> readInput t c >>= hops (Proxy :: Proxy    15) >>= printOutput
+        | p <=    16 -> readInput t c >>= hops (Proxy :: Proxy    16) >>= printOutput
+        | p <=    20 -> readInput t c >>= hops (Proxy :: Proxy    20) >>= printOutput
+        | p <=    24 -> readInput t c >>= hops (Proxy :: Proxy    24) >>= printOutput
+        | p <=    28 -> readInput t c >>= hops (Proxy :: Proxy    28) >>= printOutput
+        | p <=    32 -> readInput t c >>= hops (Proxy :: Proxy    32) >>= printOutput
+        | p <=    64 -> readInput t c >>= hops (Proxy :: Proxy    64) >>= printOutput
+        | p <=    96 -> readInput t c >>= hops (Proxy :: Proxy    96) >>= printOutput
+        | p <=   128 -> readInput t c >>= hops (Proxy :: Proxy   128) >>= printOutput
+        | p <=   256 -> readInput t c >>= hops (Proxy :: Proxy   256) >>= printOutput
+        | p <=   512 -> readInput t c >>= hops (Proxy :: Proxy   512) >>= printOutput
+        | p <=  1024 -> readInput t c >>= hops (Proxy :: Proxy  1024) >>= printOutput
+        | p <=  2048 -> readInput t c >>= hops (Proxy :: Proxy  2048) >>= printOutput
+        | p <=  4096 -> readInput t c >>= hops (Proxy :: Proxy  4096) >>= printOutput
+        | p <=  8192 -> readInput t c >>= hops (Proxy :: Proxy  8192) >>= printOutput
+        | p <= 16384 -> readInput t c >>= hops (Proxy :: Proxy 16384) >>= printOutput
+        | p <= 32768 -> readInput t c >>= hops (Proxy :: Proxy 32768) >>= printOutput
+        | p <= 65536 -> readInput t c >>= hops (Proxy :: Proxy 65536) >>= printOutput
+        | otherwise  -> error "max-precision is 65535"

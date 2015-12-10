@@ -101,6 +101,24 @@ $ hops --prec 10 'y=1+integral(2*y^2-y);laplace(y)'
 y=1+integral(2*y^2-y);laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
 ```
 
+### Number of interval orders
+
+Let *A* be the exponential generating function for the number of labeled
+interval orders ([A079144](https://oeis.org/A079144)). Zagier
+[[Vassiliev invariants and a strange identity related to the Dedekind eta-function, Topology 40 (2001)]
+](http://people.mpim-bonn.mpg.de/zagier/files/doi/10.1016/S0040-9383(00)00005-7/fulltext.pdf)
+showed that `A(24*x)=exp(x)*T(x)` where *T* is the exponential
+generating function for the seqence of Glaisher's *T* numbers
+([A002439](https://oeis.org/A002439)). Moreover, the exponential
+generating function for the *aerated* seqence of Glaisher's *T* numbers is
+`sin(2*x)/(2*cos(3*x))`. Putting this together we have an
+HOPS-expression for the number of labeled interval orders:
+
+```
+$ hops 'T=laplacei(BISECT1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))'
+T=laplacei(BISECT1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24)) => {1,1,3,19,207,3451,81663}
+```
+
 ### Simple sequence notation
 
 We have seen how to define a few different sequences using generating
