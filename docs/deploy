@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+rsync -av --delete dist/* ~/src/akc.github.io/hops
+cd ~/src/akc.github.io
+git add -A
+msg="Deployed hops: "`date`
+echo ">>> "$msg
+git commit -m "$msg"
+git push -f
+cd -
