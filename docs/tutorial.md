@@ -9,7 +9,8 @@ let us look at a number of examples.
 
 ## Generating functions
 
-The generating function, *f*, for the **Fibonacci numbers** satisfies
+The generating function, *f*, for the
+[Fibonacci numbers](https://oeis.org/A000045) satisfies
 *f=1+(x+x<sup>2</sup>)f*, and we can get the coefficient of *f* directly
 from that equation:
 
@@ -26,9 +27,9 @@ $ hops 'f=1/(1-x-x^2)'
 f=1/(1-x-x^2) => {1,1,2,3,5,8,13,21,34,55,89,144,233,377,610}
 ```
 
-The exponential generating function for the **Bell numbers** is
-*exp(e<sup>x</sup>-1)* and we can give that expression to
-`hops`:
+The exponential generating function for the
+[Bell numbers](https://oeis.org/A000110) is *exp(e<sup>x</sup>-1)* and we
+can give that expression to `hops`:
 
 ```
 $ hops --prec=10 'exp(exp(x)-1)'
@@ -52,8 +53,9 @@ $ hops --prec=11 'f=sec(x)+tan(x);laplace(f)'
 f=sec(x)+tan(x);laplace(f) => {1,1,1,2,5,16,61,272,1385,7936,50521}
 ```
 
-The **number of ballots** (ordered set partitions) is most simply
-defined by its exponential generating function *y=1/(2-e<sup>x</sup>)*:
+The [number of ballots](https://oeis.org/A000670) (ordered set partitions)
+is most simply defined by its exponential generating function
+*y=1/(2-e<sup>x</sup>)*:
 
 ```
 $ hops --prec 10 'y=1/(2-exp(x));laplace(y)'
@@ -67,16 +69,15 @@ $ hops --prec 10 'y=1+integral(2*y^2-y);laplace(y)'
 y=1+integral(2*y^2-y);laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
 ```
 
-Let *A* be the exponential generating function for the **number of
-labeled interval orders** ([A079144](https://oeis.org/A079144)). Zagier
-[[Vassiliev invariants and a strange identity related to the Dedekind
-eta-function, Topology 40 (2001)]
-](http://people.mpim-bonn.mpg.de/zagier/files/doi/10.1016/S0040-9383(00)00005-7/fulltext.pdf)
-showed that `A(24*x)=exp(x)*T(x)` where *T* is the exponential
-generating function for the seqence of Glaisher's *T* numbers
-([A002439](https://oeis.org/A002439)). Moreover, the exponential
-generating function for the *aerated* seqence of Glaisher's *T* numbers
-is `sin(2*x)/(2*cos(3*x))`. Putting this together we have an
+Let *A* be the exponential generating function for the
+[number of labeled interval orders](https://oeis.org/A079144).
+Zagier [showed](
+http://people.mpim-bonn.mpg.de/zagier/files/doi/10.1016/S0040-9383(00)00005-7/fulltext.pdf)
+that *A(24x)=exp(x)T(x)* where *T* is the exponential
+generating function for the seqence of
+[Glaisher's *T* numbers](https://oeis.org/A002439). Moreover, the exponential
+generating function for the aerated seqence of Glaisher's *T* numbers
+is *sin(2x)/(2cos(3x))*. Putting this together we have an
 HOPS-expression for the number of labeled interval orders:
 
 ```
@@ -121,17 +122,17 @@ $ hops '{n^3}'
 {n^3} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
 ```
 
-The number of integer compositions of *n* is 1 if *n=0* and
-*2<sup>n-1</sup>* if *n>0*; see [A011782](https://oeis.org/A011782).
-Here's how we might specify that formula:
+The [number of integer compositions](https://oeis.org/A011782) of *n* is
+1 if *n=0* and *2<sup>n-1</sup>* if *n>0*.  Here's how we might specify
+that formula:
 
 ```
 $ hops '{1,2^(n-1)}'
 {1,2^(n-1)} => {1,1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192}
 ```
 
-Factorials are fine too. Here's the order of the alternating group
-([A001710](https://oeis.org/A001710)):
+Factorials are fine too. Here's the
+[order of the alternating group](https://oeis.org/A001710):
 
 ```
 $ hops --prec=12 '{1,1,n!/2}'
@@ -172,9 +173,8 @@ A000108-A001006 => {0,0,0,1,5,21,81,302,1107,4027,14608,52988,192501,701065,2560
 
 ## Misc transformations
 
-HOPS knows about many of the transformations used by OEIS
-<https://oeis.org/transforms.html>.
-
+HOPS knows about many of the
+[transformations used by the OEIS](https://oeis.org/transforms.html).
 As an example, the sequence [A067145](https://oeis.org/A067145)
 claims to shift left under reversion:
 

@@ -1,6 +1,7 @@
 Name:                hops
 Version:             0.2.0
 Synopsis:            Handy Operations on Power Series
+Description:         HOPS is a DSL for power series and integer sequences.
 Homepage:            http://github.com/akc/hops
 License:             BSD3
 License-file:        LICENSE
