@@ -1,4 +1,4 @@
-# HOPS
+# HOPS [![Build Status](https://travis-ci.org/akc/hops.svg)](https://travis-ci.org/akc/hops)
 
 HOPS is a small domain specific scripting language for working with
 power series and integer sequences. It comes with an interpreter and
