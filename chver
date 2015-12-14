@@ -1,6 +1,6 @@
 old="$1"
 new="$2"
 
-sed -i'' s/$old/$new/ hops.md
+sed -i'' s/$old/$new/ docs/hops.md
 sed -i'' s/$old/$new/ hops.hs
 sed -i'' s/$old/$new/ hops.cabal
