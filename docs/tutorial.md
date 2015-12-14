@@ -118,9 +118,17 @@ We are not limited to first degree polynomials either:
 $ hops '{0,1,8,27,...}'
 {0,1,8,27,...} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
 
+$ hops '{0,1,8,27,...}' | sloane
+
+S A000578 0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744,3375,
+N A000578 The cubes: a(n) = n^3.
+
 $ hops '{n^3}'
 {n^3} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
 ```
+
+Note that the example above also illustrates that we can pipe the output
+of `hops` through `sloane`; see <http://akc.is/sloane>.
 
 The [number of integer compositions](https://oeis.org/A011782) of *n* is
 1 if *n=0* and *2<sup>n-1</sup>* if *n>0*.  Here's how we might specify
