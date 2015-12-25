@@ -10,6 +10,8 @@ else
     cd hops
 fi
 
+echo "constraints: scientific ==0.3.4.4" >cabal.config
+
 cabal update
 cabal install --only-dependencies
 
