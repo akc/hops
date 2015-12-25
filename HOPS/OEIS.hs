@@ -35,6 +35,7 @@ import Data.Monoid
 #endif
 import Data.String
 import Data.Ratio
+import Data.Scientific
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
@@ -79,11 +80,20 @@ instance FromJSON ANum where
     parseJSON _ = mzero
 
 instance ToJSON PackedSeq where
-    toJSON (PSeq bs) = String (decodeUtf8 bs)
+    toJSON (PSeq s) = toJSON (map fromRational' (parseSeqErr s))
 
 instance FromJSON PackedSeq where
-    parseJSON (String s) = pure $ PSeq (encodeUtf8 s)
+    parseJSON a@(Array _) = packSeq . map toRational' <$> parseJSON a
     parseJSON _ = mzero
+
+toRational' :: Scientific -> Rational
+toRational' = toRational
+
+fromRational' :: Rational -> Scientific
+fromRational' r =
+    case fromRationalRepetend Nothing r of
+      Right (s, Nothing) -> s
+      _ -> error $ "Cannot represent " ++ showRational r ++ " as a JSON number"
 
 spc :: Parser Char
 spc = char ' '
@@ -145,11 +155,13 @@ packedSeq = PSeq <$> (char '{' *> Ch.takeWhile (/='}') <* char '}')
 -- > packSeq [1,1/2,1/3] = PSeq {unPSeq = "1,1/2,1/3"}
 --
 packSeq :: [Rational] -> PackedSeq
-packSeq = PSeq . B.intercalate (B.pack ",") . map (B.pack . f)
-  where
-    f r = case (numerator r, denominator r) of
-            (n, 1) -> show n
-            (n, d) -> show n ++ '/':show d
+packSeq = PSeq . B.intercalate (B.pack ",") . map (B.pack . showRational)
+
+showRational :: Rational -> String
+showRational r =
+    case (numerator r, denominator r) of
+      (n, 1) -> show n
+      (n, d) -> show n ++ '/':show d
 
 -------------------------------------------------------------------------------
 -- Utility functions

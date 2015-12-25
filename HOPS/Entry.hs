@@ -16,7 +16,6 @@ module HOPS.Entry
     ) where
 
 import GHC.Generics (Generic)
-import Data.Monoid
 import Data.Maybe
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -46,16 +45,11 @@ data PackedEntry = PackedEntry
     } deriving (Eq, Show, Generic)
 
 instance ToJSON PackedEntry where
-    toJSON (PackedEntry p s) =
-        object [ "prg" .= toJSON p
-               , "seq" .= toJSON ("{" <> s <> "}")
-               ]
+    toJSON (PackedEntry p s) = object [ "prg" .= toJSON p, "seq" .= toJSON s ]
 
 instance FromJSON PackedEntry where
-    parseJSON (Object v) =
-        let shave' = PSeq . shave . unPSeq
-        in PackedEntry <$> v .: "prg" <*> (shave' <$> v .: "seq")
-    parseJSON _ = mzero
+    parseJSON (Object v) = PackedEntry <$> v .: "prg" <*> v .: "seq"
+    parseJSON _          = mzero
 
 packedEntry :: Parser PackedEntry
 packedEntry =
