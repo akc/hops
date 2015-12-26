@@ -166,6 +166,38 @@ $ hops --prec=10 'f=1+(x+x^2)*f' | hops 'f=1/(1-2*x);f/(1-x*stdin)'
 f=1+(x+x^2)*f;g=1+2*x*g;g/(1-x*f) => {1,3,8,21,54,137,344,857,2122,5229,12836}
 ```
 
+## A more involved example
+
+We shall use `hops` and [jq](https://stedolan.github.io/jq/) to
+reimplement an idea due to [Thomas
+Baruchel](https://github.com/baruchel/oeis-deconvolution). Assume that
+we save the following bash script in a file named `deconv`.
+
+```bash
+norm="map (.*.) | add"
+d=`jq -n "[$1] | length"`
+N=`jq -n "[$1] | $norm | sqrt"`
+hops --dump --prec=$d \
+  | grep -E "^A[[:digit:]]{6} => {1(,-?[[:digit:]]+){$(($d-1))}}" \
+  | hops --prec=$d "{$1}/stdin" \
+  | hops --to-json \
+  | jq -c "if (.seq | $norm) < $N then . else empty end" \
+  | hops --from-json
+```
+
+Then `./deconv <sequence>` would find power series $G$ and $H$ such
+that $F=G\cdot H$, where $F$ is the generating function for
+`<sequence>`, $G$ is the generating function for some sequence in the
+OEIS, and $H$ has "small" norm. Here, the norm of a finite sequence (or
+polynomial, or truncated power series) is the sum of the squares of its
+elements, and $H$ is said to have small norm if its norm is smaller than
+the square root of the norm of $F$. For simplicity we further assume
+that the constant term of $G$ is $1$.
+
+As an alternative we could require that $H$ also be in the OEIS. This
+could be accomplished by replacing the last three lines with
+`sloane --filter` (see [sloane](http://akc.is/sloane/)).
+
 ## OEIS A-numbers
 
 OEIS A-numbers can be used directly in HOPS programs and they are
