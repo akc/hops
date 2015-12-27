@@ -97,6 +97,14 @@ check "$hops --prec=20 'B=1/(1-x-x^2*B(x/(1-x))/(1-x))'" \
 check "$hops --prec 32 'f=1+x*f(x^2)'" \
 "f=1+x*f(x^2) => {1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}"
 
+# Catalan transform of 2^n gives central binomials
+check "$hops --prec=20 'CATALAN({2^n})-{(2*n)!/(n!)^2}'" \
+"CATALAN({2^n})-{(2*n)!/(n!)^2} => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}"
+
+# Inverse Catalan transform of central binomials gives 2^n
+check "$hops --prec=20 '{2^n}-CATALANi({(2*n)!/(n!)^2})'" \
+"{2^n}-CATALANi({(2*n)!/(n!)^2}) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}"
+
 # https://oeis.org/A079144 -- Number of labeled interval orders
 check "$hops --prec=32 \
 'T=laplacei(BISECT1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))'" \
