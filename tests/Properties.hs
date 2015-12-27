@@ -26,7 +26,9 @@ import qualified Data.Map.Strict as M
 import Control.Applicative
 #endif
 import Control.Monad
+import System.Exit
 import Test.QuickCheck
+import Test.QuickCheck.Test
 import HOPS.Matrix
 import HOPS.OEIS (Name)
 import HOPS.GF
@@ -158,8 +160,8 @@ f ~~= g = as `isPrefixOf` bs || bs `isPrefixOf` as
 
 coeffs = map Val . rationalPrefix
 
-check :: Testable prop => Int -> prop -> IO ()
-check n = quickCheckWith stdArgs {maxSuccess = n}
+check :: Testable prop => Int -> prop -> IO Result
+check n = quickCheckWithResult stdArgs {maxSuccess = n}
 
 runPrg :: KnownNat n => Env n -> ByteString -> Series n
 runPrg env = snd . evalPrg env . fromMaybe (error "parse error") . parsePrg
@@ -217,6 +219,8 @@ prop_BISECT1_u   = areEq "BISECT1   {0,1,2,3,4,5}"     "{1,3,5}"               [
 prop_BOUS_u      = areEq "BOUS      {5,4,3,2,1}"       "{1,6,15,32,83,262}"    []
 prop_BOUS2_u     = areEq "BOUS2     {5,4,3,2,1}"       "{5,9,16,33,84}"        []
 prop_BOUS2i_u    = areEq "BOUS2i    {5,4,3,2,1}"       "{5,-1,0,-5,4}"         []
+prop_CATALAN_u   = areEq "CATALAN   {1,1,1,1,1}"       "{1,1,2,5,14}"          []
+prop_CATALANi_u  = areEq "CATALANi  {1,1,2,5,14}"      "{1,1,1,1,1}"           []
 prop_DIFF_u      = areEq "DIFF      {9,4,1,0,1,4,9}"   "{-5,-3,-1,1,3,5}"      []
 prop_INVERT_u    = areEq "INVERT    {1,2,3,4,5}"       "{1,3,8,21,55}"         []
 prop_INVERTi_u   = areEq "INVERTi   {1,3,8,21,55}"     "{1,2,3,4,5}"           []
@@ -255,6 +259,8 @@ prop_BINOMIALi_BINOMIAL    = areEq "BINOMIALi(BINOMIAL(f))" "f"
 prop_BINOMIAL_BINOMIALi    = areEq "BINOMIAL(BINOMIALi(f))" "f"
 prop_BOUS2i_BOUS2          = areEq "BOUS2i(BOUS2(f))" "f"
 prop_BOUS2_BOUS2i          = areEq "BOUS2(BOUS2i(f))" "f"
+prop_CATALANi_CATALAN      = areEq "CATALANi(CATALAN(f))" "f"
+prop_CATALAN_CATALANi      = areEq "CATALAN(CATALANi(f))" "f"
 prop_INVERTi_INVERT     cs = areEq "INVERTi(INVERT(f))" "f" (take 19 cs)
 prop_INVERT_INVERTi     cs = areEq "INVERT(INVERTi(f))" "f" (take 19 cs)
 prop_LAHi_LAH           cs = areEq "LAHi(LAH(f))" "f" (take 10 cs)
@@ -816,6 +822,8 @@ tests =
     , ("unit/BIN1",              check   1 prop_BIN1_u)
     , ("unit/BISECT0",           check   1 prop_BISECT0_u)
     , ("unit/BISECT1",           check   1 prop_BISECT1_u)
+    , ("unit/CATALAN",           check   1 prop_CATALAN_u)
+    , ("unit/CATALANi",          check   1 prop_CATALANi_u)
     , ("unit/DIFF",              check   1 prop_DIFF_u)
     , ("unit/INVERT",            check   1 prop_INVERT_u)
     , ("unit/INVERTi",           check   1 prop_INVERTi_u)
@@ -858,6 +866,8 @@ tests =
     , ("BINOMIAL.BINOMIALi=id",  check  40 prop_BINOMIAL_BINOMIALi)
     , ("BOUS2i.BOUS2=id",        check  20 prop_BOUS2i_BOUS2)
     , ("BOUS2.BOUS2i=id",        check  20 prop_BOUS2_BOUS2i)
+    , ("CATALAN.CATALANi=id",    check  20 prop_CATALAN_CATALANi)
+    , ("CATALANi.CATALAN=id",    check  20 prop_CATALANi_CATALAN)
     , ("INVERTi.INVERT=id",      check   5 prop_INVERTi_INVERT)
     , ("INVERT.INVERTi=id",      check   5 prop_INVERT_INVERTi)
     , ("LAHi.LAH=id",            check   5 prop_LAHi_LAH)
@@ -979,4 +989,5 @@ tests =
 main =
     forM_ tests $ \(name, chk) -> do
         putStr (name ++ ": ")
-        chk
+        result <- chk
+        unless (isSuccess result) exitFailure

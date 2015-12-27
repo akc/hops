@@ -222,6 +222,8 @@ associations =
     , ("BOUS2i",     bous2i)
     , ("BOUS2",      bous2)
     , ("BOUS",       \f -> bous2 (1 + x*f))
+    , ("CATALAN",    \f -> let cat = 2/(1+sqrt(1-4*x)) in f `o` (x*cat))
+    , ("CATALANi",   \f -> f `o` (x*(1-x)))
     , ("CONVi",      sqrt)
     , ("CONV",       \f -> f*f)
     , ("DIFF",       lift finDiff)
