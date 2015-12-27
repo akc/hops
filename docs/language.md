@@ -71,6 +71,8 @@ Transform      | Meaning
 `BOUS2(f)`     | See [[1](https://oeis.org/transforms.txt)]
 `BOUS2i(f)`    | See [[1](https://oeis.org/transforms.txt)]
 `BOUS(f)`      | See [[1](https://oeis.org/transforms.txt)]
+`CATALAN(f)`   | `C=1+x*C^2;f@(x*C)`
+`CATALANi(f)`  | `f@(x*(1-x))`
 `CONV(f)`      | `f^2`
 `CONVi(f)`     | `sqrt(f)`
 `DIFF(f)`      | `LEFT(f)-f`
