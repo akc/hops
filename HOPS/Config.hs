@@ -29,7 +29,7 @@ getConfig :: IO Config
 getConfig = do
     h <- getHomeDirectory
     let c = Config { home      = h
-                   , hopsDir   = h </> ".hops"
+                   , hopsDir   = h </> ".oeis-data"
                    , seqDBPath = hopsDir c </> "stripped"
                    }
     return c
