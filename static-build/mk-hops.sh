@@ -2,13 +2,14 @@
 
 cd /tmp/x
 
-if cd hops
+if cd hops 2>/dev/null
 then
-    git pull
+    git fetch
 else
     git clone https://github.com/akc/hops.git
     cd hops
 fi
+git reset --hard origin/master
 
 echo "constraints: scientific ==0.3.4.4" >cabal.config
 
