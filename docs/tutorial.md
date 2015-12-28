@@ -1,6 +1,6 @@
 % HOPS Tutorial
 % Anders Claesson
-% 12 December 2015
+% 28 December 2015
 
 # HOPS Tutorial
 
@@ -192,11 +192,15 @@ OEIS, and $H$ has "small" norm. Here, the norm of a finite sequence (or
 polynomial, or truncated power series) is the sum of the squares of its
 elements, and $H$ is said to have small norm if its norm is smaller than
 the square root of the norm of $F$. For simplicity we further assume
-that the constant term of $G$ is $1$.
+that the constant term of $G$ is $1$. It should also be noted that using
+`jq` this way comes with a caveat: In contrast with `hops`, `jq` only
+supports IEEE 754 64-bit numbers, so rounding could occur for numbers with
+more that 15 decimal digits.
 
-As an alternative we could require that $H$ also be in the OEIS. This
-could be accomplished by replacing the last three lines with
-`sloane --filter` (see [sloane](http://akc.is/sloane/)).
+As an alternative to restricting the norm of $H$ we could require that
+$H$ be in the OEIS, and one way to accomplished that would be to replace the
+last three lines in the above script with `sloane --filter`
+(see [sloane](http://akc.is/sloane/)).
 
 ## OEIS A-numbers
 
@@ -210,6 +214,12 @@ difference between the Catalan numbers
 $ hops 'A000108-A001006'
 A000108-A001006 => {0,0,0,1,5,21,81,302,1107,4027,14608,52988,192501,701065,2560806}
 ```
+
+The first time you use A-numbers with `hops` you will be asked to run
+`hops --update`. This will download `https://oeis.org/stripped.gz` and
+unpack it into `.oeis-data/stripped` in your home
+directory. Alternatively, you can do this by hand using `wget` and
+`gunzip`, say, if you prefer.
 
 ## Misc transformations
 
