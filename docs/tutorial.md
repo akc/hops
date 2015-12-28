@@ -275,3 +275,16 @@ $ printf "1,1,2,5,17,33\n1,1,2,5,19,34\n" | hops --tag 1
 TAG000001 => {1,1,2,5,17,33}
 TAG000002 => {1,1,2,5,19,34}
 ```
+
+## Bash completion
+
+A bash completion script can be obtained by running
+
+~~~
+hops --bash-completion-script `which hops`
+~~~
+
+This functionality is due to the excellent
+[optparse-applicative](https://github.com/pcapriotti/optparse-applicative) library.
+For more information see
+<https://github.com/pcapriotti/optparse-applicative/wiki/Bash-Completion>.
