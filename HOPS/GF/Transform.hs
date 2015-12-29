@@ -265,7 +265,7 @@ associations =
     , ("revert",     revert)
     , ("integral",   integral)
     , ("sqrt",       sqrt)
-    , ("abs",        \(Series v) -> Series (V.map abs v))
+    , ("abs",        abs)
     , ("log",        log)
     , ("exp",        exp)
     , ("arsinh",     asinh)

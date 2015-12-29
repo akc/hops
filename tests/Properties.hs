@@ -271,8 +271,7 @@ prop_LOG_EXP            cs = areEq "LOG(EXP(f))" "f" (take 15 cs)
 prop_EXP_LOG            cs = areEq "EXP(LOG(f))" "f" (take 15 cs)
 prop_MOBIUSi_MOBIUS        = areEq "MOBIUSi(MOBIUS(f))" "f"
 prop_MOBIUS_MOBIUSi        = areEq "MOBIUS(MOBIUSi(f))" "f"
-prop_CONVi_CONV         cs = not (null cs) && head cs > 0
-                                 ==> areEq "CONVi(CONV(f))" "f" (take 10 cs)
+prop_CONVi_CONV         cs = areEq "CONVi(CONV(f))" "abs(f)" (take 10 cs)
 prop_STIRLINGi_STIRLING cs = areEq "STIRLINGi(STIRLING(f))" "f" (take 10 cs)
 prop_STIRLING_STIRLINGi cs = areEq "STIRLING(STIRLINGi(f))" "f" (take 10 cs)
 prop_NEGATE_involutive     = areEq "NEGATE(NEGATE(f))" "f"
@@ -295,7 +294,7 @@ prop_LAHi      = areEq "LAHi(f)"      "(f./{n!})@(x/(1+x)) .* {n!}"
 prop_EXP       = areEq "EXP(f)"       "(({1/n!}@(x*f./{n!}) - 1) .* {n!})/x"
 prop_LOG       = areEq "LOG(f)"       "({0,(-1)^(n+1)/n}@(x*f./{n!}) .* {n!})/x"
 prop_CONV      = areEq "CONV(f)"      "f^2"
-prop_CONVi  cs = not (null cs) && head cs > 0 ==> areEq "CONVi(f^2)" "f" (take 10 cs)
+prop_CONVi  cs = areEq "CONVi(f^2)"   "abs(f)" (take 10 cs)
 prop_EXPCONV   = areEq "EXPCONV(f)"   "(f./{n!})^2 .* {n!}"
 prop_NEGATE    = areEq "NEGATE(f)"    "2*f(0) - f"
 prop_PSUM      = areEq "PSUM(f)"      "f/(1-x)"

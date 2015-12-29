@@ -29,6 +29,7 @@ module HOPS.GF.Series
     , precision
     , coeffVector
     , coeffList
+    , leadingCoeff
     , rationalPrefix
     , eval
     -- * Operations
@@ -71,8 +72,8 @@ instance KnownNat n => Num (Series n) where
     (Series u) - (Series v) = Series $ V.zipWith (-) u v
     (Series u) * (Series v) = Series $ u `mul` v
     fromInteger x = polynomial (Proxy :: Proxy n) [fromIntegral x]
-    abs = undefined
-    signum = undefined
+    abs f = signum f * f
+    signum f = polynomial (Proxy :: Proxy n) [signum (leadingCoeff f)]
 
 instance KnownNat n => Fractional (Series n) where
     fromRational r = polynomial (Proxy :: Proxy n) [fromRational r]
@@ -93,7 +94,7 @@ instance KnownNat n => Floating (Series n) where
     asinh f = c0 asinh f + integral (derivative f / sqrt (restrict f^(2::Int) + 1))
     acosh f = c0 acosh f + integral (derivative f / sqrt (restrict f^(2::Int) - 1))
     atanh f = c0 atanh f + integral (derivative f / (1 - restrict f^(2::Int)))
-    sqrt = squareRoot
+    sqrt f = f ^! (1/2)
 
 -- | The underlying vector of coefficients. E.g.
 --
@@ -110,6 +111,14 @@ coeffVector (Series v) = v
 --
 coeffList :: Series n -> [Rat]
 coeffList = V.toList . coeffVector
+
+-- | The first nonzero coefficient when read from smaller to larger
+-- powers of x. If no such coefficient exists then return 0.
+leadingCoeff :: Series n -> Rat
+leadingCoeff f =
+    case dropWhile (==0) (coeffList f) of
+      []    -> 0
+      (c:_) -> c
 
 -- | The longest initial segment of coefficients that are rational
 -- (i.e. not `Indet` or `DZ`).
@@ -271,8 +280,18 @@ exp' f = expAux (precision f - 1) f
       (0, _) -> polynomial (Proxy :: Proxy n) [1]
       (n, _) | n < 0 -> 1 / (f ^! (-s))
       (n, 1) -> f ^^ n
-      (n, 2) -> squareRoot f ^^ n
-      (_, _) -> exp' (fromRational r * log f)
+      (n, k) ->
+          case (d `mod` k, k) of
+            (0, 2) -> y * squareRoot (f/x^d) ^^ n
+            (0, _) -> y * exp' (fromRational r * log (f/x^d))
+            (_, _) -> polynomial (Proxy :: Proxy n) [Indet]
+        where
+          d = xPower f
+          x = polynomial (Proxy :: Proxy n) [0,1]
+          y = (x^(d `div` k))^n
+
+xPower :: KnownNat n => Series n -> Integer
+xPower (Series u) = fromIntegral (V.length (V.takeWhile (==0) u))
 
 isConstant :: KnownNat n => Series n -> Bool
 isConstant (Series u) = V.all (==0) (V.tail u)

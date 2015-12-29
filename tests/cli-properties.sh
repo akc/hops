@@ -105,6 +105,14 @@ check "$hops --prec=20 'CATALAN({2^n})-{(2*n)!/(n!)^2}'" \
 check "$hops --prec=20 '{2^n}-CATALANi({(2*n)!/(n!)^2})'" \
 "{2^n}-CATALANi({(2*n)!/(n!)^2}) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}"
 
+# Square root of Goldbach's conjecture
+check "$hops --prec=30 'sqrt(A002372)'" \
+"sqrt(A002372) => {0,1,1,1,0,1,1,0,1,1,0,1,0,0,1,1,0,0,1,0,1,1,0,1,0,0,1,0,0,1,1}"
+
+# Central binomial coefficients as the square root of powers of 4
+check "$hops --prec=30 'sqrt(A000302)-A000984'" \
+"sqrt(A000302)-A000984 => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}"
+
 # https://oeis.org/A079144 -- Number of labeled interval orders
 check "$hops --prec=32 \
 'T=laplacei(BISECT1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))'" \
