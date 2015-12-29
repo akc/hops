@@ -38,7 +38,7 @@ import HOPS.GF
 import HOPS.GF.Series
 import HOPS.GF.Transform
 
-nameVer = "hops 0.4.0" :: String
+nameVer = "hops 0.4.1" :: String
 strpdURL = "https://oeis.org/stripped.gz" :: URL
 
 type Prec = Int
