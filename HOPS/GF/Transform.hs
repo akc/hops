@@ -210,7 +210,8 @@ laplacei f = f ./ facSeries
 
 associations :: KnownNat n => [(ByteString, Transform n)]
 associations =
-    [ ("AERATE1",    \f -> f `o` x^(2::Int))
+    [ ("ABS",        \(Series v) -> Series (V.map abs v))
+    , ("AERATE1",    \f -> f `o` x^(2::Int))
     , ("AERATE2",    \f -> f `o` x^(3::Int))
     , ("BARRY1",     \f -> 1 / (1 - x - x*x*f)) -- Named after Paul Barry
     , ("BARRY2",     \f -> 1 / (1 + x + x*x*f)) -- Named after Paul Barry

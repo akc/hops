@@ -35,7 +35,7 @@ integral(f) | integral of *f*
 Function       | Meaning
 ---------------|----------------------------------------
 `sqrt(f)`      | `f^(1/2)`
-`abs(f)`       | coefficient-wise absolute value
+`abs(f)`       | `f` multiplied by the sign of its leading coefficient
 `log(f)`       | logarithmic function
 `exp(f)`       | exponential function
 `sin(f)`       | sine function
@@ -59,6 +59,7 @@ Function       | Meaning
 
 Transform      | Meaning
 ---------------|----------------------------------------
+`ABS(f)`       | coefficient-wise absolute value
 `AERATE1(f)`   | `f(x^2)`
 `AERATE2(f)`   | `f(x^3)`
 `BARRY1(f)`    | `1/(1-x-x^2*f)`
@@ -68,9 +69,9 @@ Transform      | Meaning
 `BIN1(f)`      | `g={(-1)^n/n!}*((laplacei(x*f))@(-x));LEFT(laplace(-g))`
 `BISECT0(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT0(f)={a0,a2,a4,...}`
 `BISECT1(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT1(f)={a1,a3,a5,...}`
-`BOUS2(f)`     | See [[1](https://oeis.org/transforms.txt)]
-`BOUS2i(f)`    | See [[1](https://oeis.org/transforms.txt)]
-`BOUS(f)`      | See [[1](https://oeis.org/transforms.txt)]
+`BOUS2(f)`     | see [[1](https://oeis.org/transforms.txt)]
+`BOUS2i(f)`    | see [[1](https://oeis.org/transforms.txt)]
+`BOUS(f)`      | see [[1](https://oeis.org/transforms.txt)]
 `CATALAN(f)`   | `C=1+x*C^2;f@(x*C)`
 `CATALANi(f)`  | `f@(x*(1-x))`
 `CONV(f)`      | `f^2`
