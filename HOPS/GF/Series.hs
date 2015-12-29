@@ -286,12 +286,15 @@ exp' f = expAux (precision f - 1) f
             (0, _) -> y * exp' (fromRational r * log (f/x^d))
             (_, _) -> polynomial (Proxy :: Proxy n) [Indet]
         where
-          d = xPower f
+          d = leadingExponent f
           x = polynomial (Proxy :: Proxy n) [0,1]
           y = (x^(d `div` k))^n
 
-xPower :: KnownNat n => Series n -> Integer
-xPower (Series u) = fromIntegral (V.length (V.takeWhile (==0) u))
+leadingExponent :: KnownNat n => Series n -> Integer
+leadingExponent f =
+    case span (==0) (rationalPrefix f) of
+      (_ ,[]) -> 0
+      (xs,_ ) -> fromIntegral (length xs)
 
 isConstant :: KnownNat n => Series n -> Bool
 isConstant (Series u) = V.all (==0) (V.tail u)
