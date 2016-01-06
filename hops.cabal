@@ -49,7 +49,7 @@ Executable hops
                        deepseq >=1.3,
                        directory >=1.2,
                        filepath >=1.3,
-                       http-conduit >=2.1,
+                       http-conduit >=2.1.7,
                        http-types >=0.8,
                        optparse-applicative >=0.10,
                        parallel >=3.2,

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DataKinds #-}
@@ -20,9 +19,7 @@ import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Aeson
-#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
-#endif
 import Control.Monad
 import Control.Parallel.Strategies
 import System.Directory

@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 
@@ -23,9 +22,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as Ch
 import Data.Attoparsec.ByteString.Char8
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..), object, (.=), (.:))
 import Control.Monad
-#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
-#endif
 import HOPS.Utils
 import HOPS.GF
 import HOPS.OEIS

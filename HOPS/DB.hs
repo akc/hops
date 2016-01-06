@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
@@ -16,9 +15,7 @@ module HOPS.DB
     , emptyANumDB
     ) where
 
-#if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
-#endif
 import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe

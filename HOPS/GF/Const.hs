@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
@@ -21,9 +20,7 @@ module HOPS.GF.Const
     ) where
 
 import Data.Monoid
-#if !MIN_VERSION_base(4,8,0)
 import Data.Foldable
-#endif
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
