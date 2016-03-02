@@ -5,7 +5,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -23,6 +23,8 @@ module HOPS.GF
     , vars
     , anums
     , insertVar
+    , aNumPrg
+    , tagPrg
     -- Eval
     , Env (..)
     , evalPrg
@@ -38,7 +40,7 @@ import Data.Proxy
 import Data.Maybe
 import Data.List
 import Data.Monoid
-import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
+import Data.Aeson
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
 import Data.Map.Lazy (Map)
@@ -100,7 +102,7 @@ data Expr2 a
 
 data Expr3 a
     = X
-    | A Int -- A-numbers
+    | A Int -- An A-number
     | Tag Int
     | Var Name
     | Lit a
@@ -332,6 +334,12 @@ lookupVar v env = M.lookup v (varEnv env)
 -- | Insert a variable binding into the given environment.
 insertVar :: KnownNat n => ByteString -> Series n -> Env n -> Env n
 insertVar v f (Env a vs) = Env a (M.insert v f vs)
+
+aNumPrg :: Int -> Prg Integer
+aNumPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (A m))))]
+
+tagPrg :: Int -> Prg Integer
+tagPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (Tag m))))]
 
 --------------------------------------------------------------------------------
 -- Eval

@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -18,7 +18,6 @@ module HOPS.DB
 import Control.Applicative
 import GHC.TypeLits
 import Data.Proxy
-import Data.Maybe
 import Data.Vector (Vector)
 import qualified Data.Vector as V
 import Data.ByteString (ByteString)
@@ -48,12 +47,8 @@ readSeqDB = readDB . seqDBPath
 -- A-number 'n'.
 readANumDB :: KnownNat n => Config -> IO  (Vector (Series n))
 readANumDB cfg =
-    V.fromList . map mkSeries . parseStripped . unDB <$> readSeqDB cfg
-  where
-    mkSeries = series (Proxy :: Proxy n)
-             . map fromIntegral
-             . fromMaybe (error "cannot parse local database")
-             . parseIntegerSeq . unPSeq . snd
+    let mkSeries = series (Proxy :: Proxy n) . map Val . snd
+    in V.fromList . map mkSeries . parseStripped . unDB <$> readSeqDB cfg
 
 -- | An empty A-number database
 emptyANumDB :: KnownNat n => Vector (Series n)

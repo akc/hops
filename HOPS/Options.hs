@@ -1,5 +1,5 @@
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -23,18 +23,14 @@ data Options = Options
     , tagSeqs        :: Maybe Int
     -- | List all transforms
     , listTransforms :: Bool
-    -- | convert to JSON
-    , tojson         :: Bool
-    -- | convert from JSON
-    , fromjson       :: Bool
     -- | Output all the sequences of the local DB
     , dumpSeqs       :: Bool
     -- | Updated local DB
     , update         :: Bool
     -- | Show version info
     , version        :: Bool
-    -- Search terms or programs
-    , terms          :: [String]
+    -- | Program
+    , program        :: [String]
     }
 
 -- | Parse command line options.
@@ -59,12 +55,6 @@ optionsParser =
     <*> switch
         ( long "list-transforms"
        <> help "List the names of all transforms" )
-    <*> switch
-        ( long "to-json"
-       <> help "Convert to JSON" )
-    <*> switch
-        ( long "from-json"
-       <> help "Convert from JSON" )
     <*> switch
         ( long "dump"
        <> help "Output all the sequences of the local DB" )

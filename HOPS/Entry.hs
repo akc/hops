@@ -1,29 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
 
 module HOPS.Entry
-    ( Entry (..)
-    , PackedEntry (..)
-    , parsePackedEntryErr
-    , parseEntry
+    ( Sequence
+    , Entry (..)
     ) where
 
-import GHC.Generics (Generic)
-import Data.Maybe
-import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.Attoparsec.ByteString.Char8 as Ch
-import Data.Attoparsec.ByteString.Char8
-import Data.Aeson (FromJSON (..), ToJSON(..), Value (..), object, (.=), (.:))
+import Data.Ratio
+import Data.Aeson
 import Control.Monad
 import Control.Applicative
-import HOPS.Utils
 import HOPS.GF
 import HOPS.OEIS
 
@@ -31,40 +22,26 @@ import HOPS.OEIS
 -- numbers.
 data Entry = Entry
     { getPrg :: Prg Integer
-    , getSeq :: [Rational]
+    , getSeq :: Sequence
     } deriving (Eq, Show)
 
--- | Similary, a packed entry consists of a packed program together with
--- a packed sequence.
-data PackedEntry = PackedEntry
-    { getPackedPrg :: PackedPrg
-    , getPackedSeq :: PackedSeq
-    } deriving (Eq, Show, Generic)
+instance ToJSON Entry where
+    toJSON (Entry prg s) =
+        object ([ "hops" .= toJSON prg
+                , "nums" .= toJSON (map numerator s)
+                ] ++
+                [ "dnos" .= toJSON ds
+                | let ds = map denominator s
+                , any (/=1) ds  -- For terseness only include denominators if
+                                -- at least one of them isn't 1
+                ])
 
-instance ToJSON PackedEntry where
-    toJSON (PackedEntry p s) = object [ "prg" .= toJSON p, "seq" .= toJSON s ]
-
-instance FromJSON PackedEntry where
-    parseJSON (Object v) = PackedEntry <$> v .: "prg" <*> v .: "seq"
-    parseJSON _          = mzero
-
-packedEntry :: Parser PackedEntry
-packedEntry =
-    let f w = if B.last w == '=' then return (PPrg (B.init w)) else mzero
-    in PackedEntry <$> (Ch.takeWhile1 (/='>') >>= f)
-                   <*> (char '>' *> packedSeq)
-
--- | A parser for packed entries.
-parsePackedEntry :: ByteString -> Maybe PackedEntry
-parsePackedEntry = parse_ packedEntry . B.filter (/=' ')
-
--- | Like `parsePackedEntry` but throws an error rather than returning
--- `Nothing` in case the parse fails.
-parsePackedEntryErr :: ByteString -> PackedEntry
-parsePackedEntryErr = fromMaybe (error "cannot parse input") . parsePackedEntry
-
--- | A parser for entries.
-parseEntry :: ByteString -> Entry
-parseEntry b =
-    let PackedEntry (PPrg p) (PSeq s) = parsePackedEntryErr b
-    in Entry (parsePrgErr p) (parseSeqErr s)
+instance FromJSON Entry where
+    parseJSON (Object v) = do
+        prg <- v .:  "hops"
+        ns  <- v .:  "nums"
+        mds <- v .:? "dnos"
+        return $ case mds of
+             Nothing -> Entry prg (map fromIntegral ns)
+             Just ds -> Entry prg (zipWith (%) ns ds)
+    parseJSON _ = mzero

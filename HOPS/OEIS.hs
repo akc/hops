@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -13,15 +13,13 @@ module HOPS.OEIS
       URL
     , Name
     , ANum (..)
-    , PackedSeq (..)
+    , Sequence
     -- * Parse stripped.gz
     , parseStripped
     -- * Parse sequences
     , shave
-    , parseSeqErr
     , parseIntegerSeq
-    , packedSeq
-    , packSeq
+    , parseIntegerSeqErr
     -- * Parse A-numbers and TAGs
     , aNumInt
     , tag
@@ -30,73 +28,52 @@ module HOPS.OEIS
 import GHC.Generics (Generic)
 import Data.Maybe
 import Data.Monoid
-import Data.String
-import Data.Ratio
-import Data.Scientific
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
-import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
+import Data.Aeson
 import qualified Data.Attoparsec.ByteString as A
-import qualified Data.Attoparsec.ByteString.Char8 as Ch
 import Data.Attoparsec.ByteString.Char8
-import Control.DeepSeq
 import Control.Monad
 import Control.Applicative
+import HOPS.GF.Rat
 import HOPS.Utils
+
+-- | A sequence of rational numbers.
+type Sequence = [Rational]
 
 -- | The name of an OEIS entry is a short description of the
 -- sequence. Here represented as a `ByteString`.
 type Name = ByteString
 
 -- | A URL is currently just a synonym for `String`.
-type URL  = String
+type URL = String
 
 -- | An A-number is the character \'A\' followed by a six digit
--- number. Here we represent that by a wrapped (7 character)
--- `ByteString`.
-newtype ANum = ANum {unANum :: ByteString} deriving (Eq, Ord, Show, Generic)
-
--- | A `PackedSeq` is a wrapped `ByteString`.
-newtype PackedSeq = PSeq {unPSeq :: ByteString} deriving (Eq, Show, Generic)
-
-instance NFData PackedSeq
-
-instance Monoid PackedSeq where
-    mempty = PSeq mempty
-    mappend (PSeq x) (PSeq y) = PSeq (mappend x y)
-
-instance IsString PackedSeq where
-    fromString = PSeq . fromString
+-- number. Here we represent that by an Int
+newtype ANum = ANum {unANum :: Int} deriving (Eq, Ord, Show, Generic)
 
 instance ToJSON ANum where
-    toJSON (ANum bs) = String (decodeUtf8 bs)
+    toJSON m = String ("A" <> decodeUtf8 (packANum m))
 
 instance FromJSON ANum where
-    parseJSON (String s) = pure $ ANum (encodeUtf8 s)
+    parseJSON (String s) = pure $ parseANumErr (encodeUtf8 s)
     parseJSON _ = mzero
-
-instance ToJSON PackedSeq where
-    toJSON (PSeq s) = toJSON (map fromRational' (parseSeqErr s))
-
-instance FromJSON PackedSeq where
-    parseJSON a@(Array _) = packSeq . map toRational' <$> parseJSON a
-    parseJSON _ = mzero
-
-toRational' :: Scientific -> Rational
-toRational' = toRational
-
-fromRational' :: Rational -> Scientific
-fromRational' r =
-    case fromRationalRepetend Nothing r of
-      Right (s, Nothing) -> s
-      _ -> error $ "Cannot represent " ++ showRational r ++ " as a JSON number"
 
 spc :: Parser Char
 spc = char ' '
 
+packANum :: ANum -> ByteString
+packANum = B.pack . show . unANum
+
 aNum :: Parser ANum
-aNum = ANum <$> (B.cons <$> char 'A' <*> takeWhile1 isDigit)
+aNum = ANum <$> (char 'A' *> decimal)
+
+parseANum :: ByteString -> Maybe ANum
+parseANum = parse_ (aNum <* endOfInput)
+
+parseANumErr :: ByteString -> ANum
+parseANumErr = fromMaybe (error "error parsing A-number") . parseANum
 
 -------------------------------------------------------------------------------
 -- Parsing stripped.gz
@@ -116,49 +93,24 @@ parseRecords = mapMaybe (parse_ record) . dropHeader . B.lines
 --
 -- > A000108 ,1,1,2,5,14,42,132,429,1430,4862,16796,58786,208012,742900,
 --
-parseStripped :: ByteString -> [(ANum, PackedSeq)]
-parseStripped bs = [ (anum, PSeq (shave s)) | (anum, s) <- parseRecords bs ]
+parseStripped :: ByteString -> [(ANum, Sequence)]
+parseStripped bs = [ (anum, parseIntegerSeqErr (shave s)) | (anum, s) <- parseRecords bs ]
 
 -------------------------------------------------------------------------------
 -- Parse sequences
 -------------------------------------------------------------------------------
 
-rat :: Parser Rational
-rat = (%) <$> signed decimal <*> ((char '/' *> decimal) <|> return 1)
-
-ratSeq :: Parser [Rational]
-ratSeq = rat `sepBy` char ','
-
-integerSeq :: Parser [Integer]
-integerSeq = signed decimal `sepBy` char ','
-
-parseSeq :: ByteString -> Maybe [Rational]
-parseSeq = parse_ (ratSeq <* endOfInput) . B.filter (/=' ')
-
--- | Parse a sequence of `Rational`s.
-parseSeqErr :: ByteString -> [Rational]
-parseSeqErr = fromMaybe (error "error parsing sequence") . parseSeq
+integerSeq :: Parser Sequence
+integerSeq =
+    map (fromIntegral :: Integer -> Rational) <$> signed decimal `sepBy` char ','
 
 -- | Parse a sequence of `Integer`s.
-parseIntegerSeq :: ByteString -> Maybe [Integer]
+parseIntegerSeq :: ByteString -> Maybe Sequence
 parseIntegerSeq = parse_ (integerSeq <* endOfInput) . B.filter (/=' ')
 
--- | Parser for `PackedSeq`.
-packedSeq :: Parser PackedSeq
-packedSeq = PSeq <$> (char '{' *> Ch.takeWhile (/='}') <* char '}')
-
--- | Pack a sequence of `Rational`s into a `PackedSeq`. E.g.
---
--- > packSeq [1,1/2,1/3] = PSeq {unPSeq = "1,1/2,1/3"}
---
-packSeq :: [Rational] -> PackedSeq
-packSeq = PSeq . B.intercalate (B.pack ",") . map (B.pack . showRational)
-
-showRational :: Rational -> String
-showRational r =
-    case (numerator r, denominator r) of
-      (n, 1) -> show n
-      (n, d) -> show n ++ '/':show d
+-- | Parse a sequence of `Integer`s or throw an error.
+parseIntegerSeqErr :: ByteString -> Sequence
+parseIntegerSeqErr = fromMaybe (error "error parsing sequence") . parseIntegerSeq
 
 -------------------------------------------------------------------------------
 -- Utility functions
