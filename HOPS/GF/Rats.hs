@@ -83,12 +83,6 @@ evalRats (as, finalTerm) =
                            | n <- [length cs ..]
                            ])
 
-choose :: (Integral b, Fractional a) => a -> b -> a
-choose x k = p / q
-  where
-    p = product [ x - fromIntegral i | i <- [0..k-1] ]
-    q = fromIntegral (product [1 .. toInteger k])
-
 newtonExtension :: Fractional a => [a] -> [a]
 newtonExtension cs = map (f . fromIntegral) [0::Int ..]
   where

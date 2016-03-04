@@ -38,6 +38,7 @@ module HOPS.GF.Series
     , (!^!)
     , (^!)
     , o
+    , blackDiamond
     , derivative
     , integral
     , revert
@@ -306,6 +307,19 @@ squareRoot f = squareRoot' (precision f - 1) f
     squareRoot' d g =
         let h = 2 * squareRoot' (d-1) (kRestrict d g)
         in c0 sqrt g + integral (derivative g / h)
+
+blackDiamond :: Series n -> Series n -> Series n
+blackDiamond (Series u) (Series v) =
+    Series $ V.generate (V.length u) $ \n ->
+        sum [ u!(a+c) * v!(b+c) * multinomial [a,b,c]
+            | [a,b,c] <- compositions 3 n
+            ]
+
+compositions :: Int -> Int -> [[Int]]
+compositions 0 0 = [[]]
+compositions 0 _ = []
+compositions k 0 = [ replicate k 0 ]
+compositions k n = [0..n] >>= \i -> map (i:) (compositions (k-1) (n-i))
 
 -- | The secant function: @sec f = 1 / cos f@
 sec :: KnownNat n => Series n -> Series n

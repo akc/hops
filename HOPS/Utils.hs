@@ -20,7 +20,6 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 
-
 -- | @pad d n@ packs the integer @n@ into a `ByteString` padding with
 -- \'0\' on the right to achieve length @d@.
 --

@@ -11,6 +11,8 @@ module HOPS.GF.Rat
     , maybeRational
     , isRational
     , factorial
+    , choose
+    , multinomial
     ) where
 
 import Data.Ratio
@@ -137,6 +139,10 @@ isRational :: Rat -> Bool
 isRational (Val _) = True
 isRational _       = False
 
+maybeInteger :: Rat -> Maybe Integer
+maybeInteger (Val r) | denominator r == 1 = Just (numerator r)
+maybeInteger _ = Nothing
+
 -- | If the given value represents a nonnegative integer, then the
 -- factorial of that integer is returned. If given `DZ`, return `DZ`. In
 -- all other cases return `Indet`.
@@ -148,6 +154,13 @@ factorial r  =
       Just k | k < 0     -> Indet
              | otherwise -> Val $ toRational $ product [1 .. k]
 
-maybeInteger :: Rat -> Maybe Integer
-maybeInteger (Val r) | denominator r == 1 = Just (numerator r)
-maybeInteger _ = Nothing
+choose :: (Integral b, Fractional a) => a -> b -> a
+choose x k = p / q
+  where
+    p = product [ x - fromIntegral i | i <- [0..k-1] ]
+    q = fromIntegral (product [1 .. toInteger k])
+
+multinomial :: (Integral b, Fractional a) => [b] -> a
+multinomial [] = 1
+multinomial [_] = 1
+multinomial ks@(k:kt) = fromIntegral (sum ks) `choose` k * multinomial kt
