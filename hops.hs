@@ -31,25 +31,25 @@ import HOPS.Download
 import HOPS.DB
 import HOPS.GF
 import HOPS.GF.Series
-import HOPS.GF.Transform
 
-nameVer = "hops 0.4.1" :: String
-strpdURL = "https://oeis.org/stripped.gz" :: URL
+ver :: String
+ver = "0.4.1"
+
+strpdURL :: String
+strpdURL = "https://oeis.org/stripped.gz"
 
 type Prec = Int
-type TrName = B.ByteString
 
 data Input (n :: Nat)
     = RunPrgs (Env n) [Prg Integer] [Entry]
     | TagSeqs Int [Sequence]
     | DumpSeqDB Prec [Entry]
     | UpdateDBs FilePath FilePath
-    | ListTransforms [TrName]
     | Empty
 
 data Output
     = Entries [Entry]
-    | Transforms [TrName]
+    | Version String
     | NOP
 
 lines' :: BL.ByteString -> [B.ByteString]
@@ -83,8 +83,6 @@ readInput opts cfg
     | update opts =
         return $ UpdateDBs (hopsDir cfg) (seqDBPath cfg)
 
-    | listTransforms opts = return $ ListTransforms transforms
-
     | isJust (tagSeqs opts) =
         TagSeqs (fromJust (tagSeqs opts)) . map parseIntegerSeqErr <$> readStdin
 
@@ -96,7 +94,7 @@ readInput opts cfg
 
 printOutput :: Output -> IO ()
 printOutput NOP = return ()
-printOutput (Transforms ts) = mapM_ B.putStrLn ts
+printOutput (Version v) = putStrLn $ "hops " <> v
 printOutput (Entries es) = mapM_ (BL.putStrLn . encode) es
 
 stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
@@ -132,9 +130,7 @@ hops n inp =
       TagSeqs i0 ts ->
           return $ Entries [ Entry (tagPrg i) t | (i, t) <- zip [i0 .. ] ts ]
 
-      ListTransforms ts -> return $ Transforms ts
-
-      Empty -> putStrLn nameVer >> return NOP
+      Empty -> return (Version ver)
 
       RunPrgs env prgs entries ->
           return $ Entries (zipWith Entry ps results)

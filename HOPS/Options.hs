@@ -22,8 +22,6 @@ data Options = Options
     -- | Tag sequences with TAG-numbers
     , tagSeqs        :: Maybe Int
     -- | List all transforms
-    , listTransforms :: Bool
-    -- | Output all the sequences of the local DB
     , dumpSeqs       :: Bool
     -- | Updated local DB
     , update         :: Bool
@@ -52,9 +50,6 @@ optionsParser =
         ( long "tag"
        <> metavar "N"
        <> help "Read sequences from stdin and tag them, starting at N" ))
-    <*> switch
-        ( long "list-transforms"
-       <> help "List the names of all transforms" )
     <*> switch
         ( long "dump"
        <> help "Output all the sequences of the local DB" )
