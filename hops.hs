@@ -32,11 +32,11 @@ import HOPS.DB
 import HOPS.GF
 import HOPS.GF.Series
 
-ver :: String
-ver = "0.4.1"
+versionString :: String
+versionString = "0.4.1"
 
-strpdURL :: String
-strpdURL = "https://oeis.org/stripped.gz"
+seqdataURL :: String
+seqdataURL = "https://oeis.org/stripped.gz"
 
 type Prec = Int
 
@@ -122,15 +122,15 @@ hops n inp =
 
       UpdateDBs hopsdir sdbPath -> do
           createDirectoryIfMissing False hopsdir
-          let msg1 = "Downloading " ++ strpdURL ++ ": "
+          let msg1 = "Downloading " ++ seqdataURL ++ ": "
           putStr msg1 >> hFlush stdout
-          download (length msg1) strpdURL sdbPath >> putStrLn ""
+          download (length msg1) seqdataURL sdbPath >> putStrLn ""
           return NOP
 
       TagSeqs i0 ts ->
           return $ Entries [ Entry (tagPrg i) t | (i, t) <- zip [i0 .. ] ts ]
 
-      Empty -> return (Version ver)
+      Empty -> return (Version versionString)
 
       RunPrgs env prgs entries ->
           return $ Entries (zipWith Entry ps results)
