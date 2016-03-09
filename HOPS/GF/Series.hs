@@ -318,6 +318,8 @@ blackDiamond (Series u) (Series v) =
 compositions :: Int -> Int -> [[Int]]
 compositions 0 0 = [[]]
 compositions 0 _ = []
+compositions 1 n = [[n]]
+compositions 2 n = [[n-i,i] | i <- [0..n]]
 compositions k 0 = [ replicate k 0 ]
 compositions k n = [0..n] >>= \i -> map (i:) (compositions (k-1) (n-i))
 

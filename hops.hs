@@ -33,10 +33,10 @@ import HOPS.GF
 import HOPS.GF.Series
 
 versionString :: String
-versionString = "0.4.1"
+versionString = "0.5.0"
 
-seqdataURL :: String
-seqdataURL = "https://oeis.org/stripped.gz"
+seqsURL :: String
+seqsURL = "https://oeis.org/stripped.gz"
 
 type Prec = Int
 
@@ -49,7 +49,6 @@ data Input (n :: Nat)
 
 data Output
     = Entries [Entry]
-    | Version String
     | NOP
 
 lines' :: BL.ByteString -> [B.ByteString]
@@ -76,7 +75,7 @@ readInput opts cfg
 
     | dumpSeqs opts =
           DumpSeqDB (prec opts)
-        . map (\(ANum a, s) -> Entry (aNumPrg a) s)
+        . map (\(ANum a, s) -> Entry (aNumPrg a) s [])
         . parseStripped
         . unDB <$> readSeqDB cfg
 
@@ -94,7 +93,6 @@ readInput opts cfg
 
 printOutput :: Output -> IO ()
 printOutput NOP = return ()
-printOutput (Version v) = putStrLn $ "hops " <> v
 printOutput (Entries es) = mapM_ (BL.putStrLn . encode) es
 
 stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
@@ -114,27 +112,28 @@ hops n inp =
 
       DumpSeqDB precn es ->
           return $ Entries
-              [ Entry p t
-              | Entry p s <- es
+              [ Entry p t trail
+              | Entry p s trail <- es
               , let t = take precn s
               , not (null t)
               ]
 
       UpdateDBs hopsdir sdbPath -> do
           createDirectoryIfMissing False hopsdir
-          let msg1 = "Downloading " ++ seqdataURL ++ ": "
+          let msg1 = "Downloading " ++ seqsURL ++ ": "
           putStr msg1 >> hFlush stdout
-          download (length msg1) seqdataURL sdbPath >> putStrLn ""
+          download (length msg1) seqsURL sdbPath >> putStrLn ""
           return NOP
 
       TagSeqs i0 ts ->
-          return $ Entries [ Entry (tagPrg i) t | (i, t) <- zip [i0 .. ] ts ]
+          return $ Entries [ Entry (tagPrg i) t [] | (i, t) <- zip [i0 .. ] ts ]
 
-      Empty -> return (Version versionString)
+      Empty -> putStrLn ("hops " ++ versionString) >> return NOP
 
       RunPrgs env prgs entries ->
-          return $ Entries (zipWith Entry ps results)
+          return $ Entries (zipWith3 Entry ps results (trails ++ repeat []))
         where
+          trails  = map getTrail entries
           results = runPrgs envs prgs
           (ps, envs) = case entries of
             [] -> ( prgs, [env] )

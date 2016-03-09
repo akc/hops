@@ -4,7 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -131,9 +131,6 @@ instance Arbitrary a => Arbitrary (Term a) where
         , Constant <$> arbitrary
         , Fun <$> arbitrary
         ]
-
-instance Arbitrary a => Arbitrary (Rats a) where
-    arbitrary = (,) <$> arbitrary <*> arbitrary
 
 instance Arbitrary a => Arbitrary (Matrix a) where
     arbitrary = do

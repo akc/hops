@@ -16,6 +16,8 @@ module HOPS.GF.Rat
     ) where
 
 import Data.Ratio
+import Data.Vector (Vector, (!))
+import qualified Data.Vector as V
 
 -- | Rationals extended with two elements:
 data Rat
@@ -154,13 +156,23 @@ factorial r  =
       Just k | k < 0     -> Indet
              | otherwise -> Val $ toRational $ product [1 .. k]
 
-choose :: (Integral b, Fractional a) => a -> b -> a
-choose x k = p / q
-  where
-    p = product [ x - fromIntegral i | i <- [0..k-1] ]
-    q = fromIntegral (product [1 .. toInteger k])
+pascal :: [Vector Integer]
+pascal = [ V.fromList [ n `binomial` k | k <- [0 .. (n+1) `div` 2 ] ] | n <- [0..] ]
+
+binomial :: Int -> Int -> Integer
+n `binomial` k
+    | n < k            = 0
+    | k == 0           = 1
+    | n == k           = 1
+    | k < n && 2*k > n = n `binomial` (n-k)
+    | otherwise        = pascal!!(n-1)!k  + pascal!!(n-1)!(k-1)
+
+choose :: (Integral a, Num b) => a -> a -> b
+choose n k = fromInteger $ binomial (fromIntegral n) (fromIntegral k)
 
 multinomial :: (Integral b, Fractional a) => [b] -> a
 multinomial [] = 1
 multinomial [_] = 1
+multinomial [k0,k1] = (k0+k1) `choose` k0
+multinomial [k0,k1,k2] = (k0+k1+k2) `choose` k0 * (k1+k2) `choose` k1
 multinomial ks@(k:kt) = fromIntegral (sum ks) `choose` k * multinomial kt

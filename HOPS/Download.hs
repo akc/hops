@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 -- |
 -- Copyright   : Anders Claesson 2015
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
