@@ -30,8 +30,8 @@ instance ToJSON Entry where
     toJSON (Entry prg s trail) =
         object ([ "hops"  .= toJSON prg
                 , "seq"   .= toJSON (map numerator s)
-                , "trail" .= toJSON trail
                 ] ++
+                [ "trail" .= toJSON trail | not (null trail) ] ++
                 [ "denominators" .= toJSON ds
                 | let ds = map denominator s
                 , any (/=1) ds  -- For terseness only include denominators if
@@ -41,10 +41,11 @@ instance ToJSON Entry where
 
 instance FromJSON Entry where
     parseJSON (Object v) = do
-        prg   <- v .:  "hops"
-        ns    <- v .:  "seq"
-        mds   <- v .:? "denominators"
-        trail <- v .:  "trail"
+        prg <- v .:  "hops"
+        ns  <- v .:  "seq"
+        mds <- v .:? "denominators"
+        mtr <- v .:? "trail"
+        let tr = fromMaybe [] mtr
         let ds = fromMaybe (repeat 1) mds
-        return $ Entry prg (zipWith (%) ns ds) trail
+        return $ Entry prg (zipWith (%) ns ds) tr
     parseJSON _ = mzero
