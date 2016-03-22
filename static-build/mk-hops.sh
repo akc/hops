@@ -7,8 +7,7 @@ else
     git clone https://github.com/akc/hops.git
     cd hops
 fi
-# git reset --hard origin/master
-git reset --hard origin/wip
+git reset --hard origin/master
 
 echo "constraints: http-conduit==2.1.7" >cabal.config
 
