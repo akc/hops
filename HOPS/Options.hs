@@ -59,7 +59,7 @@ optionsParser =
     <*> switch
         ( long "version"
        <> help "Show version info" )
-    <*> many (argument str (metavar "TERMS...")))
+    <*> many (argument str (metavar "PROGRAMS...")))
 
 -- | Run the command line options parser (above).
 getOptions :: IO Options
