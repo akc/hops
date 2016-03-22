@@ -16,21 +16,30 @@ Here we generate the sequence of
 
 ```
 $ hops --prec=11 '2/(1+sqrt(1-4*x))'
-2/(1+sqrt(1-4*x)) => {1,1,2,5,14,42,132,429,1430,4862,16796}
+{
+  "hops":"2/(1+sqrt(1-4*x))",
+  "seq":[1,1,2,5,14,42,132,429,1430,4862,16796]
+}
 ```
 
 Or, using an implicit defition:
 
 ```
 $ hops --prec=11 'C=1+x*C^2'
-C=1+x*C^2 => {1,1,2,5,14,42,132,429,1430,4862,16796}
+{
+  "hops":"C=1+x*C^2",
+  "seq":[1,1,2,5,14,42,132,429,1430,4862,16796]
+}
 ```
 
 Or, using an explicit formula for the *n*-th term:
 
 ```
 $ hops --prec=11 '{(2*n)!/(n!*(n+1)!)}'
-{(2*n)!/(n!*(n+1)!)} => {1,1,2,5,14,42,132,429,1430,4862,16796}
+{
+  "hops":"{(2*n)!/(n!*(n+1)!)}",
+  "seq":[1,1,2,5,14,42,132,429,1430,4862,16796]
+}
 ```
 
 See the [documentation](#documentation) section below for more.

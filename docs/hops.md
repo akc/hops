@@ -1,6 +1,6 @@
 ---
 title: HOPS(1) User Manual | Version 0.5.0
-date: 11 Oct 2015
+date: 22 March 2016
 ---
 
 # NAME
@@ -12,8 +12,7 @@ hops - handy operations on power series.
 `hops [--prec N] PROGRAMS...`  
 `hops [--prec N] (-f|--script) FILENAME`  
 `hops --tag N`  
-`hops (--to-json|--from-json)`  
-`hops (--list-transforms|--dump|--update|--version|--help)`
+`hops (--dump|--update|--version|--help)`
 
 # DESCRIPTION
 
@@ -33,17 +32,8 @@ language and how to program in it.
 --tag N
 :   Read sequences from stdin and tag them, starting at N.
 
---to-json
-:   Convert to JSON.
-
---from-json
-:   Convert from JSON.
-
 --dump
 :   Output all the sequences of the local data base.
-
---list-transforms
-:   List the names of all transforms.
 
 --update
 :   Update the local database.

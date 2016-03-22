@@ -1,6 +1,6 @@
 % HOPS Tutorial
 % Anders Claesson
-% 28 December 2015
+% 22 March 2016
 
 # HOPS Tutorial
 
@@ -16,7 +16,10 @@ from that equation:
 
 ```
 $ hops 'f=1+(x+x^2)*f'
-f=1+(x+x^2)*f => {1,1,2,3,5,8,13,21,34,55,89,144,233,377,610}
+{
+  "hops":"f=1+(x+x^2)*f",
+  "seq":[1,1,2,3,5,8,13,21,34,55,89,144,233,377,610]
+}
 ```
 
 Alternatively, we could first solve for *f* in *f=1+(x+x<sup>2</sup>)f*
@@ -24,7 +27,10 @@ and let `hops` expand that expression:
 
 ```
 $ hops 'f=1/(1-x-x^2)'
-f=1/(1-x-x^2) => {1,1,2,3,5,8,13,21,34,55,89,144,233,377,610}
+{
+  "hops":"f=1/(1-x-x^2)",
+  "seq":[1,1,2,3,5,8,13,21,34,55,89,144,233,377,610]
+}
 ```
 
 The exponential generating function for the
@@ -33,7 +39,11 @@ can give that expression to `hops`:
 
 ```
 $ hops --prec=10 'exp(exp(x)-1)'
-exp(exp(x)-1) => {1,1,1,5/6,5/8,13/30,203/720,877/5040,23/224,1007/17280}
+{
+  "hops":"exp(exp(x)-1)",
+  "seq":[1,1,1,5,5,13,203,877,23,1007],
+  "denominators":[1,1,1,6,8,30,720,5040,224,17280]
+}
 ```
 
 To get the Bell numbers we, however, also need to multiply the
@@ -42,7 +52,10 @@ the laplace transform does:
 
 ```
 $ hops --prec=10 'f=exp(exp(x)-1);laplace(f)'
-f=exp(exp(x)-1);laplace(f) => {1,1,2,5,15,52,203,877,4140,21147}
+{
+  "hops":"f=exp(exp(x)-1);laplace(f)",
+  "seq":[1,1,2,5,15,52,203,877,4140,21147]
+}
 ```
 
 Power series defined by trigonometric functions are fine too. Here's
@@ -50,7 +63,10 @@ how we might generate the Euler numbers:
 
 ```
 $ hops --prec=11 'f=sec(x)+tan(x);laplace(f)'
-f=sec(x)+tan(x);laplace(f) => {1,1,1,2,5,16,61,272,1385,7936,50521}
+{
+  "hops":"f=sec(x)+tan(x);laplace(f)",
+  "seq":[1,1,1,2,5,16,61,272,1385,7936,50521]
+}
 ```
 
 The [number of ballots](https://oeis.org/A000670) (ordered set partitions)
@@ -59,14 +75,20 @@ is most simply defined by its exponential generating function
 
 ```
 $ hops --prec 10 'y=1/(2-exp(x));laplace(y)'
-y=1/(2-exp(x));laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
+{
+  "hops":"y=1/(2-exp(x));laplace(y)",
+  "seq":[1,1,3,13,75,541,4683,47293,545835,7087261]
+}
 ```
 
 Alternatively, one can exploit that *y'=2y<sup>2</sup>-y*:
 
 ```
 $ hops --prec 10 'y=1+integral(2*y^2-y);laplace(y)'
-y=1+integral(2*y^2-y);laplace(y) => {1,1,3,13,75,541,4683,47293,545835,7087261}
+{
+  "hops":"y=1+integral(2*y^2-y);laplace(y)",
+  "seq":[1,1,3,13,75,541,4683,47293,545835,7087261]
+}
 ```
 
 Let *A* be the exponential generating function for the
@@ -82,7 +104,10 @@ HOPS-expression for the number of labeled interval orders:
 
 ```
 $ hops 'g=sin(2*x)/(2*cos(3*x));T=laplacei(BISECT1(laplace(g)));laplace((exp(x)*T)@(x/24))'
-g=sin(2*x)/(2*cos(3*x));T=laplacei(BISECT1(laplace(g)));laplace((exp(x)*T)@(x/24)) => {1,1,3,19,207,3451,81663}
+{
+  "hops":"g=sin(2*x)/(2*cos(3*x));T=laplacei(BISECT1(laplace(g)));laplace((exp(x)*T)@(x/24))",
+  "seq":[1,1,3,19,207,3451,81663]
+}
 ```
 
 ## Simple sequence notation
@@ -93,14 +118,20 @@ of specifying sequences. Here's a simple finite sequence:
 
 ```
 $ hops '{1,2,3}'
-{1,2,3} => {1,2,3}
+{
+  "hops":"{1,2,3}",
+  "seq":[1,2,3]
+}
 ```
 
 We can also use ellipses to build infinite sequences:
 
 ```
 $ hops '{1,2,...}'
-{1,2,...} => {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
+{
+  "hops":"{1,2,...}",
+  "seq":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+}
 ```
 
 What happened in the background here is that `hops` fitted the first
@@ -109,22 +140,36 @@ could alternatively have given this formula explicitly:
 
 ```
 $ hops '{1+n}'
-{1+n} => {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
+{
+  "hops":"{1+n}",
+  "seq":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+}
 ```
 
 We are not limited to first degree polynomials either:
 
 ```
 $ hops '{0,1,8,27,...}'
-{0,1,8,27,...} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
+{
+  "hops":"{0,1,8,27,...}",
+  "seq":[0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744]
+}
 
-$ hops '{0,1,8,27,...}' | sloane
-
-S A000578 0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744,3375,
-N A000578 The cubes: a(n) = n^3.
+$ hops '{0,1,8,27,...}' | sloane | jq '.seq=(.seq[:15]|@csv)'
+{
+  "trail": [
+    "{0,1,8,27,...}"
+  ],
+  "hops": "A000578",
+  "name": "The cubes: a(n) = n^3.",
+  "seq": "0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744"
+}
 
 $ hops '{n^3}'
-{n^3} => {0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744}
+{
+  "hops":"{n^3}",
+  "seq":[0,1,8,27,64,125,216,343,512,729,1000,1331,1728,2197,2744]
+}
 ```
 
 Note that the example above also illustrates that we can pipe the output
@@ -136,7 +181,10 @@ that formula:
 
 ```
 $ hops '{1,2^(n-1)}'
-{1,2^(n-1)} => {1,1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192}
+{
+  "hops":"{1,2^(n-1)}",
+  "seq":[1,1,2,4,8,16,32,64,128,256,512,1024,2048,4096,8192]
+}
 ```
 
 Factorials are fine too. Here's the
@@ -144,7 +192,10 @@ Factorials are fine too. Here's the
 
 ```
 $ hops --prec=12 '{1,1,n!/2}'
-{1,1,n!/2} => {1,1,1,3,12,60,360,2520,20160,181440,1814400,19958400}
+{
+  "hops":"{1,1,n!/2}",
+  "seq":[1,1,1,3,12,60,360,2520,20160,181440,1814400,19958400]
+}
 ```
 
 ## Composing programs
@@ -153,7 +204,10 @@ Using the special variable `stdin` we can compose programs:
 
 ```
 $ hops 'f=1+(x+x^2)*f' | hops 'stdin/(1-x)'
-f=1+(x+x^2)*f;f/(1-x) => {1,2,4,7,12,20,33,54,88,143,232,376,609,986,1596}
+{
+  "hops":"f=1+(x+x^2)*f;f/(1-x)",
+  "seq":[1,2,4,7,12,20,33,54,88,143,232,376,609,986,1596]
+}
 ```
 
 As a side note, one can show that HOPS programs form a monoid under this
@@ -163,7 +217,10 @@ Be aware that `hops` may have to rename variables when composing programs:
 
 ```
 $ hops --prec=10 'f=1+(x+x^2)*f' | hops 'f=1/(1-2*x);f/(1-x*stdin)'
-f=1+(x+x^2)*f;g=1+2*x*g;g/(1-x*f) => {1,3,8,21,54,137,344,857,2122,5229,12836}
+{
+  "hops":"f=1+(x+x^2)*f;g=1/(1-2*x);g/(1-x*f)",
+  "seq":[1,3,8,21,54,137,344,857,2122,5229,12836]
+}
 ```
 
 ## A more involved example
@@ -178,11 +235,10 @@ norm="map (.*.) | add"
 d=`jq -n "[$1] | length"`
 N=`jq -n "[$1] | $norm | sqrt"`
 hops --dump --prec=$d \
-  | grep -E "^A[[:digit:]]{6} => {1(,-?[[:digit:]]+){$(($d-1))}}" \
+  | jq -c "if (.seq | length) == $d then . else empty end" \
   | hops --prec=$d "{$1}/stdin" \
-  | hops --to-json \
-  | jq -c "if (.seq | $norm) < $N then . else empty end" \
-  | hops --from-json
+  | jq -c "if (.seq | length) == $d then . else empty end" \
+  | jq -c "if (.seq | $norm) < $N then . else empty end"
 ```
 
 Then `./deconv <sequence>` would find power series $G$ and $H$ such
@@ -212,7 +268,10 @@ difference between the Catalan numbers
 
 ```
 $ hops 'A000108-A001006'
-A000108-A001006 => {0,0,0,1,5,21,81,302,1107,4027,14608,52988,192501,701065,2560806}
+{
+  "hops":"A000108-A001006",
+  "seq":[0,0,0,1,5,21,81,302,1107,4027,14608,52988,192501,701065,2560806]
+}
 ```
 
 The first time you use A-numbers with `hops` you will be asked to run
@@ -229,15 +288,22 @@ As an example, the sequence [A067145](https://oeis.org/A067145)
 claims to shift left under reversion:
 
 ```
-S A067145 1,1,-1,3,-13,69,-419,2809,-20353,157199,-1281993,10963825,-97828031,
-N A067145 Shifts left under reversion.
+$ sloane A067145 | jq '.seq=(.seq[:10]|@csv)'
+{
+  "hops": "A067145",
+  "name": "Shifts left under reversion.",
+  "seq": "1,1,-1,3,-13,69,-419,2809,-20353,157199"
+}
 ```
 
 Let's test that claim:
 
 ```
 $ hops 'REVERT(A067145)-LEFT(A067145)'
-REVERT(A067145)-LEFT(A067145) => {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+{
+  "hops":"REVERT(A067145)-LEFT(A067145)",
+  "seq":[0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+}
 ```
 
 ## HOPS scripts
@@ -257,10 +323,22 @@ then we can apply all of these transforms to `1/(1-x)` as follows:
 
 ```
 $ hops '1/(1-x)' | hops --prec=9 -f transforms.hops
-f=1/(1-x);BINOMIAL(f) => {1,2,4,8,16,32,64,128,256}
-f=1/(1-x);EULER(f) => {1,2,3,5,7,11,15,22,30}
-f=1/(1-x);REVEGF(f) => {1,-2,9,-64,625,-7776,117649,-2097152,43046721}
-f=1/(1-x);STIRLING(f) => {1,2,5,15,52,203,877,4140,21147}
+{
+  "hops":"f=1/(1-x);BINOMIAL(f)",
+  "seq":[1,2,4,8,16,32,64,128,256]
+}
+{
+  "hops":"f=1/(1-x);EULER(f)",
+  "seq":[1,2,3,5,7,11,15,22]
+}
+{
+  "hops":"f=1/(1-x);REVEGF(f)",
+  "seq":[1,-2,9,-64,625,-7776,117649,-2097152]
+}
+{
+  "hops":"f=1/(1-x);STIRLING(f)",
+  "seq":[1,2,5,15,52,203,877,4140]
+}
 ```
 
 N.B: As in this example, the preferred file extension for HOPS
@@ -272,8 +350,8 @@ The `hops` command can assign tags to sequences:
 
 ```
 $ printf "1,1,2,5,17,33\n1,1,2,5,19,34\n" | hops --tag 1
-TAG000001 => {1,1,2,5,17,33}
-TAG000002 => {1,1,2,5,19,34}
+{"hops":"TAG000001","seq":[1,1,2,5,17,33]}
+{"hops":"TAG000002","seq":[1,1,2,5,19,34]}
 ```
 
 ## Bash completion
