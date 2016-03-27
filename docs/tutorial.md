@@ -1,6 +1,6 @@
 % HOPS Tutorial
 % Anders Claesson
-% 22 March 2016
+% 27 March 2016
 
 # HOPS Tutorial
 
@@ -11,7 +11,7 @@ let us look at a number of examples.
 
 The generating function, *f*, for the
 [Fibonacci numbers](https://oeis.org/A000045) satisfies
-*f=1+(x+x<sup>2</sup>)f*, and we can get the coefficient of *f* directly
+*f=1+(x+x<sup>2</sup>)f*, and we can get the coefficients of *f* directly
 from that equation:
 
 ```
@@ -255,7 +255,7 @@ more that 15 decimal digits.
 
 As an alternative to restricting the norm of $H$ we could require that
 $H$ be in the OEIS, and one way to accomplished that would be to replace the
-last three lines in the above script with `sloane --filter`
+last two lines in the above script with `sloane --filter`
 (see [sloane](http://akc.is/sloane/)).
 
 ## OEIS A-numbers
