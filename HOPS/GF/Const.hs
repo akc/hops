@@ -98,21 +98,21 @@ evalExpr :: Expr Integer -> Rat
 evalExpr = evalExpr0
 
 evalExpr0 :: Expr0 Integer -> Rat
-evalExpr0 (Add t e) = evalExpr0 t + evalExpr0 e
-evalExpr0 (Sub t e) = evalExpr0 t - evalExpr0 e
-evalExpr0 (Expr1 t) = evalExpr1 t
+evalExpr0 (Add e1 e2) = evalExpr0 e1 + evalExpr0 e2
+evalExpr0 (Sub e1 e2) = evalExpr0 e1 - evalExpr0 e2
+evalExpr0 (Expr1 e)   = evalExpr1 e
 
 evalExpr1 :: Expr1 Integer -> Rat
-evalExpr1 (Mul r t) = evalExpr1 r * evalExpr1 t
-evalExpr1 (Div r t) = evalExpr1 r / evalExpr1 t
-evalExpr1 (Expr2 r) = evalExpr2 r
+evalExpr1 (Mul e1 e2) = evalExpr1 e1 * evalExpr1 e2
+evalExpr1 (Div e1 e2) = evalExpr1 e1 / evalExpr1 e2
+evalExpr1 (Expr2 e)   = evalExpr2 e
 
 evalExpr2 :: Expr2 Integer -> Rat
-evalExpr2 (Neg u)   = negate (evalExpr2 u)
-evalExpr2 (Pos u)   = evalExpr2 u
-evalExpr2 (Fac u)   = factorial (evalExpr3 u)
-evalExpr2 (Pow u g) = evalExpr3 u !^! evalExpr3 g
-evalExpr2 (Expr3 g) = evalExpr3 g
+evalExpr2 (Neg e)     = negate (evalExpr2 e)
+evalExpr2 (Pos e)     = evalExpr2 e
+evalExpr2 (Fac e)     = factorial (evalExpr3 e)
+evalExpr2 (Pow e1 e2) = evalExpr3 e1 !^! evalExpr3 e2
+evalExpr2 (Expr3 e)   = evalExpr3 e
 
 evalExpr3 :: Expr3 Integer -> Rat
 evalExpr3 (Lit c)   = Val (toRational c)

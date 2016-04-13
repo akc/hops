@@ -91,7 +91,7 @@ data Expr1 a
     | Div (Expr1 a) (Expr1 a)
     | PtMul (Expr1 a) (Expr1 a)
     | PtDiv (Expr1 a) (Expr1 a)
-    | BD (Expr1 a) (Expr1 a)
+    | BDP (Expr1 a) (Expr1 a)
     | Expr2 (Expr2 a)
     deriving (Show, Eq)
 
@@ -153,7 +153,7 @@ instance (Eq a, Num a, Pretty a) => Pretty (Expr1 a) where
     pprint (Div e1 e2)   = pprint e1 <> "/"  <> pprint e2
     pprint (PtMul e1 e2) = pprint e1 <> ".*" <> pprint e2
     pprint (PtDiv e1 e2) = pprint e1 <> "./" <> pprint e2
-    pprint (BD e1 e2)    = pprint e1 <> "<>" <> pprint e2
+    pprint (BDP e1 e2)   = pprint e1 <> "<>" <> pprint e2
     pprint (Expr2 e)     = pprint e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Expr2 a) where
@@ -198,7 +198,7 @@ varsExpr1 (Mul e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
 varsExpr1 (Div e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
 varsExpr1 (PtMul e1 e2) = varsExpr1 e1 ++ varsExpr1 e2
 varsExpr1 (PtDiv e1 e2) = varsExpr1 e1 ++ varsExpr1 e2
-varsExpr1 (BD e1 e2)    = varsExpr1 e1 ++ varsExpr1 e2
+varsExpr1 (BDP e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
 varsExpr1 (Expr2 e)     = varsExpr2 e
 
 varsExpr2 :: Expr2 a -> [Name]
@@ -238,7 +238,7 @@ anumsExpr1 (Mul e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
 anumsExpr1 (Div e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
 anumsExpr1 (PtMul e1 e2) = anumsExpr1 e1 ++ anumsExpr1 e2
 anumsExpr1 (PtDiv e1 e2) = anumsExpr1 e1 ++ anumsExpr1 e2
-anumsExpr1 (BD e1 e2)    = anumsExpr1 e1 ++ anumsExpr1 e2
+anumsExpr1 (BDP e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
 anumsExpr1 (Expr2 e)     = anumsExpr2 e
 
 anumsExpr2 :: Expr2 a -> [Int]
@@ -278,7 +278,7 @@ subsExpr1 f (Mul e1 e2)   = Mul (subsExpr1 f e1) (subsExpr1 f e2)
 subsExpr1 f (Div e1 e2)   = Div (subsExpr1 f e1) (subsExpr1 f e2)
 subsExpr1 f (PtMul e1 e2) = PtMul (subsExpr1 f e1) (subsExpr1 f e2)
 subsExpr1 f (PtDiv e1 e2) = PtDiv (subsExpr1 f e1) (subsExpr1 f e2)
-subsExpr1 f (BD e1 e2)    = BD (subsExpr1 f e1) (subsExpr1 f e2)
+subsExpr1 f (BDP e1 e2)   = BDP (subsExpr1 f e1) (subsExpr1 f e2)
 subsExpr1 f (Expr2 e)     = Expr2 (subsExpr2 f e)
 
 subsExpr2 :: Subs -> Expr2 a -> Expr2 a
@@ -354,25 +354,25 @@ tagPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (Tag m))))]
 --------------------------------------------------------------------------------
 
 evalExpr0 :: KnownNat n => Env n -> Expr0 Integer -> Series n
-evalExpr0 env (Add t e) = evalExpr0 env t + evalExpr0 env e
-evalExpr0 env (Sub t e) = evalExpr0 env t - evalExpr0 env e
-evalExpr0 env (Expr1 t) = evalExpr1 env t
+evalExpr0 env (Add e1 e2) = evalExpr0 env e1 + evalExpr0 env e2
+evalExpr0 env (Sub e1 e2) = evalExpr0 env e1 - evalExpr0 env e2
+evalExpr0 env (Expr1 e)   = evalExpr1 env e
 
 evalExpr1 :: KnownNat n => Env n -> Expr1 Integer -> Series n
-evalExpr1 env (Mul r t)   = evalExpr1 env r *  evalExpr1 env t
-evalExpr1 env (Div r t)   = evalExpr1 env r /  evalExpr1 env t
-evalExpr1 env (PtMul r t) = evalExpr1 env r .* evalExpr1 env t
-evalExpr1 env (PtDiv r t) = evalExpr1 env r ./ evalExpr1 env t
-evalExpr1 env (BD r t)    = evalExpr1 env r `blackDiamond` evalExpr1 env t
-evalExpr1 env (Expr2 r)   = evalExpr2 env r
+evalExpr1 env (Mul e1 e2)   = evalExpr1 env e1 *  evalExpr1 env e2
+evalExpr1 env (Div e1 e2)   = evalExpr1 env e1 /  evalExpr1 env e2
+evalExpr1 env (PtMul e1 e2) = evalExpr1 env e1 .* evalExpr1 env e2
+evalExpr1 env (PtDiv e1 e2) = evalExpr1 env e1 ./ evalExpr1 env e2
+evalExpr1 env (BDP e1 e2)   = evalExpr1 env e1 `blackDiamond` evalExpr1 env e2
+evalExpr1 env (Expr2 e)     = evalExpr2 env e
 
 evalExpr2 :: KnownNat n => Env n -> Expr2 Integer -> Series n
-evalExpr2 env (Neg u)    = negate (evalExpr2 env u)
-evalExpr2 env (Pos u)    = evalExpr2 env u
-evalExpr2 env (Fac u)    = fac $ evalExpr3 env u
-evalExpr2 env (Pow u e)  = evalExpr3 env u ** evalExpr3 env e
-evalExpr2 env (Comp g h) = evalExpr3 env g `o` evalExpr3 env h
-evalExpr2 env (Expr3 g)  = evalExpr3 env g
+evalExpr2 env (Neg e)      = negate (evalExpr2 env e)
+evalExpr2 env (Pos e)      = evalExpr2 env e
+evalExpr2 env (Fac e)      = fac $ evalExpr3 env e
+evalExpr2 env (Pow e1 e2)  = evalExpr3 env e1 ** evalExpr3 env e2
+evalExpr2 env (Comp e1 e2) = evalExpr3 env e1 `o` evalExpr3 env e2
+evalExpr2 env (Expr3 e)    = evalExpr3 env e
 
 evalExpr3 :: KnownNat n => Env n -> Expr3 Integer -> Series n
 evalExpr3 _    X        = polynomial (Proxy :: Proxy n) [0,1]
@@ -382,7 +382,7 @@ evalExpr3 env (Var v)   = fromMaybe nil (lookupVar v env)
 evalExpr3 _   (Lit c)   = polynomial (Proxy :: Proxy n) [Val (toRational c)]
 evalExpr3 _   (Rats r)  = evalRats r
 evalExpr3 env (Expr0 e) = evalExpr0 env e
-evalExpr3 env (Tr t g)   =
+evalExpr3 env (Tr t g)  =
     let g' = evalExpr3 env g
     in case lookupTransform t of
          Just tr -> tr g'
@@ -427,7 +427,7 @@ expr1 p = chainl1 (Expr2 <$> expr2 p) (op <$> oneOf ".* ./ * / <>") <?> "expr1"
     op "/"  = Div
     op ".*" = PtMul
     op "./" = PtDiv
-    op "<>" = BD
+    op "<>" = BDP
     op _    = error "internal error"
 
 expr2 :: (Eq a, Num a) => Parser a -> Parser (Expr2 a)
