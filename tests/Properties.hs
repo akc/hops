@@ -27,7 +27,6 @@ import System.Exit
 import Test.QuickCheck
 import Test.QuickCheck.Test
 import HOPS.Matrix
-import HOPS.OEIS (Name)
 import HOPS.GF
 import qualified HOPS.GF.Const as C
 import HOPS.GF.Rats

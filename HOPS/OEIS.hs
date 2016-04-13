@@ -11,7 +11,6 @@ module HOPS.OEIS
     (
     -- * Types
       URL
-    , Name
     , ANum (..)
     , Sequence
     -- * Parse stripped.gz
@@ -40,10 +39,6 @@ import HOPS.Utils
 
 -- | A sequence of rational numbers.
 type Sequence = [Rational]
-
--- | The name of an OEIS entry is a short description of the
--- sequence. Here represented as a `ByteString`.
-type Name = ByteString
 
 -- | A URL is currently just a synonym for `String`.
 type URL = String

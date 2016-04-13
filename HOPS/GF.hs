@@ -19,6 +19,7 @@ module HOPS.GF
     , PackedPrg (..)
     , Prg (..)
     , Pretty (..)
+    , Name
     , packPrg
     , vars
     , anums
@@ -74,6 +75,8 @@ data Env (n :: Nat) = Env
     { aNumEnv :: Vector (Series n)
     , varEnv  :: Map Name (Series n)
     }
+
+type Name = ByteString -- Variable name
 
 type Subs = Name -> Name
 
