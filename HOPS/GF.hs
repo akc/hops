@@ -52,11 +52,11 @@ import Data.Attoparsec.ByteString.Char8 hiding (take, takeWhile)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Control.Monad
 import Control.Applicative
+import HOPS.Pretty
 import HOPS.Utils
 import HOPS.OEIS
 import HOPS.GF.Series
 import HOPS.GF.Transform
-import HOPS.GF.Const (Pretty(..))
 import HOPS.GF.Rats
 
 -- | A compact `ByteString` representation of a `Prg`.
@@ -125,7 +125,7 @@ data Cmd a                  -- A command is
 newtype Prg a = Prg { commands :: [Cmd a] } deriving (Show, Eq)
 
 instance ToJSON (Prg Integer) where
-    toJSON = toJSON . decodeUtf8 . pprint
+    toJSON = toJSON . decodeUtf8 . pretty
 
 instance FromJSON (Prg Integer) where
     parseJSON (String t) = fromMaybe mzero (return <$> parsePrg (encodeUtf8 t))
@@ -144,46 +144,46 @@ instance Monoid (Prg a) where
         q'' = subs [("stdin", ident)] q'
 
 instance (Eq a, Num a, Pretty a) => Pretty (Expr0 a) where
-    pprint (Add e1 e2) = pprint e1 <> "+" <> pprint e2
-    pprint (Sub e1 e2) = pprint e1 <> "-" <> pprint e2
-    pprint (Expr1 e)   = pprint e
+    pretty (Add e1 e2) = pretty e1 <> "+" <> pretty e2
+    pretty (Sub e1 e2) = pretty e1 <> "-" <> pretty e2
+    pretty (Expr1 e)   = pretty e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Expr1 a) where
-    pprint (Mul e1 e2)   = pprint e1 <> "*"  <> pprint e2
-    pprint (Div e1 e2)   = pprint e1 <> "/"  <> pprint e2
-    pprint (PtMul e1 e2) = pprint e1 <> ".*" <> pprint e2
-    pprint (PtDiv e1 e2) = pprint e1 <> "./" <> pprint e2
-    pprint (BDP e1 e2)   = pprint e1 <> "<>" <> pprint e2
-    pprint (Expr2 e)     = pprint e
+    pretty (Mul e1 e2)   = pretty e1 <> "*"  <> pretty e2
+    pretty (Div e1 e2)   = pretty e1 <> "/"  <> pretty e2
+    pretty (PtMul e1 e2) = pretty e1 <> ".*" <> pretty e2
+    pretty (PtDiv e1 e2) = pretty e1 <> "./" <> pretty e2
+    pretty (BDP e1 e2)   = pretty e1 <> "<>" <> pretty e2
+    pretty (Expr2 e)     = pretty e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Expr2 a) where
-    pprint (Neg e) = "-" <> pprint e
-    pprint (Pos e) = pprint e
-    pprint (Fac e) = pprint e <> "!"
-    pprint (Pow e1 e2) = pprint e1 <> "^" <> pprint e2
-    pprint (Comp e1 e2) = pprint e1 <> "@" <> pprint e2
-    pprint (Expr3 e) = pprint e
+    pretty (Neg e) = "-" <> pretty e
+    pretty (Pos e) = pretty e
+    pretty (Fac e) = pretty e <> "!"
+    pretty (Pow e1 e2) = pretty e1 <> "^" <> pretty e2
+    pretty (Comp e1 e2) = pretty e1 <> "@" <> pretty e2
+    pretty (Expr3 e) = pretty e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Expr3 a) where
-    pprint X = "x"
-    pprint (A i) = B.cons 'A' (pad 6 i)
-    pprint (Tag i) = "TAG" <> pad 6 i
-    pprint (Var s) = s
-    pprint (Lit x) = pprint x
-    pprint (Tr s e) = s <> pprint e
-    pprint (Rats r) = pprint r
-    pprint (Expr0 e) = paren $ pprint e
+    pretty X = "x"
+    pretty (A i) = B.cons 'A' (pad 6 i)
+    pretty (Tag i) = "TAG" <> pad 6 i
+    pretty (Var s) = s
+    pretty (Lit x) = pretty x
+    pretty (Tr s e) = s <> pretty e
+    pretty (Rats r) = pretty r
+    pretty (Expr0 e) = paren $ pretty e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Cmd a) where
-    pprint (Expr e) = pprint e
-    pprint (Asgmt s e) = s <> "=" <> pprint e
+    pretty (Expr e) = pretty e
+    pretty (Asgmt s e) = s <> "=" <> pretty e
 
 instance (Eq a, Num a, Pretty a) => Pretty (Prg a) where
-    pprint = B.intercalate ";" . map pprint . commands
+    pretty = B.intercalate ";" . map pretty . commands
 
 -- | A compact representation of a `Prg` as a wrapped `ByteString`.
 packPrg :: Prg Integer -> PackedPrg
-packPrg = PPrg . pprint
+packPrg = PPrg . pretty
 
 paren :: ByteString -> ByteString
 paren s = "(" <> s <> ")"

@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015, 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -14,24 +14,17 @@ module HOPS.GF.Const
     , Expr1 (..)
     , Expr2 (..)
     , Expr3 (..)
-    , Pretty (..)
     , evalExpr
     , expr
     ) where
 
 import Data.Monoid
-import Data.Foldable
 import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 import HOPS.GF.Series
 import HOPS.Utils
-
--- | Similar to the `Show` class, but uses `ByteString`s rather than
--- `String`s.
-class Pretty a where
-    pprint :: a -> ByteString
+import HOPS.Pretty
 
 -- | An expression for a constant. Supports addition, subtraction,
 -- multiplication, division, exponentials and factorials.
@@ -62,29 +55,26 @@ data Expr3 a
     | Expr0 (Expr0 a)
     deriving (Show, Eq, Functor, Foldable)
 
-instance Pretty Integer where
-    pprint = B.pack . show
-
 instance Pretty a => Pretty (Expr0 a) where
-    pprint (Add e1 e2) = pprint e1 <> "+" <> pprint e2
-    pprint (Sub e1 e2) = pprint e1 <> "-" <> pprint e2
-    pprint (Expr1 e)   = pprint e
+    pretty (Add e1 e2) = pretty e1 <> "+" <> pretty e2
+    pretty (Sub e1 e2) = pretty e1 <> "-" <> pretty e2
+    pretty (Expr1 e)   = pretty e
 
 instance Pretty a => Pretty (Expr1 a) where
-    pprint (Mul e1 e2) = pprint e1 <> "*"  <> pprint e2
-    pprint (Div e1 e2) = pprint e1 <> "/"  <> pprint e2
-    pprint (Expr2 e)   = pprint e
+    pretty (Mul e1 e2) = pretty e1 <> "*"  <> pretty e2
+    pretty (Div e1 e2) = pretty e1 <> "/"  <> pretty e2
+    pretty (Expr2 e)   = pretty e
 
 instance Pretty a => Pretty (Expr2 a) where
-    pprint (Neg e) = "-" <> pprint e
-    pprint (Pos e) = pprint e
-    pprint (Fac e) = pprint e <> "!"
-    pprint (Pow e k) = pprint e <> "^" <> pprint k
-    pprint (Expr3 e) = pprint e
+    pretty (Neg e) = "-" <> pretty e
+    pretty (Pos e) = pretty e
+    pretty (Fac e) = pretty e <> "!"
+    pretty (Pow e k) = pretty e <> "^" <> pretty k
+    pretty (Expr3 e) = pretty e
 
 instance Pretty a => Pretty (Expr3 a) where
-    pprint (Lit x)   = pprint x
-    pprint (Expr0 e) = paren $ pprint e
+    pretty (Lit x)   = pretty x
+    pretty (Expr0 e) = paren $ pretty e
 
 paren :: ByteString -> ByteString
 paren s = "(" <> s <> ")"

@@ -29,6 +29,7 @@ import Data.Foldable (find)
 import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
+import HOPS.Pretty
 import HOPS.GF.Const
 import HOPS.GF.Series
 
@@ -46,19 +47,19 @@ data Term a
 type Rats a = ([Expr a], Term a)
 
 instance (Eq a, Num a, Pretty a) => Pretty (Linear a) where
-    pprint (0 :+ b) | b == 0 = pprint b
-    pprint (0 :+ 1) = "n"
-    pprint (0 :+ b) = pprint b <> "*n"
-    pprint (a :+ 0) = pprint a
-    pprint (a :+ b) = pprint a <> "+" <> pprint b <> "*n"
+    pretty (0 :+ b) | b == 0 = pretty b
+    pretty (0 :+ 1) = "n"
+    pretty (0 :+ b) = pretty b <> "*n"
+    pretty (a :+ 0) = pretty a
+    pretty (a :+ b) = pretty a <> "+" <> pretty b <> "*n"
 
 instance (Eq a, Num a, Pretty a) => Pretty (Term a) where
-    pprint Ellipsis = "..."
-    pprint (Constant e) = pprint e
-    pprint (Fun f) = pprint f
+    pretty Ellipsis = "..."
+    pretty (Constant e) = pretty e
+    pretty (Fun f) = pretty f
 
 instance (Eq a, Num a, Pretty a) => Pretty (Rats a) where
-    pprint (cs, t) = "{" <> B.intercalate "," (map pprint cs ++ [pprint t]) <> "}"
+    pretty (cs, t) = "{" <> B.intercalate "," (map pretty cs ++ [pretty t]) <> "}"
 
 --------------------------------------------------------------------------------
 -- Eval

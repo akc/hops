@@ -27,6 +27,7 @@ Executable hops
                        HOPS.Matrix
                        HOPS.OEIS
                        HOPS.Options
+                       HOPS.Pretty
                        HOPS.Utils
                        HOPS.GF
                        HOPS.GF.Const
