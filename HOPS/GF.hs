@@ -202,9 +202,9 @@ varsExpr1 (BDP e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
 varsExpr1 (Expr2 e)     = varsExpr2 e
 
 varsExpr2 :: Expr2 a -> [Name]
-varsExpr2 (Neg e)  = varsExpr2 e
-varsExpr2 (Pos e)  = varsExpr2 e
-varsExpr2 (Fac e)  = varsExpr3 e
+varsExpr2 (Neg e) = varsExpr2 e
+varsExpr2 (Pos e) = varsExpr2 e
+varsExpr2 (Fac e) = varsExpr3 e
 varsExpr2 (Pow e1 e2) = varsExpr3 e1 ++ varsExpr3 e2
 varsExpr2 (Comp e1 e2) = varsExpr3 e1 ++ varsExpr3 e2
 varsExpr2 (Expr3 e) = varsExpr3 e
@@ -242,9 +242,9 @@ anumsExpr1 (BDP e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
 anumsExpr1 (Expr2 e)     = anumsExpr2 e
 
 anumsExpr2 :: Expr2 a -> [Int]
-anumsExpr2 (Neg e)  = anumsExpr2 e
-anumsExpr2 (Pos e)  = anumsExpr2 e
-anumsExpr2 (Fac e)  = anumsExpr3 e
+anumsExpr2 (Neg e) = anumsExpr2 e
+anumsExpr2 (Pos e) = anumsExpr2 e
+anumsExpr2 (Fac e) = anumsExpr3 e
 anumsExpr2 (Pow e1 e2) = anumsExpr3 e1 ++ anumsExpr3 e2
 anumsExpr2 (Comp e1 e2) = anumsExpr3 e1 ++ anumsExpr3 e2
 anumsExpr2 (Expr3 e) = anumsExpr3 e
@@ -282,9 +282,9 @@ subsExpr1 f (BDP e1 e2)   = BDP (subsExpr1 f e1) (subsExpr1 f e2)
 subsExpr1 f (Expr2 e)     = Expr2 (subsExpr2 f e)
 
 subsExpr2 :: Subs -> Expr2 a -> Expr2 a
-subsExpr2 f (Neg e)  = Neg (subsExpr2 f e)
-subsExpr2 f (Pos e)  = Pos (subsExpr2 f e)
-subsExpr2 f (Fac e)  = Fac (subsExpr3 f e)
+subsExpr2 f (Neg e) = Neg (subsExpr2 f e)
+subsExpr2 f (Pos e) = Pos (subsExpr2 f e)
+subsExpr2 f (Fac e) = Fac (subsExpr3 f e)
 subsExpr2 f (Pow e1 e2) = Pow (subsExpr3 f e1) (subsExpr3 f e2)
 subsExpr2 f (Comp e1 e2) = Comp (subsExpr3 f e1) (subsExpr3 f e2)
 subsExpr2 f (Expr3 e) = Expr3 (subsExpr3 f e)
@@ -434,7 +434,7 @@ expr2 :: (Eq a, Num a) => Parser a -> Parser (Expr2 a)
 expr2 p
      =  pm <$> oneOf "+ -" <*> expr2 p
     <|> (expr3 p >>= \g ->
-                Pow g <$> (string "^" *> expr3 p)
+                Pow  g <$> (string "^" *> expr3 p)
             <|> Comp g <$> (string "@" *> expr3 p)
             <|> pure (Fac g) <* string "!"
             <|> pure (Expr3 g))
