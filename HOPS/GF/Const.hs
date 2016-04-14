@@ -19,6 +19,7 @@ module HOPS.GF.Const
     ) where
 
 import Data.Monoid
+import Data.Foldable
 import Data.ByteString.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
