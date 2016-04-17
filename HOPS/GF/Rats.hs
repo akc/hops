@@ -89,8 +89,8 @@ newtonExtension cs = map (f . fromIntegral) [0::Int ..]
   where
     f n = sum (zipWith (\k c -> c * (n `choose` k)) [0::Int ..] coefficients)
     coefficients = map head (newtonTriangle cs)
-    differences xs = zipWith (-) (drop 1 xs) xs
     newtonTriangle = P.takeWhile (not . null) . iterate differences
+    differences xs = zipWith (-) (drop 1 xs) xs
 
 --------------------------------------------------------------------------------
 -- Parse
