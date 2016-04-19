@@ -18,6 +18,7 @@ module HOPS.GF
     , Cmd (..)
     , PackedPrg (..)
     , Prg (..)
+    , CorePrg
     , Pretty (..)
     , Name
     , packPrg
@@ -26,10 +27,12 @@ module HOPS.GF
     , insertVar
     , aNumPrg
     , tagPrg
+    -- Core
+    , core
     -- Eval
     , Env (..)
-    , evalPrg
-    , evalPrgs
+    , evalCorePrg
+    , evalCorePrgs
     -- Parse
     , parsePrg
     , parsePrgErr
@@ -51,13 +54,14 @@ import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8 hiding (take, takeWhile)
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Control.Monad
+import Control.Monad.Trans.State
 import Control.Applicative
 import HOPS.Pretty
 import HOPS.Utils
 import HOPS.OEIS
 import HOPS.GF.Series
 import HOPS.GF.Transform
-import HOPS.GF.Rats
+import qualified HOPS.GF.Rats as R
 
 -- | A compact `ByteString` representation of a `Prg`.
 newtype PackedPrg = PPrg ByteString deriving (Eq, Show, Generic)
@@ -80,58 +84,80 @@ type Name = ByteString -- Variable name
 
 type Subs = Name -> Name
 
-data Expr0 a
-    = Add (Expr0 a) (Expr0 a)
-    | Sub (Expr0 a) (Expr0 a)
-    | Expr1 (Expr1 a)
+data Expr0
+    = EAdd Expr0 Expr0
+    | ESub Expr0 Expr0
+    | Expr1 Expr1
     deriving (Show, Eq)
 
-data Expr1 a
-    = Mul (Expr1 a) (Expr1 a)
-    | Div (Expr1 a) (Expr1 a)
-    | BDP (Expr1 a) (Expr1 a)
-    | PtMul (Expr1 a) (Expr1 a)
-    | PtDiv (Expr1 a) (Expr1 a)
-    | Expr2 (Expr2 a)
+data Expr1
+    = EMul Expr1 Expr1
+    | EDiv Expr1 Expr1
+    | EBDP Expr1 Expr1
+    | EPtMul Expr1 Expr1
+    | EPtDiv Expr1 Expr1
+    | Expr2 Expr2
     deriving (Show, Eq)
 
-data Expr2 a
-    = Neg (Expr2 a)
-    | Pos (Expr2 a)
-    | Fac (Expr3 a)
-    | Pow (Expr3 a) (Expr3 a)
-    | Comp (Expr3 a) (Expr3 a)
-    | Expr3 (Expr3 a)
+data Expr2
+    = ENeg Expr2
+    | EPos Expr2
+    | EFac Expr3
+    | EPow Expr3 Expr3
+    | EComp Expr3 Expr3
+    | Expr3 Expr3
     deriving (Show, Eq)
 
-data Expr3 a
-    = X
-    | A Int -- An A-number
+data Expr3
+    = EX
+    | EA Int -- An A-number
+    | ETag Int
+    | EVar Name
+    | ELit Integer
+    | Tr Name Expr3 -- A named transform
+    | ERats R.Rats
+    | Expr0 Expr0
+    deriving (Show, Eq)
+
+data Cmd                -- A command is
+    = Expr Expr0        -- an expression, or
+    | Asgmt Name Expr0  -- an assignment
+    deriving (Show, Eq)
+
+data Fun1 = Neg | Fac | Tr1 Name deriving (Show, Eq)
+
+data Fun2
+    = Add | Sub
+    | Mul | Div
+    | BDP | Pow | Comp | PtMul | PtDiv
+    deriving (Show, Eq)
+
+data Core
+    = App1 Fun1 Core
+    | App2 Fun2 Core Core
+    | X
+    | A Int
     | Tag Int
     | Var Name
-    | Lit a
-    | Tr Name (Expr3 a) -- A named transform
-    | Rats (Rats a)
-    | Expr0 (Expr0 a)
-    deriving (Show, Eq)
+    | Lit Integer
+    | Rats R.Core
+    | Let Name Core
+    deriving (Show)
 
-data Cmd a                  -- A command is
-    = Expr (Expr0 a)        -- an expression, or
-    | Asgmt Name (Expr0 a)  -- an assignment
-    deriving (Show, Eq)
+type CorePrg = [Core]
 
 -- | A program is a list of commands, where a command is either a power
 -- series expression or an assignment.
-newtype Prg a = Prg { commands :: [Cmd a] } deriving (Show, Eq)
+newtype Prg = Prg { commands :: [Cmd] } deriving (Show, Eq)
 
-instance ToJSON (Prg Integer) where
+instance ToJSON Prg where
     toJSON = toJSON . decodeUtf8 . pretty
 
-instance FromJSON (Prg Integer) where
+instance FromJSON Prg where
     parseJSON (String t) = fromMaybe mzero (return <$> parsePrg (encodeUtf8 t))
     parseJSON _ = mzero
 
-instance Monoid (Prg a) where
+instance Monoid Prg where
     mempty = Prg []
     mappend (Prg []) q = q
     mappend p (Prg []) = p
@@ -143,182 +169,103 @@ instance Monoid (Prg a) where
         Asgmt ident _ = last (commands p'')
         q'' = subs [("stdin", ident)] q'
 
-instance (Eq a, Num a, Pretty a) => Pretty (Expr0 a) where
-    pretty (Add e1 e2) = pretty e1 <> "+" <> pretty e2
-    pretty (Sub e1 e2) = pretty e1 <> "-" <> pretty e2
-    pretty (Expr1 e)   = pretty e
+instance Pretty Expr0 where
+    pretty (EAdd e1 e2) = pretty e1 <> "+" <> pretty e2
+    pretty (ESub e1 e2) = pretty e1 <> "-" <> pretty e2
+    pretty (Expr1 e)    = pretty e
 
-instance (Eq a, Num a, Pretty a) => Pretty (Expr1 a) where
-    pretty (Mul e1 e2)   = pretty e1 <> "*"  <> pretty e2
-    pretty (Div e1 e2)   = pretty e1 <> "/"  <> pretty e2
-    pretty (BDP e1 e2)   = pretty e1 <> "<>" <> pretty e2
-    pretty (PtMul e1 e2) = pretty e1 <> ".*" <> pretty e2
-    pretty (PtDiv e1 e2) = pretty e1 <> "./" <> pretty e2
-    pretty (Expr2 e)     = pretty e
+instance Pretty Expr1 where
+    pretty (EMul e1 e2)   = pretty e1 <> "*"  <> pretty e2
+    pretty (EDiv e1 e2)   = pretty e1 <> "/"  <> pretty e2
+    pretty (EBDP e1 e2)   = pretty e1 <> "<>" <> pretty e2
+    pretty (EPtMul e1 e2) = pretty e1 <> ".*" <> pretty e2
+    pretty (EPtDiv e1 e2) = pretty e1 <> "./" <> pretty e2
+    pretty (Expr2 e)      = pretty e
 
-instance (Eq a, Num a, Pretty a) => Pretty (Expr2 a) where
-    pretty (Neg e) = "-" <> pretty e
-    pretty (Pos e) = pretty e
-    pretty (Fac e) = pretty e <> "!"
-    pretty (Pow e1 e2) = pretty e1 <> "^" <> pretty e2
-    pretty (Comp e1 e2) = pretty e1 <> "@" <> pretty e2
+instance Pretty Expr2 where
+    pretty (ENeg e) = "-" <> pretty e
+    pretty (EPos e) = pretty e
+    pretty (EFac e) = pretty e <> "!"
+    pretty (EPow e1 e2) = pretty e1 <> "^" <> pretty e2
+    pretty (EComp e1 e2) = pretty e1 <> "@" <> pretty e2
     pretty (Expr3 e) = pretty e
 
-instance (Eq a, Num a, Pretty a) => Pretty (Expr3 a) where
-    pretty X = "x"
-    pretty (A i) = B.cons 'A' (pad 6 i)
-    pretty (Tag i) = "TAG" <> pad 6 i
-    pretty (Var s) = s
-    pretty (Lit x) = pretty x
+instance Pretty Expr3 where
+    pretty EX = "x"
+    pretty (EA i) = B.cons 'A' (pad 6 i)
+    pretty (ETag i) = "TAG" <> pad 6 i
+    pretty (EVar s) = s
+    pretty (ELit t) = pretty t
     pretty (Tr s e) = s <> pretty e
-    pretty (Rats r) = pretty r
+    pretty (ERats r) = pretty r
     pretty (Expr0 e) = paren $ pretty e
 
-instance (Eq a, Num a, Pretty a) => Pretty (Cmd a) where
+instance Pretty Cmd where
     pretty (Expr e) = pretty e
     pretty (Asgmt s e) = s <> "=" <> pretty e
 
-instance (Eq a, Num a, Pretty a) => Pretty (Prg a) where
+instance Pretty Prg where
     pretty = B.intercalate ";" . map pretty . commands
 
 -- | A compact representation of a `Prg` as a wrapped `ByteString`.
-packPrg :: Prg Integer -> PackedPrg
+packPrg :: Prg -> PackedPrg
 packPrg = PPrg . pretty
 
-paren :: ByteString -> ByteString
-paren s = "(" <> s <> ")"
-
-varsExpr0 :: Expr0 a -> [Name]
-varsExpr0 (Add e1 e2) = varsExpr0 e1 ++ varsExpr0 e2
-varsExpr0 (Sub e1 e2) = varsExpr0 e1 ++ varsExpr0 e2
-varsExpr0 (Expr1 e)   = varsExpr1 e
-
-varsExpr1 :: Expr1 a -> [Name]
-varsExpr1 (Mul e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
-varsExpr1 (Div e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
-varsExpr1 (BDP e1 e2)   = varsExpr1 e1 ++ varsExpr1 e2
-varsExpr1 (PtMul e1 e2) = varsExpr1 e1 ++ varsExpr1 e2
-varsExpr1 (PtDiv e1 e2) = varsExpr1 e1 ++ varsExpr1 e2
-varsExpr1 (Expr2 e)     = varsExpr2 e
-
-varsExpr2 :: Expr2 a -> [Name]
-varsExpr2 (Neg e) = varsExpr2 e
-varsExpr2 (Pos e) = varsExpr2 e
-varsExpr2 (Fac e) = varsExpr3 e
-varsExpr2 (Pow e1 e2) = varsExpr3 e1 ++ varsExpr3 e2
-varsExpr2 (Comp e1 e2) = varsExpr3 e1 ++ varsExpr3 e2
-varsExpr2 (Expr3 e) = varsExpr3 e
-
-varsExpr3 :: Expr3 a -> [Name]
-varsExpr3 (A _) = []
-varsExpr3 (Tag _) = []
-varsExpr3 (Var s) = [s]
-varsExpr3 (Tr _ e) = varsExpr3 e
-varsExpr3 (Expr0 e) = varsExpr0 e
-varsExpr3 _ = []
-
-varsCmd :: Cmd a -> [Name]
-varsCmd (Expr e) = varsExpr0 e
-varsCmd (Asgmt s e) = s : varsExpr0 e
-
-varsPrg :: Prg a -> [Name]
-varsPrg = nub . (>>= varsCmd) . commands
-
 -- | The list of variables in a program.
-vars :: Prg a -> [Name]
-vars = varsPrg
-
-anumsExpr0 :: Expr0 a -> [Int]
-anumsExpr0 (Add e1 e2) = anumsExpr0 e1 ++ anumsExpr0 e2
-anumsExpr0 (Sub e1 e2) = anumsExpr0 e1 ++ anumsExpr0 e2
-anumsExpr0 (Expr1 e)   = anumsExpr1 e
-
-anumsExpr1 :: Expr1 a -> [Int]
-anumsExpr1 (Mul e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
-anumsExpr1 (Div e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
-anumsExpr1 (BDP e1 e2)   = anumsExpr1 e1 ++ anumsExpr1 e2
-anumsExpr1 (PtMul e1 e2) = anumsExpr1 e1 ++ anumsExpr1 e2
-anumsExpr1 (PtDiv e1 e2) = anumsExpr1 e1 ++ anumsExpr1 e2
-anumsExpr1 (Expr2 e)     = anumsExpr2 e
-
-anumsExpr2 :: Expr2 a -> [Int]
-anumsExpr2 (Neg e) = anumsExpr2 e
-anumsExpr2 (Pos e) = anumsExpr2 e
-anumsExpr2 (Fac e) = anumsExpr3 e
-anumsExpr2 (Pow e1 e2) = anumsExpr3 e1 ++ anumsExpr3 e2
-anumsExpr2 (Comp e1 e2) = anumsExpr3 e1 ++ anumsExpr3 e2
-anumsExpr2 (Expr3 e) = anumsExpr3 e
-
-anumsExpr3 :: Expr3 a -> [Int]
-anumsExpr3 (A i) = [i]
-anumsExpr3 (Tag _) = []
-anumsExpr3 (Var _) = []
-anumsExpr3 (Tr _ e) = anumsExpr3 e
-anumsExpr3 (Expr0 e) = anumsExpr0 e
-anumsExpr3 _ = []
-
-anumsCmd :: Cmd a -> [Int]
-anumsCmd (Expr e) = anumsExpr0 e
-anumsCmd (Asgmt _ e) = anumsExpr0 e
-
-anumsPrg :: Prg a -> [Int]
-anumsPrg = nub . (>>= anumsCmd) . commands
+vars :: CorePrg -> [Name]
+vars = varsCorePrg
 
 -- | The list of A-numbers in a program.
-anums :: Prg a -> [Int]
-anums = anumsPrg
+anums :: CorePrg -> [Int]
+anums = anumsCorePrg
 
-subsExpr0 :: Subs -> Expr0 a -> Expr0 a
-subsExpr0 f (Add e1 e2) = Add (subsExpr0 f e1) (subsExpr0 f e2)
-subsExpr0 f (Sub e1 e2) = Sub (subsExpr0 f e1) (subsExpr0 f e2)
-subsExpr0 f (Expr1 e)   = Expr1 (subsExpr1 f e)
+subsExpr0 :: Subs -> Expr0 -> Expr0
+subsExpr0 f (EAdd e1 e2) = EAdd (subsExpr0 f e1) (subsExpr0 f e2)
+subsExpr0 f (ESub e1 e2) = ESub (subsExpr0 f e1) (subsExpr0 f e2)
+subsExpr0 f (Expr1 e)    = Expr1 (subsExpr1 f e)
 
-subsExpr1 :: Subs -> Expr1 a -> Expr1 a
-subsExpr1 f (Mul e1 e2)   = Mul (subsExpr1 f e1) (subsExpr1 f e2)
-subsExpr1 f (Div e1 e2)   = Div (subsExpr1 f e1) (subsExpr1 f e2)
-subsExpr1 f (BDP e1 e2)   = BDP (subsExpr1 f e1) (subsExpr1 f e2)
-subsExpr1 f (PtMul e1 e2) = PtMul (subsExpr1 f e1) (subsExpr1 f e2)
-subsExpr1 f (PtDiv e1 e2) = PtDiv (subsExpr1 f e1) (subsExpr1 f e2)
-subsExpr1 f (Expr2 e)     = Expr2 (subsExpr2 f e)
+subsExpr1 :: Subs -> Expr1 -> Expr1
+subsExpr1 f (EMul e1 e2)   = EMul (subsExpr1 f e1) (subsExpr1 f e2)
+subsExpr1 f (EDiv e1 e2)   = EDiv (subsExpr1 f e1) (subsExpr1 f e2)
+subsExpr1 f (EBDP e1 e2)   = EBDP (subsExpr1 f e1) (subsExpr1 f e2)
+subsExpr1 f (EPtMul e1 e2) = EPtMul (subsExpr1 f e1) (subsExpr1 f e2)
+subsExpr1 f (EPtDiv e1 e2) = EPtDiv (subsExpr1 f e1) (subsExpr1 f e2)
+subsExpr1 f (Expr2 e)      = Expr2 (subsExpr2 f e)
 
-subsExpr2 :: Subs -> Expr2 a -> Expr2 a
-subsExpr2 f (Neg e) = Neg (subsExpr2 f e)
-subsExpr2 f (Pos e) = Pos (subsExpr2 f e)
-subsExpr2 f (Fac e) = Fac (subsExpr3 f e)
-subsExpr2 f (Pow e1 e2) = Pow (subsExpr3 f e1) (subsExpr3 f e2)
-subsExpr2 f (Comp e1 e2) = Comp (subsExpr3 f e1) (subsExpr3 f e2)
+subsExpr2 :: Subs -> Expr2 -> Expr2
+subsExpr2 f (ENeg e) = ENeg (subsExpr2 f e)
+subsExpr2 f (EPos e) = EPos (subsExpr2 f e)
+subsExpr2 f (EFac e) = EFac (subsExpr3 f e)
+subsExpr2 f (EPow e1 e2) = EPow (subsExpr3 f e1) (subsExpr3 f e2)
+subsExpr2 f (EComp e1 e2) = EComp (subsExpr3 f e1) (subsExpr3 f e2)
 subsExpr2 f (Expr3 e) = Expr3 (subsExpr3 f e)
 
-subsExpr3 :: Subs -> Expr3 a -> Expr3 a
-subsExpr3 _ X = X
-subsExpr3 _ (A i) = A i
-subsExpr3 _ (Tag i) = Tag i
-subsExpr3 f (Var s) = Var (f s)
-subsExpr3 _ (Lit x) = Lit x
+subsExpr3 :: Subs -> Expr3 -> Expr3
+subsExpr3 f (EVar s) = EVar (f s)
 subsExpr3 f (Tr s e) = Tr s (subsExpr3 f e)
-subsExpr3 _ (Rats r) = Rats r
 subsExpr3 f (Expr0 e) = Expr0 (subsExpr0 f e)
+subsExpr3 _ e = e
 
-subsCmd :: Subs -> Cmd a -> Cmd a
+subsCmd :: Subs -> Cmd -> Cmd
 subsCmd f (Expr e) = Expr (subsExpr0 f e)
 subsCmd f (Asgmt s e) = Asgmt (f s) (subsExpr0 f e)
 
-subsPrg :: Subs -> Prg a -> Prg a
+subsPrg :: Subs -> Prg -> Prg
 subsPrg f = Prg . map (subsCmd f) . commands
 
-subs :: [(Name, Name)] -> Prg a -> Prg a
+subs :: [(Name, Name)] -> Prg -> Prg
 subs assoc = subsPrg f
   where
     f k = let d = M.fromList assoc in M.findWithDefault k k d
 
-vars' :: Prg a -> [Name]
-vars' prog = vars prog \\ ["stdin"]
+vars' :: Prg -> [Name]
+vars' prog = vars (core prog) \\ ["stdin"]
 
 nameSupply :: [Name]
 nameSupply = B.words "f g h p q r s t u v w"
           ++ [ B.pack ('f':show i) | i <- [0::Int ..] ]
 
-nfEnd :: [Name] -> Prg a -> ([Name], Prg a)
+nfEnd :: [Name] -> Prg -> ([Name], Prg)
 nfEnd vs prog@(Prg cmds) = (ws, Prg cmds')
   where
     (ws, cmds') = nfEnd' cmds
@@ -327,7 +274,7 @@ nfEnd vs prog@(Prg cmds) = (ws, Prg cmds')
     nfEnd' [a]      = (vs, [a])
     nfEnd' (c:cs)   = let (us, cs') = nfEnd' cs in (us, c:cs')
 
-rename :: [Name] -> Prg a -> ([Name], Prg a)
+rename :: [Name] -> Prg -> ([Name], Prg)
 rename vs p = (names, subs assoc p)
   where
     names = vs \\ map snd assoc
@@ -343,124 +290,179 @@ lookupVar v env = M.lookup v (varEnv env)
 insertVar :: KnownNat n => ByteString -> Series n -> Env n -> Env n
 insertVar v f (Env a vs) = Env a (M.insert v f vs)
 
-aNumPrg :: Int -> Prg Integer
-aNumPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (A m))))]
+aNumPrg :: Int -> Prg
+aNumPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (EA m))))]
 
-tagPrg :: Int -> Prg Integer
-tagPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (Tag m))))]
+tagPrg :: Int -> Prg
+tagPrg m = Prg [Expr (Expr1 (Expr2 (Expr3 (ETag m))))]
+
+--------------------------------------------------------------------------------
+-- Core
+--------------------------------------------------------------------------------
+
+core :: Prg -> CorePrg
+core = map coreCmd . commands
+
+coreCmd :: Cmd -> Core
+coreCmd (Expr e) = coreExpr0 e
+coreCmd (Asgmt s e) = Let s (coreExpr0 e)
+
+coreExpr0 :: Expr0 -> Core
+coreExpr0 (EAdd e1 e2) = App2 Add (coreExpr0 e1) (coreExpr0 e2)
+coreExpr0 (ESub e1 e2) = App2 Sub (coreExpr0 e1) (coreExpr0 e2)
+coreExpr0 (Expr1 e) = coreExpr1 e
+
+coreExpr1 :: Expr1 -> Core
+coreExpr1 (EMul e1 e2) = App2 Mul (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (EDiv e1 e2) = App2 Div (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (EBDP e1 e2) = App2 BDP (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (EPtMul e1 e2) = App2 PtMul (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (EPtDiv e1 e2) = App2 PtDiv (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (Expr2 e) = coreExpr2 e
+
+coreExpr2 :: Expr2 -> Core
+coreExpr2 (ENeg e) = App1 Neg (coreExpr2 e)
+coreExpr2 (EPos e) = coreExpr2 e
+coreExpr2 (EFac e) = App1 Fac (coreExpr3 e)
+coreExpr2 (EPow e1 e2) = App2 Pow (coreExpr3 e1) (coreExpr3 e2)
+coreExpr2 (EComp e1 e2) = App2 Comp (coreExpr3 e1) (coreExpr3 e2)
+coreExpr2 (Expr3 e) = coreExpr3 e
+
+coreExpr3 :: Expr3 -> Core
+coreExpr3 EX = X
+coreExpr3 (EA i) = A i
+coreExpr3 (ETag i) = Tag i
+coreExpr3 (EVar s) = Var s
+coreExpr3 (ELit t) = Lit t
+coreExpr3 (Tr s e) = App1 (Tr1 s) (coreExpr3 e)
+coreExpr3 (ERats r) = Rats (R.core r)
+coreExpr3 (Expr0 e) = coreExpr0 e
+
+varsCorePrg :: CorePrg -> [Name]
+varsCorePrg = nub . (>>= varsCore)
+
+varsCore :: Core -> [Name]
+varsCore (App1 _ e) = varsCore e
+varsCore (App2 _ e1 e2) = varsCore e1 ++ varsCore e2
+varsCore (Var s) = [s]
+varsCore (Let s e) = s : varsCore e
+varsCore _ = []
+
+anumsCorePrg :: CorePrg -> [Int]
+anumsCorePrg = nub . (>>= anumsCore)
+
+anumsCore :: Core -> [Int]
+anumsCore (App1 _ e) = anumsCore e
+anumsCore (App2 _ e1 e2) = anumsCore e1 ++ anumsCore e2
+anumsCore (A i) = [i]
+anumsCore (Let _ e) = anumsCore e
+anumsCore _ = []
 
 --------------------------------------------------------------------------------
 -- Eval
 --------------------------------------------------------------------------------
 
-evalExpr0 :: KnownNat n => Env n -> Expr0 Integer -> Series n
-evalExpr0 env (Add e1 e2) = evalExpr0 env e1 + evalExpr0 env e2
-evalExpr0 env (Sub e1 e2) = evalExpr0 env e1 - evalExpr0 env e2
-evalExpr0 env (Expr1 e)   = evalExpr1 env e
+evalFun1 :: KnownNat n => Fun1 -> Env n -> Series n -> Series n
+evalFun1 Neg     _   = negate
+evalFun1 Fac     _   = fac
+evalFun1 (Tr1 t) env =
+    fromMaybe (fromMaybe nil (lookupVar t env) `o`) (lookupTransform t)
 
-evalExpr1 :: KnownNat n => Env n -> Expr1 Integer -> Series n
-evalExpr1 env (Mul e1 e2)   = evalExpr1 env e1 *  evalExpr1 env e2
-evalExpr1 env (Div e1 e2)   = evalExpr1 env e1 /  evalExpr1 env e2
-evalExpr1 env (BDP e1 e2)   = evalExpr1 env e1 `blackDiamond` evalExpr1 env e2
-evalExpr1 env (PtMul e1 e2) = evalExpr1 env e1 .* evalExpr1 env e2
-evalExpr1 env (PtDiv e1 e2) = evalExpr1 env e1 ./ evalExpr1 env e2
-evalExpr1 env (Expr2 e)     = evalExpr2 env e
+evalFun2 :: KnownNat n => Fun2 -> Series n -> Series n -> Series n
+evalFun2 Add = (+)
+evalFun2 Sub = (-)
+evalFun2 Mul = (*)
+evalFun2 Div = (/)
+evalFun2 BDP = blackDiamond
+evalFun2 PtMul = (.*)
+evalFun2 PtDiv = (./)
+evalFun2 Pow = (**)
+evalFun2 Comp = o
 
-evalExpr2 :: KnownNat n => Env n -> Expr2 Integer -> Series n
-evalExpr2 env (Neg e)      = negate (evalExpr2 env e)
-evalExpr2 env (Pos e)      = evalExpr2 env e
-evalExpr2 env (Fac e)      = fac $ evalExpr3 env e
-evalExpr2 env (Pow e1 e2)  = evalExpr3 env e1 ** evalExpr3 env e2
-evalExpr2 env (Comp e1 e2) = evalExpr3 env e1 `o` evalExpr3 env e2
-evalExpr2 env (Expr3 e)    = evalExpr3 env e
+evalCore :: KnownNat n => Core -> State (Env n) (Series n)
+evalCore (App1 f e) = evalFun1 f <$> get <*> evalCore e
+evalCore (App2 f e1 e2) = evalFun2 f <$> evalCore e1 <*> evalCore e2
+evalCore X = return $ polynomial (Proxy :: Proxy n) [0,1]
+evalCore (A i) = fromMaybe nil . lookupANum i <$> get
+evalCore (Tag _) = return nil
+evalCore (Var v) = fromMaybe nil . lookupVar v <$> get
+evalCore (Lit c) = return $ polynomial (Proxy :: Proxy n) [Val (toRational c)]
+evalCore (Rats r) = return $ R.evalCore r
+evalCore (Let v e) = do
+    (f, env) <- runState (evalCore e) <$> get
+    put (insertVar v f env)
+    return f
 
-evalExpr3 :: KnownNat n => Env n -> Expr3 Integer -> Series n
-evalExpr3 _    X        = polynomial (Proxy :: Proxy n) [0,1]
-evalExpr3 env (A i)     = fromMaybe nil (lookupANum i env)
-evalExpr3 _   (Tag _)   = nil
-evalExpr3 env (Var v)   = fromMaybe nil (lookupVar v env)
-evalExpr3 _   (Lit c)   = polynomial (Proxy :: Proxy n) [Val (toRational c)]
-evalExpr3 _   (Rats r)  = evalRats r
-evalExpr3 env (Expr0 e) = evalExpr0 env e
-evalExpr3 env (Tr t g)  =
-    let g' = evalExpr3 env g
-    in case lookupTransform t of
-         Just tr -> tr g'
-         Nothing -> fromMaybe nil (lookupVar t env) `o` g'
-
-evalCmd :: KnownNat n => Env n -> Cmd Integer -> (Env n, Series n)
-evalCmd env (Expr e) = (env, evalExpr0 env e)
-evalCmd env (Asgmt v e) = (insertVar v f env, f) where f = evalExpr0 env e
-
-evalPrgNext :: KnownNat n => Prg Integer -> (Env n, Series n) -> (Env n, Series n)
-evalPrgNext (Prg cs) (env, f) = foldl' (\(ev, _) c -> evalCmd ev c) (env, f) cs
+evalCorePrgNext :: KnownNat n => CorePrg -> (Series n, Env n) -> (Series n, Env n)
+evalCorePrgNext prog (env, f) =
+    foldl' (\(_, ev) c -> runState (evalCore c) ev) (env, f) prog
 
 nil :: KnownNat n => Series n
 nil = series (Proxy :: Proxy n) []
 
 -- | Evaluate a program in a given environment.
-evalPrg :: KnownNat n => Env n -> Prg Integer -> (Env n, Series n)
-evalPrg env p = trail !! precision f0
+evalCorePrg :: KnownNat n => Env n -> CorePrg -> Series n
+evalCorePrg env prog = fst (trail !! precision f0)
   where
     f0 = nil
-    trail = iterate (evalPrgNext p) (env, f0)
+    trail = iterate (evalCorePrgNext prog) (f0, env)
 
 -- | Evaluate a list of programs in a given environment.
-evalPrgs :: KnownNat n => Env n -> [Prg Integer] -> [(Env n, Series n)]
-evalPrgs env = map (evalPrg env)
+evalCorePrgs :: KnownNat n => Env n -> [CorePrg] -> [Series n]
+evalCorePrgs env = map (evalCorePrg env)
 
 --------------------------------------------------------------------------------
 -- Parse
 --------------------------------------------------------------------------------
 
-expr0 :: (Eq a, Num a) => Parser a -> Parser (Expr0 a)
-expr0 p = chainl1 (Expr1 <$> expr1 p) (op <$> oneOf "+ -") <?> "expr0"
+expr0 :: Parser Expr0
+expr0 = chainl1 (Expr1 <$> expr1) (op <$> oneOf "+ -") <?> "expr0"
   where
-    op "+" = Add
-    op "-" = Sub
+    op "+" = EAdd
+    op "-" = ESub
     op _   = error "internal error"
 
-expr1 :: (Eq a, Num a) => Parser a -> Parser (Expr1 a)
-expr1 p = chainl1 (Expr2 <$> expr2 p) (op <$> oneOf ".* ./ * / <>") <?> "expr1"
+expr1 :: Parser Expr1
+expr1 = chainl1 (Expr2 <$> expr2) (op <$> oneOf ".* ./ * / <>") <?> "expr1"
   where
-    op "*"  = Mul
-    op "/"  = Div
-    op ".*" = PtMul
-    op "./" = PtDiv
-    op "<>" = BDP
+    op "*"  = EMul
+    op "/"  = EDiv
+    op ".*" = EPtMul
+    op "./" = EPtDiv
+    op "<>" = EBDP
     op _    = error "internal error"
 
-expr2 :: (Eq a, Num a) => Parser a -> Parser (Expr2 a)
-expr2 p
-     =  pm <$> oneOf "+ -" <*> expr2 p
-    <|> (expr3 p >>= \g ->
-                Pow  g <$> (string "^" *> expr3 p)
-            <|> Comp g <$> (string "@" *> expr3 p)
-            <|> pure (Fac g) <* string "!"
+expr2 :: Parser Expr2
+expr2
+     =  pm <$> oneOf "+ -" <*> expr2
+    <|> (expr3 >>= \g ->
+                EPow  g <$> (string "^" *> expr3)
+            <|> EComp g <$> (string "@" *> expr3)
+            <|> pure (EFac g) <* string "!"
             <|> pure (Expr3 g))
     <?> "expr2"
   where
-    pm "+" = Pos
-    pm "-" = Neg
+    pm "+" = EPos
+    pm "-" = ENeg
     pm _   = error "internal error"
 
-expr3 :: (Eq a, Num a) => Parser a -> Parser (Expr3 a)
-expr3 p
-     =  Lit     <$> p
-    <|> A       <$> aNumInt
-    <|> Tag     <$> tag
-    <|> Tr      <$> name <*> expr3 p
-    <|> Var     <$> var
-    <|> const X <$> string "x"
-    <|> Rats    <$> rats p
-    <|> Expr0   <$> parens (expr0 p)
+expr3 :: Parser Expr3
+expr3
+     =  ELit     <$> decimal
+    <|> EA       <$> aNumInt
+    <|> ETag     <$> tag
+    <|> Tr       <$> name <*> expr3
+    <|> EVar     <$> var
+    <|> const EX <$> string "x"
+    <|> ERats    <$> R.rats
+    <|> Expr0    <$> parens expr0
     <?> "expr3"
 
-assignment :: (Eq a, Num a) => Parser a -> Parser (ByteString, Expr0 a)
-assignment p = (,) <$> var <*> (string "=" >> expr0 p)
+assignment :: Parser (ByteString, Expr0)
+assignment = (,) <$> var <*> (string "=" >> expr0)
 
-cmd :: (Eq a, Num a) => Parser a -> Parser (Cmd a)
-cmd p = uncurry Asgmt <$> assignment p <|> Expr <$> expr0 p
+cmd :: Parser Cmd
+cmd = uncurry Asgmt <$> assignment <|> Expr <$> expr0
 
 reserved :: [Name]
 reserved = "x" : transforms
@@ -472,13 +474,13 @@ name = mappend <$> takeWhile1 isAlpha_ascii
 var :: Parser ByteString
 var = name >>= \s -> if s `elem` reserved then mzero else return s
 
-prg :: Parser (Prg Integer)
-prg = Prg <$> cmd decimal `sepBy'` string ";"
+prg :: Parser Prg
+prg = Prg <$> cmd `sepBy'` string ";"
           <*  (string ";" <|> pure "")
           <*  endOfInput
 
 -- | Parse a program.
-parsePrg :: ByteString -> Maybe (Prg Integer)
+parsePrg :: ByteString -> Maybe Prg
 parsePrg = parse_ prg . B.takeWhile (/='#') . B.filter f
   where
     f '\t' = False
@@ -486,5 +488,5 @@ parsePrg = parse_ prg . B.takeWhile (/='#') . B.filter f
     f _    = True
 
 -- | Parse a program and possibly fail with an error.
-parsePrgErr :: ByteString -> Prg Integer
+parsePrgErr :: ByteString -> Prg
 parsePrgErr = fromMaybe (error "error parsing program") . parsePrg

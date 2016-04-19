@@ -9,8 +9,10 @@
 module HOPS.GF.Rat
     ( Rat (..)
     , maybeRational
+    , maybeInteger
     , isRational
     , factorial
+    , binomial
     , choose
     , multinomial
     ) where

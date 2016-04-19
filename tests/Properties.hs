@@ -29,7 +29,7 @@ import Test.QuickCheck.Test
 import HOPS.Matrix
 import HOPS.GF
 import qualified HOPS.GF.Const as C
-import HOPS.GF.Rats
+import qualified HOPS.GF.Rats as R
 import HOPS.GF.Series
 import HOPS.GF.Transform
 
@@ -39,96 +39,97 @@ alpha = ['A'..'Z'] ++ ['a'..'z']
 digits :: String
 digits = ['0'..'9']
 
+ratsGen :: Gen R.Rats
+ratsGen = (,) <$> resize 4 arbitrary <*> arbitrary
+
 nameGen :: Gen Name
 nameGen = B.pack <$> ((:) <$> first <*> rest)
   where
     first = elements alpha
     rest = listOf $ elements (alpha ++ digits ++ "_")
 
-instance Arbitrary a => Arbitrary (Prg a) where
+instance Arbitrary Prg where
     arbitrary = Prg <$> listOf arbitrary
 
-instance Arbitrary a => Arbitrary (Cmd a) where
+instance Arbitrary Cmd where
     arbitrary = oneof
         [ Expr <$> arbitrary
         , Asgmt <$> nameGen <*> arbitrary
         ]
 
-instance Arbitrary a => Arbitrary (Expr0 a) where
+instance Arbitrary Expr0 where
     arbitrary = frequency
-        [ (10, Add   <$> arbitrary <*> arbitrary)
-        , (10, Sub   <$> arbitrary <*> arbitrary)
-        , (80, Expr1 <$> arbitrary)
+        [ ( 3, EAdd   <$> arbitrary <*> arbitrary)
+        , ( 3, ESub   <$> arbitrary <*> arbitrary)
+        , (94, Expr1  <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (Expr1 a) where
+instance Arbitrary Expr1 where
     arbitrary = frequency
-        [ ( 5, Mul   <$> arbitrary <*> arbitrary)
-        , ( 5, Div   <$> arbitrary <*> arbitrary)
-        , ( 5, PtMul <$> arbitrary <*> arbitrary)
-        , ( 5, PtDiv <$> arbitrary <*> arbitrary)
-        , (80, Expr2 <$> arbitrary)
+        [ ( 2, EMul   <$> arbitrary <*> arbitrary)
+        , ( 2, EDiv   <$> arbitrary <*> arbitrary)
+        , ( 2, EPtMul <$> arbitrary <*> arbitrary)
+        , ( 2, EPtDiv <$> arbitrary <*> arbitrary)
+        , (92, Expr2  <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (Expr2 a) where
+instance Arbitrary Expr2 where
     arbitrary = frequency
-        [ ( 1, Neg   <$> arbitrary)
-        , ( 1, Pos   <$> arbitrary)
-        , ( 1, Fac   <$> arbitrary)
-        , ( 1, Pow   <$> arbitrary <*> arbitrary)
-        , ( 1, Comp  <$> arbitrary <*> arbitrary)
-        , (95, Expr3 <$> arbitrary)
+        [ ( 1, ENeg   <$> arbitrary)
+        , ( 1, EPos   <$> arbitrary)
+        , ( 1, EFac   <$> arbitrary)
+        , ( 1, EPow   <$> arbitrary <*> arbitrary)
+        , ( 1, EComp  <$> arbitrary <*> arbitrary)
+        , (95, Expr3  <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (Expr3 a) where
+instance Arbitrary Expr3 where
     arbitrary = frequency
-        [ (19, const X <$> (arbitrary :: Gen ()))
-        , (19, A       <$> arbitrary)
-        , ( 3, Tag     <$> arbitrary)
-        , (19, Var     <$> nameGen  )
-        , (19, Lit     <$> arbitrary)
-        , ( 1, Tr      <$> nameGen <*> arbitrary)
-        , (15, Rats    <$> arbitrary)
-        , ( 5, Expr0   <$> arbitrary)
+        [ (20, return EX)
+        , (15, EA       <$> arbitrary)
+        , ( 3, ETag     <$> arbitrary)
+        , (20, EVar     <$> nameGen  )
+        , (33, ELit     <$> arbitrary)
+        , ( 1, Tr       <$> nameGen <*> arbitrary)
+        , ( 7, ERats    <$> ratsGen  )
+        , ( 1, Expr0    <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (C.Expr0 a) where
+instance Arbitrary C.Expr0 where
     arbitrary = frequency
-        [ (10, C.Add   <$> arbitrary <*> arbitrary)
-        , (10, C.Sub   <$> arbitrary <*> arbitrary)
-        , (80, C.Expr1 <$> arbitrary)
+        [ ( 1, C.EAdd  <$> arbitrary <*> arbitrary)
+        , ( 1, C.ESub  <$> arbitrary <*> arbitrary)
+        , (98, C.Expr1 <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (C.Expr1 a) where
+instance Arbitrary C.Expr1 where
     arbitrary = frequency
-        [ (10, C.Mul   <$> arbitrary <*> arbitrary)
-        , (10, C.Div   <$> arbitrary <*> arbitrary)
-        , (80, C.Expr2 <$> arbitrary)
+        [ ( 1, C.EMul  <$> arbitrary <*> arbitrary)
+        , ( 1, C.EDiv  <$> arbitrary <*> arbitrary)
+        , (98, C.Expr2 <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (C.Expr2 a) where
+instance Arbitrary C.Expr2 where
     arbitrary = frequency
-        [ ( 2, C.Neg   <$> arbitrary)
-        , ( 2, C.Pos   <$> arbitrary)
-        , ( 1, C.Fac   <$> arbitrary)
-        , ( 1, C.Pow   <$> arbitrary <*> arbitrary)
-        , (94, C.Expr3 <$> arbitrary)
+        [ ( 1, C.ENeg  <$> arbitrary)
+        , ( 1, C.EPos  <$> arbitrary)
+        , ( 1, C.EFac  <$> arbitrary)
+        , ( 1, C.EPow  <$> arbitrary <*> arbitrary)
+        , (96, C.Expr3 <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (C.Expr3 a) where
+instance Arbitrary C.Expr3 where
     arbitrary = frequency
-        [ (90, C.Lit   <$> arbitrary)
-        , (10, C.Expr0 <$> arbitrary)
+        [ (90, C.ELit  <$> arbitrary)
+        , ( 9, return C.EN)
+        , ( 1, C.Expr0 <$> arbitrary)
         ]
 
-instance Arbitrary a => Arbitrary (Linear a) where
-    arbitrary = (:+) <$> arbitrary <*> arbitrary
-
-instance Arbitrary a => Arbitrary (Term a) where
-    arbitrary = oneof
-        [ const Ellipsis <$> (arbitrary :: Gen ())
-        , Constant <$> arbitrary
-        , Fun <$> arbitrary
+instance Arbitrary R.Term where
+    arbitrary = frequency
+        [ (10, return R.Ellipsis)
+        , (45, R.Constant <$> arbitrary)
+        , (45, R.Fun <$> arbitrary)
         ]
 
 instance Arbitrary a => Arbitrary (Matrix a) where
@@ -156,8 +157,11 @@ coeffs = map Val . rationalPrefix
 check :: Testable prop => Int -> prop -> IO Result
 check n = quickCheckWithResult stdArgs {maxSuccess = n}
 
+evalPrg :: KnownNat n => Env n -> Prg -> Series n
+evalPrg env = evalCorePrg env . core
+
 runPrg :: KnownNat n => Env n -> ByteString -> Series n
-runPrg env = snd . evalPrg env . fromMaybe (error "parse error") . parsePrg
+runPrg env = evalPrg env . fromMaybe (error "parse error") . parsePrg
 
 ogf :: KnownNat n => Proxy n -> [Integer] -> Series n
 ogf n = series n . map (Val . fromIntegral)
@@ -184,14 +188,14 @@ areEq lhs rhs cs =
 toRatsString :: Show a => [a] -> String
 toRatsString xs = "{" ++ intercalate "," (map show xs) ++ "}"
 
-prop_Prg_id1 p = mempty <> p == (p :: Prg Integer)
-prop_Prg_id2 p = p <> mempty == (p :: Prg Integer)
-prop_Prg_assoc p q r = p <> (q <> r) == (p <> q) <> (r :: Prg Integer)
+prop_Prg_id1 p = mempty <> p == (p :: Prg)
+prop_Prg_id2 p = p <> mempty == (p :: Prg)
+prop_Prg_assoc p q r = p <> (q <> r) == (p <> q) <> (r :: Prg)
 
 prop_Prg_value p = evalPrg' p == evalPrg' q
   where
-    evalPrg' = snd . evalPrg empty40
-    q = p <> fromJust (parsePrg "stdin") :: Prg Integer
+    evalPrg' = evalPrg empty40
+    q = p <> fromJust (parsePrg "stdin") :: Prg
 
 prop_Rat_power_u :: Bool
 prop_Rat_power_u = (1/4) !^! (3/2) == Val (1 % 8)
@@ -600,20 +604,18 @@ prop_A003149 = take (length a003149) lhs == a003149
 
 -- Fredholm-Rueppel sequence
 a036987 =
-    [ 1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0
-    , 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0
-    , 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-    , 0,0,0
+    [ 1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    , 0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     ]
 
 prop_Fredholm_Rueppel_1 = take (length a036987) lhs == a036987
   where
-    env = Env V.empty M.empty :: Env 105
+    env = Env V.empty M.empty :: Env 60
     lhs = coeffs (runPrg env "f=1+x*AERATE1(f)")
 
 prop_Fredholm_Rueppel_2 = take (length a036987) lhs == a036987
   where
-    env = Env V.empty M.empty :: Env 105
+    env = Env V.empty M.empty :: Env 60
     lhs = coeffs (runPrg env "f=1+x*f(x^2)")
 
 -- XXX: Dirichlet g.f. for right-shifted sequence: 2^(-s)/(1-2^(-s)).
@@ -800,7 +802,7 @@ tests =
     [ ("Prg-monoid/id-1",        check 100 prop_Prg_id1)
     , ("Prg-monoid/id-2",        check 100 prop_Prg_id2)
     , ("Prg-monoid/associative", check 100 prop_Prg_assoc)
-    , ("Prg-monoid/value",       check  20 prop_Prg_value)
+    , ("Prg-monoid/value",       check 100 prop_Prg_value)
     , ("unit/Rat-Power",         check   1 prop_Rat_power_u)
     , ("unit/Neg-Power",         check   1 prop_Neg_power_u)
     , ("unit/LEFT",              check   1 prop_LEFT_u)

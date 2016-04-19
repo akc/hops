@@ -8,6 +8,7 @@
 
 module HOPS.Utils
     ( pad
+    , paren
     , parens
     , oneOf
     , chainl1
@@ -27,6 +28,9 @@ import Control.Applicative
 --
 pad :: Int -> Int -> ByteString
 pad d n = B.replicate (d - B.length s) '0' <> s where s = B.pack (show n)
+
+paren :: ByteString -> ByteString
+paren s = "(" <> s <> ")"
 
 -- | Parse @p@ enclosed in parenthesis.
 parens :: Parser a -> Parser a

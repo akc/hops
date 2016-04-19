@@ -12,11 +12,11 @@
 -- Expressions defining sequences of rational numbers.
 
 module HOPS.GF.Rats
-    ( Linear (..)
-    , Fun
-    , Term (..)
+    ( Term (..)
     , Rats
-    , evalRats
+    , Core
+    , core
+    , evalCore
     , rats
     ) where
 
@@ -30,86 +30,62 @@ import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 import HOPS.Pretty
-import HOPS.GF.Const
+import qualified HOPS.GF.Const as C
 import HOPS.GF.Series
 
-data Linear a = a :+ a deriving (Show, Eq)
-
-type Fun a = Expr (Linear a)
-
-data Term a
+data Term
     = Ellipsis
-    | Constant (Expr a)
-    | Fun (Fun a)
+    | Constant C.Expr
+    | Fun C.Expr
     deriving (Show, Eq)
 
 -- | An expression defining a sequence.
-type Rats a = ([Expr a], Term a)
+type Rats = ([C.Expr], Term)
 
-instance (Eq a, Num a, Pretty a) => Pretty (Linear a) where
-    pretty (0 :+ b) | b == 0 = pretty b
-    pretty (0 :+ 1) = "n"
-    pretty (0 :+ b) = pretty b <> "*n"
-    pretty (a :+ 0) = pretty a
-    pretty (a :+ b) = pretty a <> "+" <> pretty b <> "*n"
-
-instance (Eq a, Num a, Pretty a) => Pretty (Term a) where
+instance Pretty Term where
     pretty Ellipsis = "..."
     pretty (Constant e) = pretty e
     pretty (Fun f) = pretty f
 
-instance (Eq a, Num a, Pretty a) => Pretty (Rats a) where
+instance Pretty Rats where
     pretty (cs, t) = "{" <> B.intercalate "," (map pretty cs ++ [pretty t]) <> "}"
+
+--------------------------------------------------------------------------------
+-- Core
+--------------------------------------------------------------------------------
+
+type Core = ([C.Core], C.Core)
+
+core :: Rats -> Core
+core (es, t) =
+    let cs = map C.core es
+    in case t of
+      Ellipsis   -> ( []              , newtonPoly cs )
+      Constant e -> ( cs ++ [C.core e], C.indet       )
+      Fun e      -> ( cs              , C.core e      )
+
+newtonPoly :: [C.Core] -> C.Core
+newtonPoly es =
+    C.simplify $ sum (zipWith (\k c -> (C.simplify (c*C.Binom k))) [0::Int ..] cs)
+  where
+    cs = map head (newtonTriangle (zipWith C.subs [0..] es))
+    newtonTriangle = P.takeWhile (not . null) . iterate diffs
+    diffs xs = map C.simplify $ zipWith (-) (drop 1 xs) xs
 
 --------------------------------------------------------------------------------
 -- Eval
 --------------------------------------------------------------------------------
 
-evalLinear :: Num a => a -> Linear a -> a
-evalLinear n (a :+ b) = a + b * n
-
--- | Evaluate an expression obtaining the series defined by that
--- expression.
-evalRats :: KnownNat n => Rats Integer -> Series n
-evalRats (as, finalTerm) =
-    let cs = map evalExpr as
-    in case finalTerm of
-        Ellipsis   -> series (Proxy :: Proxy n) (newtonExtension cs)
-        Constant e -> series (Proxy :: Proxy n) (cs ++ [ evalExpr e ])
-        t -> let e = case t of
-                       Fun d    -> d
-                       _        -> error "internal error"
-             in series (Proxy :: Proxy n)
-                    (cs ++ [ evalExpr (evalLinear (fromIntegral n) <$> e)
-                           | n <- [length cs ..]
-                           ])
-
-newtonExtension :: Fractional a => [a] -> [a]
-newtonExtension cs = map (f . fromIntegral) [0::Int ..]
-  where
-    f n = sum (zipWith (\k c -> c * (n `choose` k)) [0::Int ..] coefficients)
-    coefficients = map head (newtonTriangle cs)
-    newtonTriangle = P.takeWhile (not . null) . iterate differences
-    differences xs = zipWith (-) (drop 1 xs) xs
+evalCore :: KnownNat n => Core -> Series n
+evalCore (es, t) =
+    series (Proxy :: Proxy n) $ zipWith C.evalCore [0..] (es ++ repeat t)
 
 --------------------------------------------------------------------------------
 -- Parse
 --------------------------------------------------------------------------------
 
-linear :: (Eq a, Num a) => Parser a -> Parser (Linear a)
-linear p = const (0 :+ 1) <$> string "n" <|> (:+ 0) <$> p
-
-fun :: (Eq a, Num a) => Parser a -> Parser (Fun a)
-fun p = expr (linear p) <?> "function"
-
-funTerm :: (Eq a, Num a) => Parser a -> Parser (Term a)
-funTerm p = Fun <$> fun p
-
-ellipsis :: Parser (Term a)
-ellipsis = const Ellipsis <$> string "..."
-
-term :: (Eq a, Num a) => Parser a -> Parser (Term a)
-term p = ellipsis <|> funTerm p
+term :: Parser Term
+term = const Ellipsis <$> string "..." <|> Fun <$> C.expr
 
 commaSep :: Parser a -> Parser [a]
 commaSep p = p `sepBy` string ","
@@ -118,20 +94,17 @@ decompose :: [a] -> Maybe ([a], a)
 decompose [] = Nothing
 decompose xs = Just (init xs, last xs)
 
-toConstant :: (Eq a, Num a) => Term a -> Term a
-toConstant (Fun e) | isConstant e = Constant ((\(a :+ _) -> a) <$> e)
+toConstant :: Term -> Term
+toConstant (Fun e) | C.isConstant e = Constant e
 toConstant f = f
 
-isConstant :: (Eq a, Num a) => Expr (Linear a) -> Bool
-isConstant e = isNothing (find (\(_ :+ b) -> b /= 0) e)
-
 -- | Parser for `Rats`.
-rats :: (Eq a, Num a) => Parser a -> Parser (Rats a)
-rats p = toRats <$> (string "{" *> commaSep (term p) <* string "}")
+rats :: Parser Rats
+rats = toRats <$> (string "{" *> commaSep term <* string "}")
   where
     coerce (Constant e) = e
     coerce (Fun _) = error "unexpected 'n'"
-    coerce _ = error "unexpected ellipsis"
+    coerce Ellipsis = error "unexpected ellipsis"
     toRats rs = fromMaybe (error "at least one term expected") $ do
         (ts, t) <- decompose (toConstant <$> rs)
         return (coerce <$> ts, t)

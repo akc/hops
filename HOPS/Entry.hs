@@ -21,7 +21,7 @@ import HOPS.OEIS
 -- | An entry consists of a program together with a list of rational
 -- numbers.
 data Entry = Entry
-    { getPrg   :: Prg Integer
+    { getPrg   :: Prg
     , getSeq   :: Sequence
     , getTrail :: [PackedPrg]
     } deriving (Eq, Show)

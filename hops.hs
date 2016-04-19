@@ -41,7 +41,7 @@ seqsURL = "https://oeis.org/stripped.gz"
 type Prec = Int
 
 data Input (n :: Nat)
-    = RunPrgs (Env n) [Prg Integer] [Entry]
+    = RunPrgs (Env n) [Prg] [CorePrg] [Entry]
     | TagSeqs Int [Sequence]
     | DumpSeqDB Prec [Entry]
     | UpdateDBs FilePath FilePath
@@ -62,12 +62,13 @@ readEntries = do
   let decodeErr = fromMaybe (error "error decoding JSON") . decode
   map (decodeErr . BL.fromStrict) <$> readStdin
 
-readPrgs :: Options -> IO [Prg Integer]
-readPrgs opts =
-    filter (not . null . commands) . map parsePrgErr <$>
-        if script opts == ""
-            then return (map B.pack (program opts))
-            else lines' <$> BL.readFile (script opts)
+readPrgs :: Options -> IO ([Prg], [CorePrg])
+readPrgs opts = do
+    prgs <- filter (not . null . commands) . map parsePrgErr <$>
+              if script opts == ""
+                  then return (map B.pack (program opts))
+                  else lines' <$> BL.readFile (script opts)
+    return (prgs, map core prgs)
 
 readInput :: KnownNat n => Options -> Config -> IO (Input n)
 readInput opts cfg
@@ -86,10 +87,10 @@ readInput opts cfg
         TagSeqs (fromJust (tagSeqs opts)) . map parseIntegerSeqErr <$> readStdin
 
     | otherwise = do
-        prgs <- readPrgs opts
-        inp  <- if "stdin" `elem` (vars =<< prgs) then readEntries else return []
-        db   <- if null (anums =<< prgs) then return emptyANumDB else readANumDB cfg
-        return $ RunPrgs (Env db M.empty) prgs inp
+        (prgs, cprgs) <- readPrgs opts
+        inp <- if "stdin" `elem` (vars =<< cprgs) then readEntries else return []
+        db  <- if null (anums =<< cprgs) then return emptyANumDB else readANumDB cfg
+        return $ RunPrgs (Env db M.empty) prgs cprgs inp
 
 printOutput :: Output -> IO ()
 printOutput NOP = return ()
@@ -101,10 +102,9 @@ stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 parbuf256 :: NFData a => Strategy [a]
 parbuf256 = parBuffer 256 rdeepseq
 
-runPrgs :: KnownNat n => [Env n] -> [Prg Integer] -> [Sequence]
+runPrgs :: KnownNat n => [Env n] -> [CorePrg] -> [Sequence]
 runPrgs es ps =
-    let getCoeffs = rationalPrefix . snd
-    in concat ([ getCoeffs <$> evalPrgs e ps | e <- es] `using` parbuf256)
+    concat ([rationalPrefix <$> evalCorePrgs e ps | e <- es] `using` parbuf256)
 
 hops :: KnownNat n => Proxy n -> Input n -> IO Output
 hops n inp =
@@ -130,11 +130,11 @@ hops n inp =
 
       Empty -> putStrLn ("hops " ++ versionString) >> return NOP
 
-      RunPrgs env prgs entries ->
+      RunPrgs env prgs cprgs entries ->
           return $ Entries (zipWith3 Entry ps results (trails ++ repeat []))
         where
-          trails  = map getTrail entries
-          results = runPrgs envs prgs
+          trails = map getTrail entries
+          results = runPrgs envs cprgs
           (ps, envs) = case entries of
             [] -> ( prgs, [env] )
             _  -> ( concat [[ q <> p | p <- prgs ] | e <- entries, let q = getPrg e]

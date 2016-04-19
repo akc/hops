@@ -1,6 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
 
 -- |
 -- Copyright   : Anders Claesson 2015, 2016
@@ -14,13 +12,20 @@ module HOPS.GF.Const
     , Expr1 (..)
     , Expr2 (..)
     , Expr3 (..)
+    , Core (..)
+    , indet
+    , core
+    , subs
+    , simplify
+    , isConstant
     , evalExpr
+    , evalCore
     , expr
     ) where
 
+import Data.Maybe
 import Data.Monoid
 import Data.Foldable
-import Data.ByteString.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 import HOPS.GF.Series
@@ -31,120 +36,210 @@ import HOPS.Pretty
 -- multiplication, division, exponentials and factorials.
 type Expr = Expr0
 
-data Expr0 a
-    = Add (Expr0 a) (Expr0 a)
-    | Sub (Expr0 a) (Expr0 a)
-    | Expr1 (Expr1 a)
-    deriving (Show, Eq, Functor, Foldable)
+data Expr0
+    = EAdd Expr0 Expr0
+    | ESub Expr0 Expr0
+    | Expr1 Expr1
+    deriving (Show, Eq)
 
-data Expr1 a
-    = Mul (Expr1 a) (Expr1 a)
-    | Div (Expr1 a) (Expr1 a)
-    | Expr2 (Expr2 a)
-    deriving (Show, Eq, Functor, Foldable)
+data Expr1
+    = EMul Expr1 Expr1
+    | EDiv Expr1 Expr1
+    | Expr2 Expr2
+    deriving (Show, Eq)
 
-data Expr2 a
-    = Neg (Expr2 a)
-    | Pos (Expr2 a)
-    | Fac (Expr3 a)
-    | Pow (Expr3 a) (Expr3 a)
-    | Expr3 (Expr3 a)
-    deriving (Show, Eq, Functor, Foldable)
+data Expr2
+    = ENeg Expr2
+    | EPos Expr2
+    | EFac Expr3
+    | EPow Expr3 Expr3
+    | Expr3 Expr3
+    deriving (Show, Eq)
 
-data Expr3 a
-    = Lit a
-    | Expr0 (Expr0 a)
-    deriving (Show, Eq, Functor, Foldable)
+data Expr3
+    = ELit Integer
+    | EN
+    | Expr0 Expr0
+    deriving (Show, Eq)
 
-instance Pretty a => Pretty (Expr0 a) where
-    pretty (Add e1 e2) = pretty e1 <> "+" <> pretty e2
-    pretty (Sub e1 e2) = pretty e1 <> "-" <> pretty e2
-    pretty (Expr1 e)   = pretty e
+data Fun1 = Neg | Fac deriving Show
 
-instance Pretty a => Pretty (Expr1 a) where
-    pretty (Mul e1 e2) = pretty e1 <> "*"  <> pretty e2
-    pretty (Div e1 e2) = pretty e1 <> "/"  <> pretty e2
-    pretty (Expr2 e)   = pretty e
+data Fun2 = Add | Sub | Mul | Div | Pow deriving Show
 
-instance Pretty a => Pretty (Expr2 a) where
-    pretty (Neg e) = "-" <> pretty e
-    pretty (Pos e) = pretty e
-    pretty (Fac e) = pretty e <> "!"
-    pretty (Pow e k) = pretty e <> "^" <> pretty k
-    pretty (Expr3 e) = pretty e
+data Core
+    = App1 Fun1 Core
+    | App2 Fun2 Core Core
+    | Binom Int        -- binomial(N,k)
+    | Lit Rat
+    | N
+    deriving Show
 
-instance Pretty a => Pretty (Expr3 a) where
-    pretty (Lit x)   = pretty x
-    pretty (Expr0 e) = paren $ pretty e
+instance Num Core where
+    (+) = App2 Add
+    (-) = App2 Sub
+    (*) = App2 Mul
+    fromInteger i = Lit (fromInteger i)
+    abs = undefined
+    signum = undefined
 
-paren :: ByteString -> ByteString
-paren s = "(" <> s <> ")"
+instance Pretty Expr0 where
+    pretty (EAdd e1 e2) = pretty e1 <> "+" <> pretty e2
+    pretty (ESub e1 e2) = pretty e1 <> "-" <> pretty e2
+    pretty (Expr1 e)    = pretty e
+
+instance Pretty Expr1 where
+    pretty (EMul e1 e2) = pretty e1 <> "*"  <> pretty e2
+    pretty (EDiv e1 e2) = pretty e1 <> "/"  <> pretty e2
+    pretty (Expr2 e)    = pretty e
+
+instance Pretty Expr2 where
+    pretty (ENeg e) = "-" <> pretty e
+    pretty (EPos e) = pretty e
+    pretty (EFac e) = pretty e <> "!"
+    pretty (EPow e k) = pretty e <> "^" <> pretty k
+    pretty (Expr3 e)  = pretty e
+
+instance Pretty Expr3 where
+    pretty (ELit x)  = pretty x
+    pretty EN = "n"
+    pretty (Expr0 e) = paren (pretty e)
+
+indet :: Core
+indet = Lit Indet
+
+--------------------------------------------------------------------------------
+-- Core
+--------------------------------------------------------------------------------
+
+core :: Expr -> Core
+core = simplify . coreExpr0
+
+simplifyLit :: Core -> Core
+simplifyLit (App1 Neg (Lit i)) = Lit (-i)
+simplifyLit (App1 Fac (Lit i)) =
+    let j = fromMaybe (error "factorial of non-integer") (maybeInteger i)
+    in fromInteger (product [1..j])
+simplifyLit (App2 Add (Lit i) (Lit j)) = Lit (i + j)
+simplifyLit (App2 Add (Lit 0) e      ) = e
+simplifyLit (App2 Add e       (Lit 0)) = e
+simplifyLit (App2 Sub (Lit i) (Lit j)) = Lit (i - j)
+simplifyLit (App2 Sub (Lit 0) e      ) = App1 Neg e
+simplifyLit (App2 Sub e       (Lit 0)) = e
+simplifyLit (App2 Mul (Lit i) (Lit j)) = Lit (i * j)
+simplifyLit (App2 Mul (Lit 1) e      ) = e
+simplifyLit (App2 Mul e       (Lit 1)) = e
+simplifyLit (App2 Div e       (Lit 1)) = e
+simplifyLit (App2 Div (Lit i) (Lit j)) = Lit (i / j)
+simplifyLit e = e
+
+simplify :: Core -> Core
+simplify (App1 f e) = simplifyLit $ App1 f (simplify e)
+simplify (App2 f e1 e2) = simplifyLit $ App2 f (simplify e1) (simplify e2)
+simplify e = e
+
+subs :: Int -> Core -> Core
+subs n = Lit . evalCore n
+
+coreExpr0 :: Expr0 -> Core
+coreExpr0 (EAdd e1 e2) = App2 Add (coreExpr0 e1) (coreExpr0 e2)
+coreExpr0 (ESub e1 e2) = App2 Sub (coreExpr0 e1) (coreExpr0 e2)
+coreExpr0 (Expr1 e)    = coreExpr1 e
+
+coreExpr1 :: Expr1 -> Core
+coreExpr1 (EMul e1 e2) = App2 Mul (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (EDiv e1 e2) = App2 Div (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (Expr2 e)    = coreExpr2 e
+
+coreExpr2 :: Expr2 -> Core
+coreExpr2 (ENeg e)     = App1 Neg (coreExpr2 e)
+coreExpr2 (EPos e)     = coreExpr2 e
+coreExpr2 (EFac e)     = App1 Fac (coreExpr3 e)
+coreExpr2 (EPow e1 e2) = App2 Pow (coreExpr3 e1) (coreExpr3 e2)
+coreExpr2 (Expr3 e)    = coreExpr3 e
+
+coreExpr3 :: Expr3 -> Core
+coreExpr3 (ELit c)  = fromInteger c
+coreExpr3 EN = N
+coreExpr3 (Expr0 e) = coreExpr0 e
+
+--------------------------------------------------------------------------------
+-- Util
+--------------------------------------------------------------------------------
+
+isConstant :: Expr -> Bool
+isConstant = isC . core
+  where
+    isC (App1 _ e) = isC e
+    isC (App2 _ e1 e2) = isC e1 && isC e2
+    isC N = False
+    isC _ = True
 
 --------------------------------------------------------------------------------
 -- Eval
 --------------------------------------------------------------------------------
 
+evalFun1 :: Fun1 -> Rat -> Rat
+evalFun1 Neg = negate
+evalFun1 Fac = factorial
+
+evalFun2 :: Fun2 -> Rat -> Rat -> Rat
+evalFun2 Add = (+)
+evalFun2 Sub = (-)
+evalFun2 Mul = (*)
+evalFun2 Div = (/)
+evalFun2 Pow = (!^!)
+
+-- | The value of the given (core) expression.
+evalCore :: Int -> Core -> Rat
+evalCore n (App1 f e) = evalFun1 f (evalCore n e)
+evalCore n (App2 f e1 e2) = evalFun2 f (evalCore n e1) (evalCore n e2)
+evalCore n N = fromIntegral n
+evalCore _ (Lit c) = c
+evalCore n (Binom k) = fromIntegral $ binomial n k
+
 -- | The value of the given expression.
-evalExpr :: Expr Integer -> Rat
-evalExpr = evalExpr0
-
-evalExpr0 :: Expr0 Integer -> Rat
-evalExpr0 (Add e1 e2) = evalExpr0 e1 + evalExpr0 e2
-evalExpr0 (Sub e1 e2) = evalExpr0 e1 - evalExpr0 e2
-evalExpr0 (Expr1 e)   = evalExpr1 e
-
-evalExpr1 :: Expr1 Integer -> Rat
-evalExpr1 (Mul e1 e2) = evalExpr1 e1 * evalExpr1 e2
-evalExpr1 (Div e1 e2) = evalExpr1 e1 / evalExpr1 e2
-evalExpr1 (Expr2 e)   = evalExpr2 e
-
-evalExpr2 :: Expr2 Integer -> Rat
-evalExpr2 (Neg e)     = negate (evalExpr2 e)
-evalExpr2 (Pos e)     = evalExpr2 e
-evalExpr2 (Fac e)     = factorial (evalExpr3 e)
-evalExpr2 (Pow e1 e2) = evalExpr3 e1 !^! evalExpr3 e2
-evalExpr2 (Expr3 e)   = evalExpr3 e
-
-evalExpr3 :: Expr3 Integer -> Rat
-evalExpr3 (Lit c)   = Val (toRational c)
-evalExpr3 (Expr0 e) = evalExpr0 e
+evalExpr :: Int -> Expr -> Rat
+evalExpr n = evalCore n . core
 
 --------------------------------------------------------------------------------
 -- Parse
 --------------------------------------------------------------------------------
 
 -- | Parser for an `Expr`.
-expr :: Parser a -> Parser (Expr a)
+expr :: Parser Expr
 expr = expr0
 
-expr0 :: Parser a -> Parser (Expr0 a)
-expr0 p = chainl1 (Expr1 <$> expr1 p) (op0 <$> oneOf "+ -") <?> "expr0"
+expr0 :: Parser Expr0
+expr0 = chainl1 (Expr1 <$> expr1) (op0 <$> oneOf "+ -") <?> "expr0"
   where
-    op0 "+" = Add
-    op0 "-" = Sub
+    op0 "+" = EAdd
+    op0 "-" = ESub
     op0 _   = error "internal error"
 
-expr1 :: Parser a -> Parser (Expr1 a)
-expr1 p = chainl1 (Expr2 <$> expr2 p) (op1 <$> oneOf "* /") <?> "expr1"
+expr1 :: Parser Expr1
+expr1 = chainl1 (Expr2 <$> expr2) (op1 <$> oneOf "* /") <?> "expr1"
   where
-    op1 "*" = Mul
-    op1 "/" = Div
+    op1 "*" = EMul
+    op1 "/" = EDiv
     op1 _   = error "internal error"
 
-expr2 :: Parser a -> Parser (Expr2 a)
-expr2 p
-     =  op3 <$> oneOf "+ -" <*> expr2 p
-    <|> do { u <- expr3 p
-           ; choice [ return (Fac u) <* string "!"
-                    , Pow u <$> (string "^" *> expr3 p)
+expr2 :: Parser Expr2
+expr2
+     =  op3 <$> oneOf "+ -" <*> expr2
+    <|> do { u <- expr3
+           ; choice [ return (EFac u) <* string "!"
+                    , EPow u <$> (string "^" *> expr3)
                     , return (Expr3 u)
                     ]
            }
     <?> "expr2"
   where
-    op3 "+" = Pos
-    op3 "-" = Neg
+    op3 "+" = EPos
+    op3 "-" = ENeg
     op3 _   = error "internal error"
 
-expr3 :: Parser a -> Parser (Expr3 a)
-expr3 p = Lit <$> p <|> Expr0 <$> parens (expr0 p) <?> "expr3"
+expr3 :: Parser Expr3
+expr3
+    = string "n" *> return EN
+   <|> ELit <$> decimal
+   <|> Expr0 <$> parens expr0 <?> "expr3"

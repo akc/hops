@@ -13,6 +13,7 @@ module HOPS.OEIS
       URL
     , ANum (..)
     , Sequence
+    , packANum
     -- * Parse stripped.gz
     , parseStripped
     -- * Parse sequences
