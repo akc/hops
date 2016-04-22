@@ -116,9 +116,7 @@ core = simplify . coreExpr0
 
 simplifyLit :: Core -> Core
 simplifyLit (App1 Neg (Lit i)) = Lit (-i)
-simplifyLit (App1 Fac (Lit i)) =
-    let j = fromMaybe (error "factorial of non-integer") (maybeInteger i)
-    in fromInteger (product [1..j])
+simplifyLit (App1 Fac (Lit i)) = Lit (factorial i)
 simplifyLit (App2 Add (Lit i) (Lit j)) = Lit (i + j)
 simplifyLit (App2 Add (Lit 0) e      ) = e
 simplifyLit (App2 Add e       (Lit 0)) = e
