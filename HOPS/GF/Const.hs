@@ -15,7 +15,6 @@ module HOPS.GF.Const
     , Core (..)
     , indet
     , core
-    , subs
     , simplify
     , isConstant
     , evalExpr
@@ -134,9 +133,6 @@ simplify :: Core -> Core
 simplify (App1 f e) = simplifyLit $ App1 f (simplify e)
 simplify (App2 f e1 e2) = simplifyLit $ App2 f (simplify e1) (simplify e2)
 simplify e = e
-
-subs :: Int -> Core -> Core
-subs n = Lit . evalCore n
 
 coreExpr0 :: Expr0 -> Core
 coreExpr0 (EAdd e1 e2) = App2 Add (coreExpr0 e1) (coreExpr0 e2)

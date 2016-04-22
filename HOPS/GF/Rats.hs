@@ -66,11 +66,11 @@ core (es, t) =
 
 newtonPoly :: [C.Core] -> C.Core
 newtonPoly es =
-    C.simplify $ sum (zipWith (\k c -> (C.simplify (c*C.Binom k))) [0::Int ..] cs)
+    C.simplify $ sum (zipWith (\k c -> ((C.Lit c * C.Binom k))) [0::Int ..] cs)
   where
-    cs = map head (newtonTriangle (zipWith C.subs [0..] es))
+    cs = map head (newtonTriangle (zipWith C.evalCore [0..] es))
     newtonTriangle = P.takeWhile (not . null) . iterate diffs
-    diffs xs = map C.simplify $ zipWith (-) (drop 1 xs) xs
+    diffs xs = zipWith (-) (drop 1 xs) xs
 
 --------------------------------------------------------------------------------
 -- Eval
