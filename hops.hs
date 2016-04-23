@@ -33,17 +33,14 @@ import HOPS.GF
 import HOPS.GF.Series
 
 versionString :: String
-versionString = "0.5.1"
+versionString = "0.6.0"
 
 seqsURL :: String
 seqsURL = "https://oeis.org/stripped.gz"
 
-type Prec = Int
-
 data Input (n :: Nat)
     = RunPrgs (Env n) [Prg] [CorePrg] [Entry]
     | TagSeqs Int [Sequence]
-    | DumpSeqDB Prec [Entry]
     | UpdateDBs FilePath FilePath
     | Empty
 
@@ -70,25 +67,24 @@ readPrgs opts = do
                   else lines' <$> BL.readFile (script opts)
     return (prgs, map core prgs)
 
+readDB :: Config -> IO [Entry]
+readDB =
+    let mkEntry (ANum a, s) = Entry (aNumPrg a) s []
+    in fmap (map mkEntry . parseStripped . unDB) . readSeqDB
+
 readInput :: KnownNat n => Options -> Config -> IO (Input n)
 readInput opts cfg
     | version opts = return Empty
-
-    | dumpSeqs opts =
-          DumpSeqDB (prec opts)
-        . map (\(ANum a, s) -> Entry (aNumPrg a) s [])
-        . parseStripped
-        . unDB <$> readSeqDB cfg
-
-    | update opts =
-        return $ UpdateDBs (hopsDir cfg) (seqDBPath cfg)
-
+    | update opts = return $ UpdateDBs (hopsDir cfg) (seqDBPath cfg)
     | isJust (tagSeqs opts) =
         TagSeqs (fromJust (tagSeqs opts)) . map parseIntegerSeqErr <$> readStdin
-
     | otherwise = do
         (prgs, cprgs) <- readPrgs opts
-        inp <- if "stdin" `elem` (vars =<< cprgs) then readEntries else return []
+        inp <- if forAll opts
+               then readDB cfg
+               else if "stdin" `elem` (vars =<< cprgs)
+                    then readEntries
+                    else return []
         db  <- if null (anums =<< cprgs) then return emptyANumDB else readANumDB cfg
         return $ RunPrgs (Env db M.empty) prgs cprgs inp
 
@@ -109,14 +105,6 @@ runPrgs es ps =
 hops :: KnownNat n => Proxy n -> Input n -> IO Output
 hops n inp =
     case inp of
-
-      DumpSeqDB precn es ->
-          return $ Entries
-              [ Entry p t trail
-              | Entry p s trail <- es
-              , let t = take precn s
-              , not (null t)
-              ]
 
       UpdateDBs hopsdir sdbPath -> do
           createDirectoryIfMissing False hopsdir

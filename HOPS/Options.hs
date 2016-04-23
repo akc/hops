@@ -15,20 +15,13 @@ import Options.Applicative
 -- | Command line options:
 data Options = Options
     {
-    -- | Filename of script to run.
-      script         :: String
-    -- | Generating function precision.
-    , prec           :: Int
-    -- | Tag sequences with TAG-numbers
-    , tagSeqs        :: Maybe Int
-    -- | List all transforms
-    , dumpSeqs       :: Bool
-    -- | Updated local DB
-    , update         :: Bool
-    -- | Show version info
-    , version        :: Bool
-    -- | Program
-    , program        :: [String]
+      script  :: String
+    , prec    :: Int
+    , tagSeqs :: Maybe Int
+    , forAll  :: Bool
+    , update  :: Bool
+    , version :: Bool
+    , program :: [String]
     }
 
 -- | Parse command line options.
@@ -51,8 +44,8 @@ optionsParser =
        <> metavar "N"
        <> help "Read sequences from stdin and tag them, starting at N" ))
     <*> switch
-        ( long "dump"
-       <> help "Output all the sequences of the local DB" )
+        ( long "forall"
+       <> help "Run program(s) on all sequences in the local DB" )
     <*> switch
         ( long "update"
        <> help "Update the local database" )

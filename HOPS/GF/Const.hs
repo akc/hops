@@ -112,8 +112,11 @@ core :: Expr -> Core
 core = simplify . coreExpr0
 
 simplifyLit :: Core -> Core
+simplifyLit (App1 _  (Lit DZ)) = Lit DZ
 simplifyLit (App1 Neg (Lit i)) = Lit (-i)
 simplifyLit (App1 Fac (Lit i)) = Lit (factorial i)
+simplifyLit (App2 _ (Lit DZ) _) = Lit DZ
+simplifyLit (App2 _ _ (Lit DZ)) = Lit DZ
 simplifyLit (App2 Add (Lit i) (Lit j)) = Lit (i + j)
 simplifyLit (App2 Add (Lit 0) e      ) = e
 simplifyLit (App2 Add e       (Lit 0)) = e
