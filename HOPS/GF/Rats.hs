@@ -25,7 +25,6 @@ import GHC.TypeLits
 import Data.Monoid
 import Data.Proxy
 import Data.Maybe
-import Data.Foldable (find)
 import qualified Data.ByteString.Char8 as B
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
@@ -66,7 +65,7 @@ core (es, t) =
 
 newtonPoly :: [C.Core] -> C.Core
 newtonPoly es =
-    C.simplify $ sum (zipWith (\k c -> ((C.Lit c * C.Binom k))) [0::Int ..] cs)
+    C.simplify $ sum (zipWith (\k c -> (C.Lit c * C.Binom k)) [0::Int ..] cs)
   where
     cs = map head (newtonTriangle (zipWith C.evalCore [0..] es))
     newtonTriangle = P.takeWhile (not . null) . iterate diffs

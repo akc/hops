@@ -22,9 +22,7 @@ module HOPS.GF.Const
     , expr
     ) where
 
-import Data.Maybe
 import Data.Monoid
-import Data.Foldable
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 import HOPS.GF.Series
