@@ -55,30 +55,34 @@ lines' = filter (not . B.null) . map BL.toStrict . BL.lines
 readStdin :: IO [B.ByteString]
 readStdin = lines' <$> BL.getContents
 
+decodeErr :: B.ByteString -> Entry
+decodeErr = fromMaybe (error "error decoding JSON") . decodeStrict'
+
 readEntries :: IO [Entry]
-readEntries = do
-  let decodeErr = fromMaybe (error "error decoding JSON") . decode
-  map (decodeErr . BL.fromStrict) <$> readStdin
+readEntries = map decodeErr <$> readStdin
 
 readPrgs :: Options -> IO ([Prg], [CorePrg])
 readPrgs opts = do
     prgs <- filter (not . null . commands) . map parsePrgErr <$>
-              if script opts == ""
-                  then return (map B.pack (program opts))
-                  else lines' <$> BL.readFile (script opts)
+                if script opts == ""
+                then return (map B.pack (program opts))
+                else lines' <$> BL.readFile (script opts)
     return (prgs, map core prgs)
 
+mkEntry :: (ANum, Sequence) -> Entry
+mkEntry (ANum a, s) = Entry (aNumPrg a) s []
+
 readDB :: Config -> IO [Entry]
-readDB =
-    let mkEntry (ANum a, s) = Entry (aNumPrg a) s []
-    in fmap (map mkEntry . parseStripped . unDB) . readSeqDB
+readDB = fmap (map mkEntry . parseStripped . unDB) . readSeqDB
+
+readSeqs :: IO [Sequence]
+readSeqs = map parseIntegerSeqErr <$> readStdin
 
 readInput :: KnownNat n => Options -> Config -> IO (Input n)
 readInput opts cfg
     | version opts = return Empty
     | update opts = return $ UpdateDBs (hopsDir cfg) (seqDBPath cfg)
-    | isJust (tagSeqs opts) =
-        TagSeqs (fromJust (tagSeqs opts)) . map parseIntegerSeqErr <$> readStdin
+    | isJust (tagSeqs opts) = TagSeqs (fromJust (tagSeqs opts)) <$> readSeqs
     | otherwise = do
         (prgs, cprgs) <- readPrgs opts
         inp <- if forAll opts
@@ -86,7 +90,9 @@ readInput opts cfg
                else if "stdin" `elem` (vars =<< cprgs)
                     then readEntries
                     else return []
-        db  <- if null (anums =<< cprgs) then return emptyANumDB else readANumDB cfg
+        db  <- if null (anums =<< cprgs)
+               then return emptyANumDB
+               else readANumDB cfg
         return $ RunPrgs (Env db M.empty) prgs cprgs inp
 
 printOutput :: Output -> IO ()
@@ -96,12 +102,11 @@ printOutput (Entries es) = mapM_ (BL.putStrLn . encode) es
 stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
 stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 
-parbuf256 :: NFData a => Strategy [a]
-parbuf256 = parBuffer 256 rdeepseq
-
 runPrgs :: KnownNat n => [Env n] -> [CorePrg] -> [Sequence]
-runPrgs es ps =
-    concat ([rationalPrefix <$> evalCorePrgs e ps | e <- es] `using` parbuf256)
+runPrgs envs progs =
+    concat ( [rationalPrefix <$> evalCorePrgs e progs
+             | e <- envs
+             ] `using` parBuffer 256 rdeepseq )
 
 hops :: KnownNat n => Proxy n -> Input n -> IO Output
 hops n inp =
@@ -122,13 +127,11 @@ hops n inp =
       RunPrgs env prgs cprgs entries ->
           return $ Entries (zipWith3 Entry ps results (trails ++ repeat []))
         where
-          trails = map getTrail entries
+          (qs, seqs, trails) = unzip3 [ (q,s,t) | Entry q s t <- entries ]
           results = runPrgs envs cprgs
-          (ps, envs) = case entries of
-            [] -> ( prgs, [env] )
-            _  -> ( concat [[ q <> p | p <- prgs ] | e <- entries, let q = getPrg e]
-                  , map (stdEnv n env . getSeq) entries
-                  )
+          (ps, envs) = if null qs
+                       then (prgs, [env])
+                       else ((<>) <$> qs <*> prgs, map (stdEnv n env) seqs)
 
 -- | Main function and entry point for hops.
 main :: IO ()
