@@ -17,15 +17,14 @@ module HOPS.OEIS
     -- * Parse stripped.gz
     , parseStripped
     -- * Parse sequences
-    , shave
     , parseIntegerSeq
-    , parseIntegerSeqErr
     -- * Parse A-numbers and TAGs
     , aNumInt
     , tag
     ) where
 
 import GHC.Generics (Generic)
+import Data.List
 import Data.Maybe
 import Data.Monoid
 import Data.ByteString.Char8 (ByteString)
@@ -89,34 +88,20 @@ parseRecords = mapMaybe (parse_ record) . dropHeader . B.lines
 -- > A000108 ,1,1,2,5,14,42,132,429,1430,4862,16796,58786,208012,742900,
 --
 parseStripped :: ByteString -> [(ANum, Sequence)]
-parseStripped bs = [ (anum, parseIntegerSeqErr (shave s)) | (anum, s) <- parseRecords bs ]
+parseStripped bs = [ (anum, parseIntegerSeq (B.drop 1 s)) | (anum, s) <- parseRecords bs ]
 
 -------------------------------------------------------------------------------
 -- Parse sequences
 -------------------------------------------------------------------------------
 
-integerSeq :: Parser Sequence
-integerSeq =
-    map (fromIntegral :: Integer -> Rational) <$> signed decimal `sepBy` char ','
-
 -- | Parse a sequence of `Integer`s.
-parseIntegerSeq :: ByteString -> Maybe Sequence
-parseIntegerSeq = parse_ (integerSeq <* endOfInput) . B.filter (/=' ')
-
--- | Parse a sequence of `Integer`s or throw an error.
-parseIntegerSeqErr :: ByteString -> Sequence
-parseIntegerSeqErr = fromMaybe (error "error parsing sequence") . parseIntegerSeq
+parseIntegerSeq :: ByteString -> Sequence
+parseIntegerSeq =
+    unfoldr (fmap (\(i, bs) -> (fromIntegral i, B.drop 1 bs)) . B.readInteger)
 
 -------------------------------------------------------------------------------
 -- Utility functions
 -------------------------------------------------------------------------------
-
--- | \"Shave\" off the first and last element of a `ByteString`. E.g.
---
--- > shave "{1,2,3}" = "1,2,3"
---
-shave :: ByteString -> ByteString
-shave = B.init . B.tail
 
 -- | A parser for A-numbers as `Int`s.
 aNumInt :: Parser Int

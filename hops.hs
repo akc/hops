@@ -76,7 +76,7 @@ readDB :: Config -> IO [Entry]
 readDB = fmap (map mkEntry . parseStripped . unDB) . readSeqDB
 
 readSeqs :: IO [Sequence]
-readSeqs = map parseIntegerSeqErr <$> readStdin
+readSeqs = map (parseIntegerSeq . B.filter (/=' ')) <$> readStdin
 
 readInput :: KnownNat n => Options -> Config -> IO (Input n)
 readInput opts cfg
