@@ -48,6 +48,16 @@ nameGen = B.pack <$> ((:) <$> first <*> rest)
     first = elements alpha
     rest = listOf $ elements (alpha ++ digits ++ "_")
 
+instance Arbitrary Rat where
+    arbitrary = frequency
+        [ ( 4, return Indet )
+        , ( 1, return DZ )
+        , (95, Val <$> arbitrary)
+        ]
+
+instance KnownNat n => Arbitrary (Series n) where
+    arbitrary = series (Proxy :: Proxy n) <$> arbitrary
+
 instance Arbitrary Prg where
     arbitrary = Prg <$> listOf arbitrary
 
@@ -299,6 +309,15 @@ prop_PSUMSIGN  = areEq "PSUMSIGN(f)"  "f/(1+x)"
 prop_STIRLING  = areEq "STIRLING(f)"  "((x*f ./ {n!})@({0,1/n!}) .* {n!})/x"
 prop_STIRLINGi = areEq "STIRLINGi(f)" "((x*f ./ {n!})@({0,(-1)^(n+1)/n}) .* {n!})/x"
 prop_POINT     = areEq "POINT(f)"     "x*D(f./{n!}) .* {n!}"
+
+prop_Distrib1 :: Series 20 -> Series 20 -> Series 20 -> Bool
+prop_Distrib1 f g h = f*(g+h) == f*g + f*h
+
+prop_Distrib2 :: Series 20 -> Series 20 -> Series 20 -> Bool
+prop_Distrib2 f g h = f.*(g+h) == f.*g + f.*h
+
+prop_Distrib3 :: Series 20 -> Series 20 -> Series 20 -> Bool
+prop_Distrib3 f g h = (g+h)./f == g./f + h./f
 
 prop_DISTRIB as bs cs =
     and [ exec lhs ~~= exec rhs | (lhs, rhs) <- eqs ]
@@ -900,7 +919,10 @@ tests =
     , ("STIRLING = expr",        check 100 prop_STIRLING)
     , ("STIRLINGi = expr",       check 100 prop_STIRLINGi)
     , ("POINT = x*D(f./{n!}) .* {n!}", check 100 prop_POINT)
-    , ("distributive",           check 100 prop_DISTRIB)
+    , ("distributive1",          check 100 prop_Distrib1)
+    , ("distributive2",          check 100 prop_Distrib2)
+    , ("distributive3",          check 100 prop_Distrib3)
+    , ("DISTRIBUTIVE",           check 100 prop_DISTRIB)
     , ("eval: f",                check 100 prop_f)
     , ("eval: [2^n]",            check 100 prop_Powers_of_2)
     , ("eval: x@f=f=f@x",        check 100 prop_Compose)

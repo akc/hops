@@ -277,16 +277,17 @@ integral (Series v) = Series (V.cons 0 u)
 -- series (Proxy :: Proxy 4) [Indet,Indet,Indet,Indet]
 --
 revert :: Series n -> Series n
-revert (Series u) = Series (rev u)
+revert (Series u) = Series rev
   where
-    rev v | V.null v      = V.empty
-          | V.head v /= 0 = V.fromListN n (repeat Indet)
-          | otherwise     = iterate f ind !! n
-        where
-          n   = V.length v
-          ind = V.fromListN (n-1) (repeat Indet)
-          one = V.fromListN (n-1) (1 : repeat 0)
-          f w = V.cons 0 $ one `divide` (V.tail v `comp` w)
+    rev | V.null u      = V.empty
+        | V.head u /= 0 = V.fromListN n (repeat Indet)
+        | otherwise     = iterate f ind !! n
+      where
+        n   = V.length u
+        ind = V.fromListN n (repeat Indet)
+        one = V.fromListN (n-1) (1 : repeat 0)
+        u'  = V.tail u
+        f w = V.cons 0 $ one `divide` (u' `comp` V.init w)
 {-# INLINE revert #-}
 
 -- | Evaluate the polynomial @p@ at @x@ using Horner's method.
