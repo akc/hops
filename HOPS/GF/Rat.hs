@@ -10,6 +10,7 @@ module HOPS.GF.Rat
     ( Rat (..)
     , maybeRational
     , maybeInteger
+    , maybeInt
     , isRational
     , factorial
     , binomial
@@ -60,12 +61,14 @@ instance Num Rat where
     _       + DZ      = DZ
     Indet   + _       = Indet
     _       + Indet   = Indet
+    {-# INLINE (+) #-}
 
     (Val x) - (Val y) = Val (x-y)
     DZ      - _       = DZ
     _       - DZ      = DZ
     Indet   - _       = Indet
     _       - Indet   = Indet
+    {-# INLINE (-) #-}
 
     (Val x) * (Val y) = Val (x*y)
     (Val 0) * Indet   = 0
@@ -75,20 +78,25 @@ instance Num Rat where
     Indet   * (Val 0) = 0
     Indet   * (Val _) = Indet
     Indet   * Indet   = Indet
+    {-# INLINE (*) #-}
 
     negate (Val x) = Val (negate x)
     negate Indet   = Indet
     negate DZ      = DZ
+    {-# INLINE negate #-}
 
     abs (Val x) = Val (abs x)
     abs Indet   = Indet
     abs DZ      = DZ
+    {-# INLINE abs #-}
 
     signum (Val x) = Val (signum x)
     signum Indet   = Indet
     signum DZ      = DZ
+    {-# INLINE signum #-}
 
-    fromInteger = Val . fromInteger
+    fromInteger i = Val (fromInteger i)
+    {-# INLINE fromInteger #-}
 
 -- | Division table:
 --
@@ -110,7 +118,10 @@ instance Fractional Rat where
     DZ      / _       = DZ
     _       / DZ      = DZ
     Indet   / _       = Indet
+    {-# INLINE (/) #-}
+
     fromRational = Val . fromRational
+    {-# INLINE fromRational #-}
 
 instance Floating Rat where
     pi = Val (toRational (pi :: Double))
@@ -137,15 +148,27 @@ lift :: (Double -> Double) -> Rat -> Rat
 lift f (Val r) = Val $ toRational $ f (fromRational r)
 lift _ Indet = Indet
 lift _ DZ = DZ
+{-# INLINE lift #-}
 
 -- | Is the given element a known rational?
 isRational :: Rat -> Bool
 isRational (Val _) = True
 isRational _       = False
+{-# INLINE isRational #-}
 
 maybeInteger :: Rat -> Maybe Integer
 maybeInteger (Val r) | denominator r == 1 = Just (numerator r)
 maybeInteger _ = Nothing
+{-# INLINE maybeInteger #-}
+
+maybeInt :: Rat -> Maybe Int
+maybeInt (Val r) | denominator r == 1 =
+    let i = numerator r
+    in if toInteger (minBound :: Int) <= i && i <= toInteger (maxBound :: Int)
+       then Just (fromInteger i)
+       else Nothing
+maybeInt _ = Nothing
+{-# INLINE maybeInt #-}
 
 -- | If the given value represents a nonnegative integer, then the
 -- factorial of that integer is returned. If given `DZ`, return `DZ`. In

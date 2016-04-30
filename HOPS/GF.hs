@@ -133,15 +133,15 @@ data Fun2
     deriving (Show, Eq)
 
 data Core
-    = App1 Fun1 Core
-    | App2 Fun2 Core Core
+    = App1 !Fun1 !Core
+    | App2 !Fun2 !Core !Core
     | X
-    | A Int
-    | Tag Int
-    | Var Name
-    | Lit Integer
-    | Rats R.Core
-    | Let Name Core
+    | A   {-# UNPACK #-} !Int
+    | Tag {-# UNPACK #-} !Int
+    | Var {-# UNPACK #-} !Name
+    | Lit !Integer
+    | Rats !R.Core
+    | Let {-# UNPACK #-} !Name !Core
     deriving (Show)
 
 type CorePrg = [Core]
@@ -367,6 +367,7 @@ evalFun1 Neg     _   = negate
 evalFun1 Fac     _   = fac
 evalFun1 (Tr1 t) env =
     fromMaybe (fromMaybe nil (lookupVar t env) `o`) (lookupTransform t)
+{-# INLINE evalFun1 #-}
 
 evalFun2 :: KnownNat n => Fun2 -> Series n -> Series n -> Series n
 evalFun2 Add = (+)
@@ -378,6 +379,7 @@ evalFun2 PtMul = (.*)
 evalFun2 PtDiv = (./)
 evalFun2 Pow = (**)
 evalFun2 Comp = o
+{-# INLINE evalFun2 #-}
 
 evalCore :: KnownNat n => Core -> State (Env n) (Series n)
 evalCore (App1 f e) = evalFun1 f <$> get <*> evalCore e
@@ -392,13 +394,16 @@ evalCore (Let v e) = do
     (f, env) <- runState (evalCore e) <$> get
     put (insertVar v f env)
     return f
+{-# INLINE evalCore #-}
 
 evalCorePrgNext :: KnownNat n => CorePrg -> (Series n, Env n) -> (Series n, Env n)
 evalCorePrgNext prog (env, f) =
     foldl' (\(_, ev) c -> runState (evalCore c) ev) (env, f) prog
+{-# INLINE evalCorePrgNext #-}
 
 nil :: KnownNat n => Series n
 nil = series (Proxy :: Proxy n) []
+{-# INLINE nil #-}
 
 -- | Evaluate a program in a given environment.
 evalCorePrg :: KnownNat n => Env n -> CorePrg -> Series n
@@ -406,6 +411,7 @@ evalCorePrg env prog = fst (trail !! precision f0)
   where
     f0 = nil
     trail = iterate (evalCorePrgNext prog) (f0, env)
+{-# INLINE evalCorePrg #-}
 
 -- | Evaluate a list of programs in a given environment.
 evalCorePrgs :: KnownNat n => Env n -> [CorePrg] -> [Series n]

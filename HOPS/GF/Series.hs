@@ -67,35 +67,59 @@ instance Show (Series n) where
 
 instance Eq (Series n) where
     f == g = coeffVector f == coeffVector g
+    {-# INLINE (==) #-}
 
 instance KnownNat n => Num (Series n) where
     (Series u) + (Series v) = Series $ V.zipWith (+) u v
+    {-# INLINE (+) #-}
     (Series u) - (Series v) = Series $ V.zipWith (-) u v
+    {-# INLINE (-) #-}
     (Series u) * (Series v) = Series $ u `mul` v
+    {-# INLINE (*) #-}
     fromInteger x = polynomial (Proxy :: Proxy n) [fromIntegral x]
+    {-# INLINE fromInteger #-}
     abs f = signum f * f
+    {-# INLINE abs #-}
     signum f = polynomial (Proxy :: Proxy n) [signum (leadingCoeff f)]
+    {-# INLINE signum #-}
 
 instance KnownNat n => Fractional (Series n) where
     fromRational r = polynomial (Proxy :: Proxy n) [fromRational r]
+    {-# INLINE fromRational #-}
     (Series u) / (Series v) = Series $ u `divide` v
+    {-# INLINE (/) #-}
 
 instance KnownNat n => Floating (Series n) where
     pi = polynomial (Proxy :: Proxy n) [pi]
+    {-# INLINE pi #-}
     exp = exp'
+    {-# INLINE exp #-}
     log f = c0 log f + integral (derivative f / restrict f)
+    {-# INLINE log #-}
     f ** g = if isConstant g then f ^! constant g else exp (g * log f)
+    {-# INLINE (**) #-}
     sin f = c0 sin f + integral (derivative f * cos (restrict f))
+    {-# INLINE sin #-}
     cos f = c0 cos f - integral (derivative f * sin (restrict f))
+    {-# INLINE cos #-}
     asin f = c0 asin f + integral (derivative f / sqrt (1 - restrict f^(2::Int)))
+    {-# INLINE asin #-}
     acos f = c0 acos f - integral (derivative f / sqrt (1 - restrict f^(2::Int)))
+    {-# INLINE acos #-}
     atan f = c0 atan f + integral (derivative f / (1 + restrict f^(2::Int)))
+    {-# INLINE atan #-}
     sinh f = c0 sinh f + integral (derivative f * cosh (restrict f))
+    {-# INLINE sinh #-}
     cosh f = c0 cosh f + integral (derivative f * sinh (restrict f))
+    {-# INLINE cosh #-}
     asinh f = c0 asinh f + integral (derivative f / sqrt (restrict f^(2::Int) + 1))
+    {-# INLINE asinh #-}
     acosh f = c0 acosh f + integral (derivative f / sqrt (restrict f^(2::Int) - 1))
+    {-# INLINE acosh #-}
     atanh f = c0 atanh f + integral (derivative f / (1 - restrict f^(2::Int)))
+    {-# INLINE atanh #-}
     sqrt f = f ^! (1/2)
+    {-# INLINE sqrt #-}
 
 -- | The underlying vector of coefficients. E.g.
 --
@@ -104,6 +128,7 @@ instance KnownNat n => Floating (Series n) where
 --
 coeffVector :: Series n -> Vector Rat
 coeffVector (Series v) = v
+{-# INLINE coeffVector #-}
 
 -- | The list of coefficients of the given series. E.g.
 --
@@ -112,6 +137,7 @@ coeffVector (Series v) = v
 --
 coeffList :: Series n -> [Rat]
 coeffList = V.toList . coeffVector
+{-# INLINE coeffList #-}
 
 -- | The first nonzero coefficient when read from smaller to larger
 -- powers of x. If no such coefficient exists then return 0.
@@ -120,15 +146,18 @@ leadingCoeff f =
     case dropWhile (==0) (coeffList f) of
       []    -> 0
       (c:_) -> c
+{-# INLINE leadingCoeff #-}
 
 -- | The longest initial segment of coefficients that are rational
 -- (i.e. not `Indet` or `DZ`).
 rationalPrefix :: Series n -> [Rational]
 rationalPrefix = mapMaybe maybeRational . takeWhile isRational . coeffList
+{-# INLINE rationalPrefix #-}
 
 -- | If @f :: Series n@, then @precision f = n@.
 precision :: Series n -> Int
 precision (Series v) = V.length v
+{-# INLINE precision #-}
 
 -- | Create a polynomial with the given list of coefficients. E.g.
 --
@@ -137,6 +166,7 @@ precision (Series v) = V.length v
 --
 polynomial :: KnownNat n => Proxy n -> [Rat] -> Series n
 polynomial n xs = Series $ V.fromListN (fromInteger (natVal n)) (xs ++ repeat 0)
+{-# INLINE polynomial #-}
 
 -- | Create a power series with the given list of initial
 -- coefficients. E.g.
@@ -146,18 +176,70 @@ polynomial n xs = Series $ V.fromListN (fromInteger (natVal n)) (xs ++ repeat 0)
 --
 series :: KnownNat n => Proxy n -> [Rat] -> Series n
 series n xs = Series $ V.fromListN (fromInteger (natVal n)) (xs ++ repeat Indet)
+{-# INLINE series #-}
 
 -- | Coefficient wise multiplication of two power series. Also called
 -- the Hadamard product.
 (.*) :: Series n -> Series n -> Series n
 (.*) (Series u) (Series v) = Series $ V.zipWith (*) u v
+{-# INLINE (.*) #-}
 
 -- | Coefficient wise division of two power series.
 (./) :: Series n -> Series n -> Series n
 (./) (Series u) (Series v) = Series $ V.zipWith (/) u v
+{-# INLINE (./) #-}
 
 mul :: Vector Rat -> Vector Rat -> Vector Rat
-mul u v = V.generate (V.length u) $ \n -> sum [ u!i * v!(n-i) | i <- [0..n] ]
+mul u v =
+    let n = V.length u
+    in if n < 17
+       then convolution n u v
+       else let mu = V.mapM maybeInt u
+                mv = V.mapM maybeInt v
+            in case (mu, mv) of
+                (Just u', Just v') ->
+                    V.fromList $ map fromIntegral (pmult n (V.toList u') (V.toList v'))
+                _ -> convolution n u v
+{-# INLINE mul #-}
+
+convolution :: Int -> Vector Rat -> Vector Rat -> Vector Rat
+convolution n u v = V.generate n $ \j -> sum [u!i * v!(j-i) | i <- [0..j]]
+{-# INLINE convolution #-}
+
+type Poly = [Int]
+
+peval :: Poly -> Integer -> Integer
+peval p x = foldr (\c s -> x * s + fromIntegral c) 0 p
+{-# INLINE peval #-}
+
+maxNorm :: Poly -> Integer
+maxNorm = maximum . (0:) . map (abs . toInteger)
+{-# INLINE maxNorm #-}
+
+-- Bound the largest absolute value of any coefficient in the product.
+bound :: Int -> Poly -> Poly -> Integer
+bound prec p q =
+    let b = max 1 (toInteger prec * maxNorm p * maxNorm q)
+    in 2^((2 :: Integer) + ceiling (logBase 2 (fromIntegral b) :: Double))
+{-# INLINE bound #-}
+
+-- Fast polynomial multiplication using Kronecker substitution. This
+-- implementation is based on "Can we save time in multiplying
+-- polynomials by encoding them as integers?" by R. J. Fateman (2010).
+pmult :: Int -> Poly -> Poly -> [Integer]
+pmult prec p q =
+    take prec $ unpack ((peval p a) * (peval q a)) ++ repeat 0
+  where
+    a = bound prec p q
+    unpack 0 = []
+    unpack i =
+        if i < 0
+        then map (*(-1)) $ unpack (-i)
+        else let (c,r) = quotRem i a
+             in if 2*r > a
+                then (r - a) : unpack (c+1)
+                else r       : unpack c
+{-# INLINE pmult #-}
 
 divide :: Vector Rat -> Vector Rat -> Vector Rat
 divide u v | V.null v || V.null u = V.empty
@@ -169,18 +251,21 @@ divide u v =
         (c, d) -> let q   = c/d
                       qv' = V.map (q*) v'
                   in V.cons q $ divide (V.zipWith (-) u' qv') (V.init v)
+{-# INLINE divide #-}
 
 -- | The (formal) derivative of a power series.
 derivative :: Series n -> Series n
 derivative (Series v) = Series $ V.snoc u Indet
   where
     u = V.imap (\i a -> a * fromIntegral (i+1)) (V.tail v)
+{-# INLINE derivative #-}
 
 -- | The (formal) integral of a power series.
 integral :: Series n -> Series n
 integral (Series v) = Series (V.cons 0 u)
   where
     u = V.imap (\i a -> a / fromIntegral (i+1)) (V.init v)
+{-# INLINE integral #-}
 
 -- | Reversion (compositional inverse) of a power series.  Unless the
 -- constant of the power series is zero the result is indeterminate.
@@ -202,6 +287,7 @@ revert (Series u) = Series (rev u)
           ind = V.fromListN (n-1) (repeat Indet)
           one = V.fromListN (n-1) (1 : repeat 0)
           f w = V.cons 0 $ one `divide` (V.tail v `comp` w)
+{-# INLINE revert #-}
 
 -- | Evaluate the polynomial @p@ at @x@ using Horner's method.
 --
@@ -211,6 +297,7 @@ revert (Series u) = Series (rev u)
 --
 eval :: Series n -> Rat -> Rat
 eval (Series v) x = V.foldr (\c s -> x * s + c) 0 v
+{-# INLINE eval #-}
 
 comp :: Vector Rat -> Vector Rat -> Vector Rat
 comp _ v | V.null v = V.empty
@@ -225,6 +312,7 @@ comp u v =
       v' = V.tail v
       c  = V.head u
       w  = V.init v
+{-# INLINE comp #-}
 
 infixr 7 `o`
 
@@ -236,21 +324,27 @@ infixr 7 `o`
 --
 o :: KnownNat n => Series n -> Series n -> Series n
 o (Series u) (Series v) = Series $ u `comp` v
+{-# INLINE o #-}
 
 c0 :: KnownNat n => (Rat -> Rat) -> Series n -> Series n
 c0 f (Series v) = fromRat $ f (V.head v)
+{-# INLINE c0 #-}
 
 constant :: Series n -> Rat
 constant (Series v) = V.head v
+{-# INLINE constant #-}
 
 fromRat :: KnownNat n => Rat -> Series n
 fromRat c = polynomial (Proxy :: Proxy n) [c]
+{-# INLINE fromRat #-}
 
 kRestrict :: Int -> Series n -> Series n
 kRestrict k (Series v) = Series (v // [(k, Indet)])
+{-# INLINE kRestrict #-}
 
 restrict :: Series n -> Series n
 restrict f = kRestrict (precision f - 1) f
+{-# INLINE restrict #-}
 
 exp' :: KnownNat n => Series n -> Series n
 exp' f = expAux (precision f - 1) f
@@ -259,6 +353,7 @@ exp' f = expAux (precision f - 1) f
     expAux d g =
         let h = expAux (d-1) (kRestrict d g)
         in c0 exp g + integral (derivative g * h)
+{-# INLINE exp' #-}
 
 -- | The power operator for `Rat`s. E.g.
 --
@@ -267,6 +362,7 @@ exp' f = expAux (precision f - 1) f
 --
 (!^!) :: Rat -> Rat -> Rat
 (!^!) c r = let Series v = polynomial (Proxy :: Proxy 2) [c] ^! r in V.head v
+{-# INLINE (!^!) #-}
 
 -- | A power series raised to a rational power.
 --
@@ -290,15 +386,18 @@ exp' f = expAux (precision f - 1) f
           d = leadingExponent f
           x = polynomial (Proxy :: Proxy n) [0,1]
           y = (x^(d `div` k))^n
+{-# INLINE (^!) #-}
 
 leadingExponent :: KnownNat n => Series n -> Integer
 leadingExponent f =
     case span (==0) (rationalPrefix f) of
       (_ ,[]) -> 0
       (xs,_ ) -> fromIntegral (length xs)
+{-# INLINE leadingExponent #-}
 
 isConstant :: KnownNat n => Series n -> Bool
 isConstant (Series u) = V.all (==0) (V.tail u)
+{-# INLINE isConstant #-}
 
 squareRoot :: KnownNat n => Series n -> Series n
 squareRoot f = squareRoot' (precision f - 1) f
@@ -307,6 +406,7 @@ squareRoot f = squareRoot' (precision f - 1) f
     squareRoot' d g =
         let h = 2 * squareRoot' (d-1) (kRestrict d g)
         in c0 sqrt g + integral (derivative g / h)
+{-# INLINE squareRoot #-}
 
 blackDiamond :: Series n -> Series n -> Series n
 blackDiamond (Series u) (Series v) =
@@ -314,6 +414,7 @@ blackDiamond (Series u) (Series v) =
         sum [ u!(a+c) * v!(b+c) * multinomial [a,b,c]
             | [a,b,c] <- compositions 3 n
             ]
+{-# INLINE blackDiamond #-}
 
 compositions :: Int -> Int -> [[Int]]
 compositions 0 0 = [[]]
@@ -322,10 +423,12 @@ compositions 1 n = [[n]]
 compositions 2 n = [[n-i,i] | i <- [0..n]]
 compositions k 0 = [ replicate k 0 ]
 compositions k n = [0..n] >>= \i -> map (i:) (compositions (k-1) (n-i))
+{-# INLINE compositions #-}
 
 -- | The secant function: @sec f = 1 / cos f@
 sec :: KnownNat n => Series n -> Series n
 sec f = 1 / cos f
+{-# INLINE sec #-}
 
 -- | The factorial of a constant power series. If the the power series
 -- isn't constant, then the result is indeterminate (represented using
@@ -337,3 +440,4 @@ sec f = 1 / cos f
 fac :: KnownNat n => Series n -> Series n
 fac f | isConstant f = polynomial (Proxy :: Proxy n) [factorial (constant f)]
       | otherwise    = polynomial (Proxy :: Proxy n) [Indet]
+{-# INLINE fac #-}
