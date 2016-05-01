@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 
@@ -190,18 +189,16 @@ convolution :: Int -> Vector Rat -> Vector Rat -> Vector Rat
 convolution n u v = V.generate n $ \j -> sum [u!i * v!(j-i) | i <- [0..j]]
 {-# INLINE convolution #-}
 
-type Poly = [Int]
-
-peval :: Poly -> Integer -> Integer
+peval :: [Int] -> Integer -> Integer
 peval p x = foldr (\c s -> x * s + fromIntegral c) 0 p
 {-# INLINE peval #-}
 
-maxNorm :: Poly -> Integer
+maxNorm :: [Int] -> Integer
 maxNorm = maximum . (0:) . map (abs . toInteger)
 {-# INLINE maxNorm #-}
 
 -- Bound the largest absolute value of any coefficient in the product.
-bound :: Int -> Poly -> Poly -> Integer
+bound :: Int -> [Int] -> [Int] -> Integer
 bound prec p q =
     let b = max 1 (toInteger prec * maxNorm p * maxNorm q)
     in 2^((2 :: Integer) + ceiling (logBase 2 (fromIntegral b) :: Double))
@@ -210,9 +207,9 @@ bound prec p q =
 -- Fast polynomial multiplication using Kronecker substitution. This
 -- implementation is based on "Can we save time in multiplying
 -- polynomials by encoding them as integers?" by R. J. Fateman (2010).
-pmult :: Int -> Poly -> Poly -> [Integer]
+pmult :: Int -> [Int] -> [Int] -> [Integer]
 pmult prec p q =
-    take prec $ unpack ((peval p a) * (peval q a)) ++ repeat 0
+    take prec $ unpack (peval p a * peval q a) ++ repeat 0
   where
     a = bound prec p q
     unpack i = if i < 0 then map (*(-1)) $ unp (-i) else unp i

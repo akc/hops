@@ -1,6 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 
@@ -38,7 +36,6 @@ module HOPS.GF
     , parsePrgErr
     ) where
 
-import GHC.Generics (Generic)
 import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe
@@ -64,7 +61,7 @@ import HOPS.GF.Transform
 import qualified HOPS.GF.Rats as R
 
 -- | A compact `ByteString` representation of a `Prg`.
-newtype PackedPrg = PPrg ByteString deriving (Eq, Show, Generic)
+newtype PackedPrg = PPrg ByteString deriving (Eq, Show)
 
 instance ToJSON PackedPrg where
     toJSON (PPrg bs) = String (decodeUtf8 bs)

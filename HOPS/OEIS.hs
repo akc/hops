@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
 
 -- |
 -- Copyright   : Anders Claesson 2015, 2016
@@ -23,7 +22,6 @@ module HOPS.OEIS
     , tag
     ) where
 
-import GHC.Generics (Generic)
 import Data.List
 import Data.Maybe
 import Data.Monoid
@@ -45,7 +43,7 @@ type URL = String
 
 -- | An A-number is the character \'A\' followed by a six digit
 -- number. Here we represent that by an Int
-newtype ANum = ANum {unANum :: Int} deriving (Eq, Ord, Show, Generic)
+newtype ANum = ANum {unANum :: Int} deriving (Eq, Ord, Show)
 
 instance ToJSON ANum where
     toJSON m = String ("A" <> decodeUtf8 (packANum m))
@@ -88,7 +86,10 @@ parseRecords = mapMaybe (parse_ record) . dropHeader . B.lines
 -- > A000108 ,1,1,2,5,14,42,132,429,1430,4862,16796,58786,208012,742900,
 --
 parseStripped :: ByteString -> [(ANum, Sequence)]
-parseStripped bs = [ (anum, parseIntegerSeq (B.drop 1 s)) | (anum, s) <- parseRecords bs ]
+parseStripped bs =
+    [ (anum, parseIntegerSeq (B.drop 1 s))
+    | (anum, s) <- parseRecords bs
+    ]
 
 -------------------------------------------------------------------------------
 -- Parse sequences

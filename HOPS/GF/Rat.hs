@@ -164,7 +164,9 @@ maybeInteger _ = Nothing
 maybeInt :: Rat -> Maybe Int
 maybeInt (Val r) | denominator r == 1 =
     let i = numerator r
-    in if toInteger (minBound :: Int) <= i && i <= toInteger (maxBound :: Int)
+        minInt = toInteger (minBound :: Int)
+        maxInt = toInteger (maxBound :: Int)
+    in if minInt <= i && i <= maxInt
        then Just (fromInteger i)
        else Nothing
 maybeInt _ = Nothing
