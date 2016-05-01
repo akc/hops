@@ -91,35 +91,20 @@ instance KnownNat n => Fractional (Series n) where
 
 instance KnownNat n => Floating (Series n) where
     pi = polynomial (Proxy :: Proxy n) [pi]
-    {-# INLINE pi #-}
     exp = exp'
-    {-# INLINE exp #-}
     log f = c0 log f + integral (derivative f / restrict f)
-    {-# INLINE log #-}
     f ** g = if isConstant g then f ^! constant g else exp (g * log f)
-    {-# INLINE (**) #-}
     sin f = c0 sin f + integral (derivative f * cos (restrict f))
-    {-# INLINE sin #-}
     cos f = c0 cos f - integral (derivative f * sin (restrict f))
-    {-# INLINE cos #-}
     asin f = c0 asin f + integral (derivative f / sqrt (1 - restrict f^(2::Int)))
-    {-# INLINE asin #-}
     acos f = c0 acos f - integral (derivative f / sqrt (1 - restrict f^(2::Int)))
-    {-# INLINE acos #-}
     atan f = c0 atan f + integral (derivative f / (1 + restrict f^(2::Int)))
-    {-# INLINE atan #-}
     sinh f = c0 sinh f + integral (derivative f * cosh (restrict f))
-    {-# INLINE sinh #-}
     cosh f = c0 cosh f + integral (derivative f * sinh (restrict f))
-    {-# INLINE cosh #-}
     asinh f = c0 asinh f + integral (derivative f / sqrt (restrict f^(2::Int) + 1))
-    {-# INLINE asinh #-}
     acosh f = c0 acosh f + integral (derivative f / sqrt (restrict f^(2::Int) - 1))
-    {-# INLINE acosh #-}
     atanh f = c0 atanh f + integral (derivative f / (1 - restrict f^(2::Int)))
-    {-# INLINE atanh #-}
     sqrt f = f ^! (1/2)
-    {-# INLINE sqrt #-}
 
 -- | The underlying vector of coefficients. E.g.
 --
@@ -200,7 +185,6 @@ mul u v =
                 (Just u', Just v') ->
                     V.fromList $ map fromIntegral (pmult n (V.toList u') (V.toList v'))
                 _ -> convolution n u v
-{-# INLINE mul #-}
 
 convolution :: Int -> Vector Rat -> Vector Rat -> Vector Rat
 convolution n u v = V.generate n $ \j -> sum [u!i * v!(j-i) | i <- [0..j]]
@@ -231,15 +215,12 @@ pmult prec p q =
     take prec $ unpack ((peval p a) * (peval q a)) ++ repeat 0
   where
     a = bound prec p q
-    unpack 0 = []
-    unpack i =
-        if i < 0
-        then map (*(-1)) $ unpack (-i)
-        else let (c,r) = quotRem i a
-             in if 2*r > a
-                then (r - a) : unpack (c+1)
-                else r       : unpack c
-{-# INLINE pmult #-}
+    unpack i = if i < 0 then map (*(-1)) $ unp (-i) else unp i
+    unp 0 = []
+    unp i = let (c,r) = quotRem i a
+            in if 2*r > a
+               then (r - a) : unp (c+1)
+               else r       : unp c
 
 divide :: Vector Rat -> Vector Rat -> Vector Rat
 divide u v | V.null v || V.null u = V.empty
@@ -251,21 +232,18 @@ divide u v =
         (c, d) -> let q   = c/d
                       qv' = V.map (q*) v'
                   in V.cons q $ divide (V.zipWith (-) u' qv') (V.init v)
-{-# INLINE divide #-}
 
 -- | The (formal) derivative of a power series.
 derivative :: Series n -> Series n
 derivative (Series v) = Series $ V.snoc u Indet
   where
     u = V.imap (\i a -> a * fromIntegral (i+1)) (V.tail v)
-{-# INLINE derivative #-}
 
 -- | The (formal) integral of a power series.
 integral :: Series n -> Series n
 integral (Series v) = Series (V.cons 0 u)
   where
     u = V.imap (\i a -> a / fromIntegral (i+1)) (V.init v)
-{-# INLINE integral #-}
 
 -- | Reversion (compositional inverse) of a power series.  Unless the
 -- constant of the power series is zero the result is indeterminate.
@@ -288,7 +266,6 @@ revert (Series u) = Series rev
         one = V.fromListN (n-1) (1 : repeat 0)
         u'  = V.tail u
         f w = V.cons 0 $ one `divide` (u' `comp` V.init w)
-{-# INLINE revert #-}
 
 -- | Evaluate the polynomial @p@ at @x@ using Horner's method.
 --
@@ -313,7 +290,6 @@ comp u v =
       v' = V.tail v
       c  = V.head u
       w  = V.init v
-{-# INLINE comp #-}
 
 infixr 7 `o`
 
@@ -354,7 +330,6 @@ exp' f = expAux (precision f - 1) f
     expAux d g =
         let h = expAux (d-1) (kRestrict d g)
         in c0 exp g + integral (derivative g * h)
-{-# INLINE exp' #-}
 
 -- | The power operator for `Rat`s. E.g.
 --
@@ -387,7 +362,6 @@ exp' f = expAux (precision f - 1) f
           d = leadingExponent f
           x = polynomial (Proxy :: Proxy n) [0,1]
           y = (x^(d `div` k))^n
-{-# INLINE (^!) #-}
 
 leadingExponent :: KnownNat n => Series n -> Integer
 leadingExponent f =
@@ -407,7 +381,6 @@ squareRoot f = squareRoot' (precision f - 1) f
     squareRoot' d g =
         let h = 2 * squareRoot' (d-1) (kRestrict d g)
         in c0 sqrt g + integral (derivative g / h)
-{-# INLINE squareRoot #-}
 
 blackDiamond :: Series n -> Series n -> Series n
 blackDiamond (Series u) (Series v) =
@@ -415,7 +388,6 @@ blackDiamond (Series u) (Series v) =
         sum [ u!(a+c) * v!(b+c) * multinomial [a,b,c]
             | [a,b,c] <- compositions 3 n
             ]
-{-# INLINE blackDiamond #-}
 
 compositions :: Int -> Int -> [[Int]]
 compositions 0 0 = [[]]
@@ -424,7 +396,6 @@ compositions 1 n = [[n]]
 compositions 2 n = [[n-i,i] | i <- [0..n]]
 compositions k 0 = [ replicate k 0 ]
 compositions k n = [0..n] >>= \i -> map (i:) (compositions (k-1) (n-i))
-{-# INLINE compositions #-}
 
 -- | The secant function: @sec f = 1 / cos f@
 sec :: KnownNat n => Series n -> Series n
@@ -441,4 +412,3 @@ sec f = 1 / cos f
 fac :: KnownNat n => Series n -> Series n
 fac f | isConstant f = polynomial (Proxy :: Proxy n) [factorial (constant f)]
       | otherwise    = polynomial (Proxy :: Proxy n) [Indet]
-{-# INLINE fac #-}
