@@ -15,6 +15,7 @@ module HOPS.GF.Rats
     ( Term (..)
     , Rats
     , Core
+    , SequenceType (..)
     , core
     , evalCore
     , rats
@@ -38,8 +39,10 @@ data Term
     | Fun C.Expr
     deriving (Show, Eq)
 
+data SequenceType = Poly | Ser deriving (Show, Eq)
+
 -- | An expression defining a sequence.
-type Rats = ([C.Expr], Term)
+type Rats = ([C.Expr], Term, SequenceType)
 
 instance Pretty Term where
     pretty Ellipsis = "..."
@@ -47,21 +50,28 @@ instance Pretty Term where
     pretty (Fun f) = pretty f
 
 instance Pretty Rats where
-    pretty (cs, t) = "{" <> B.intercalate "," (map pretty cs ++ [pretty t]) <> "}"
+    pretty (cs, t, stype) = bra <>
+        B.intercalate "," (map pretty cs ++ [pretty t]) <> ket
+      where (bra, ket) = case stype of
+              Poly -> ("[", "]")
+              Ser  -> ("{", "}")
 
 --------------------------------------------------------------------------------
 -- Core
 --------------------------------------------------------------------------------
 
-type Core = ([C.Core], C.Core)
+type Core = ([C.Core], C.Core, SequenceType)
 
 core :: Rats -> Core
-core (es, t) =
+core (es, t, stype) =
     let cs = map C.core es
+        fill = case stype of
+                Poly -> C.zero
+                Ser -> C.indet
     in case t of
-      Ellipsis   -> ( []              , newtonPoly cs )
-      Constant e -> ( cs ++ [C.core e], C.indet       )
-      Fun e      -> ( cs              , C.core e      )
+      Ellipsis   -> ( []              , newtonPoly cs, stype )
+      Constant e -> ( cs ++ [C.core e], fill         , stype )
+      Fun e      -> ( cs              , C.core e     , stype )
 
 newtonPoly :: [C.Core] -> C.Core
 newtonPoly es =
@@ -76,9 +86,11 @@ newtonPoly es =
 --------------------------------------------------------------------------------
 
 evalCore :: KnownNat n => Core -> Series n
-evalCore (es, t) =
-    series (Proxy :: Proxy n) $ zipWith C.evalCore [0..] (es ++ repeat t)
-
+evalCore (es, t, stype) =
+    let f = case stype of
+          Poly -> polynomial
+          Ser  -> series
+    in f (Proxy :: Proxy n) $ zipWith C.evalCore [0..] (es ++ repeat t)
 --------------------------------------------------------------------------------
 -- Parse
 --------------------------------------------------------------------------------
@@ -99,11 +111,16 @@ toConstant f = f
 
 -- | Parser for `Rats`.
 rats :: Parser Rats
-rats = toRats <$> (string "{" *> commaSep term <* string "}")
-  where
-    coerce (Constant e) = e
-    coerce (Fun _) = error "unexpected 'n'"
-    coerce Ellipsis = error "unexpected ellipsis"
-    toRats rs = fromMaybe (error "at least one term expected") $ do
-        (ts, t) <- decompose (toConstant <$> rs)
-        return (coerce <$> ts, t)
+rats = do
+  bra <- st <$> (string "{" <|> string "[")
+  rs <- commaSep term
+  if bra == Ser then string "}" else string "]"
+  return (toRats rs bra)
+    where
+      coerce (Constant e) = e
+      coerce (Fun _) = error "unexpected 'n'"
+      coerce Ellipsis = error "unexpected ellipsis"
+      st b = if b == "{" then Ser else Poly
+      toRats rs bra = fromMaybe (error "at least one term expected") $ do
+          (ts, t) <- decompose (toConstant <$> rs)
+          return (coerce <$> ts, t, bra)

@@ -40,7 +40,7 @@ digits :: String
 digits = ['0'..'9']
 
 ratsGen :: Gen R.Rats
-ratsGen = (,) <$> resize 4 arbitrary <*> arbitrary
+ratsGen = (,,) <$> resize 4 arbitrary <*> arbitrary <*> arbitrary
 
 nameGen :: Gen Name
 nameGen = B.pack <$> ((:) <$> first <*> rest)
@@ -141,6 +141,9 @@ instance Arbitrary R.Term where
         , (45, R.Constant <$> arbitrary)
         , (45, R.Fun <$> arbitrary)
         ]
+
+instance Arbitrary R.SequenceType where
+  arbitrary = elements [R.Poly, R.Ser]
 
 instance Arbitrary a => Arbitrary (Matrix a) where
     arbitrary = do
