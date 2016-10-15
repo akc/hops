@@ -29,9 +29,6 @@ import HOPS.Matrix
 -- | A `Transform` takes a `Series` to another `Series`.
 type Transform n = Series n -> Series n
 
-mkX :: KnownNat n => Proxy n -> Series n
-mkX n = polynomial n [0, 1]
-
 facSeries :: KnownNat n => Series n
 facSeries = series (Proxy :: Proxy n) $ scanl (*) 1 (map fromIntegral [1::Int ..])
 
@@ -136,11 +133,10 @@ euler :: KnownNat n => Transform n
 euler f =
     lift (restrictToPrefix (length cs)) $ shiftLeft (1 / product gs)
   where
-    x  = mkX (Proxy :: Proxy n)
     cs = map Val (rationalPrefix f)
-    gs = zipWith (\k c -> (1 - x^k) ^! c) [1::Int ..] cs
+    gs = zipWith (\k c -> (1 - xpow k) ^! c) [1::Int ..] cs
 
-euleri :: KnownNat n => Transform n
+euleri :: Transform n
 euleri (Series u) = Series $ V.generate (V.length u) (\i -> term (i+1))
   where
     f 1 = u ! 0
@@ -156,9 +152,8 @@ weight :: KnownNat n => Transform n
 weight f =
     lift (restrictToPrefix (length cs)) $ shiftLeft (product gs)
   where
-    x  = mkX (Proxy :: Proxy n)
     cs = map Val (rationalPrefix f)
-    gs = zipWith (\n c -> (1 + x^n) ^! c) [1::Int ..] cs
+    gs = zipWith (\n c -> (1 + xpow n) ^! c) [1::Int ..] cs
 
 increasing :: Ord a => [a] -> Bool
 increasing cs = and (zipWith (<=) cs (drop 1 cs))
@@ -170,7 +165,7 @@ partition f =
         else lift h (shiftLeft (1/g))
   where
     h  = V.imap $ \i c -> if i < length cs then c else Indet
-    x  = mkX (Proxy :: Proxy n)
+    x  = xpow 1
     g  = product $ map (\c -> 1 - x ^! c) cs
     cs = nub $ map Val (rationalPrefix f)
 
@@ -178,7 +173,7 @@ partition f =
 t019 :: KnownNat n => Transform n
 t019 f = ((1-x)*(1-x)*f + (2*a0 - a1)*x - a0) / (x*x)
   where
-    x  = mkX (Proxy :: Proxy n)
+    x  = xpow 1
     v  = coeffVector f
     a0 = polynomial (Proxy :: Proxy n) [v!0]
     a1 = polynomial (Proxy :: Proxy n) [v!1]
@@ -187,13 +182,13 @@ t019 f = ((1-x)*(1-x)*f + (2*a0 - a1)*x - a0) / (x*x)
 bous2 :: KnownNat n => Transform n
 bous2 f = laplace (laplacei f * (sec x + tan x))
   where
-    x = mkX (Proxy :: Proxy n)
+    x = xpow 1
 
 -- The inverse Boustrophedon transform
 bous2i :: KnownNat n => Transform n
 bous2i f = laplace (laplacei f / (sec x + tan x))
   where
-    x = mkX (Proxy :: Proxy n)
+    x = xpow 1
 
 hankel :: Vector Rat -> Vector Rat
 hankel v = V.generate n $ \i -> det (hankelN (i+1))
@@ -284,7 +279,7 @@ associations =
     , ("sec",        sec)
     ]
   where
-    x = mkX (Proxy :: Proxy n)
+    x = xpow 1
 
 dispatch :: KnownNat n => Map ByteString (Transform n)
 dispatch = M.fromList associations

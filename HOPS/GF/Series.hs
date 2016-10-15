@@ -24,6 +24,7 @@ module HOPS.GF.Series
     -- * Constructions
     , polynomial
     , series
+    , xpow
     -- * Accessors
     , precision
     , coeffVector
@@ -162,6 +163,10 @@ series :: KnownNat n => Proxy n -> [Rat] -> Series n
 series n xs = Series $ V.fromListN (fromInteger (natVal n)) (xs ++ repeat Indet)
 {-# INLINE series #-}
 
+-- | Create the power series x^k.
+xpow :: KnownNat n => Int -> Series n
+xpow k = polynomial (Proxy :: Proxy n) $ replicate k 0 ++ [1]
+
 -- | Coefficient wise multiplication of two power series. Also called
 -- the Hadamard product.
 (.*) :: Series n -> Series n -> Series n
@@ -296,7 +301,7 @@ infixr 7 `o`
 -- >>> (1/(1-x)) `o` (2*x)
 -- series (Proxy :: Proxy 4) [Val (1 % 1),Val (2 % 1),Val (4 % 1),Val (8 % 1)]
 --
-o :: KnownNat n => Series n -> Series n -> Series n
+o :: Series n -> Series n -> Series n
 o (Series u) (Series v) = Series $ u `comp` v
 {-# INLINE o #-}
 
@@ -351,23 +356,22 @@ exp' f = expAux (precision f - 1) f
       (n, _) | n < 0 -> 1 / (f ^! (-s))
       (n, 1) -> f ^^ n
       (n, k) ->
-          case (d `mod` k, k) of
-            (0, 2) -> y * squareRoot (f/x^d) ^^ n
-            (0, _) -> y * exp' (fromRational r * log (f/x^d))
+          case (d `mod` fromInteger k, k) of
+            (0, 2) -> y * squareRoot (f/xpow d) ^^ n
+            (0, _) -> y * exp' (fromRational r * log (f/xpow d))
             (_, _) -> polynomial (Proxy :: Proxy n) [Indet]
         where
-          d = leadingExponent f
-          x = polynomial (Proxy :: Proxy n) [0,1]
-          y = (x^(d `div` k))^n
+          d = fromInteger $ leadingExponent f :: Int
+          y = xpow ((d `div` fromInteger k) * fromInteger n)
 
-leadingExponent :: KnownNat n => Series n -> Integer
+leadingExponent :: Series n -> Integer
 leadingExponent f =
     case span (==0) (rationalPrefix f) of
       (_ ,[]) -> 0
       (xs,_ ) -> fromIntegral (length xs)
 {-# INLINE leadingExponent #-}
 
-isConstant :: KnownNat n => Series n -> Bool
+isConstant :: Series n -> Bool
 isConstant (Series u) = V.all (==0) (V.tail u)
 {-# INLINE isConstant #-}
 
