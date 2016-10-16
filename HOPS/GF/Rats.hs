@@ -109,18 +109,21 @@ toConstant :: Term -> Term
 toConstant (Fun e) | C.isConstant e = Constant e
 toConstant f = f
 
+sequenceOfTerms :: Parser ([Term], SequenceType)
+sequenceOfTerms = do
+    bra <- string "{" <|> string "["
+    ts <- commaSep term
+    let (ket, stype) = if bra == "{" then ("}", Ser) else ("]", Poly)
+    string ket
+    return (ts, stype)
+
 -- | Parser for `Rats`.
 rats :: Parser Rats
-rats = do
-  bra <- st <$> (string "{" <|> string "[")
-  rs <- commaSep term
-  if bra == Ser then string "}" else string "]"
-  return (toRats rs bra)
-    where
-      coerce (Constant e) = e
-      coerce (Fun _) = error "unexpected 'n'"
-      coerce Ellipsis = error "unexpected ellipsis"
-      st b = if b == "{" then Ser else Poly
-      toRats rs bra = fromMaybe (error "at least one term expected") $ do
-          (ts, t) <- decompose (toConstant <$> rs)
-          return (coerce <$> ts, t, bra)
+rats = toRats <$> sequenceOfTerms
+  where
+    coerce (Constant e) = e
+    coerce (Fun _) = error "unexpected 'n'"
+    coerce Ellipsis = error "unexpected ellipsis"
+    toRats (rs, stype) = fromMaybe (error "at least one term expected") $ do
+        (ts, t) <- decompose (toConstant <$> rs)
+        return (coerce <$> ts, t, stype)
