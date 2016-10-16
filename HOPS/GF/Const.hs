@@ -14,6 +14,7 @@ module HOPS.GF.Const
     , Expr3 (..)
     , Core (..)
     , indet
+    , zero
     , core
     , simplify
     , isConstant
@@ -103,6 +104,9 @@ instance Pretty Expr3 where
 
 indet :: Core
 indet = Lit Indet
+
+zero :: Core
+zero = Lit (Val 0)
 
 --------------------------------------------------------------------------------
 -- Core

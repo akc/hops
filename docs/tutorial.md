@@ -110,21 +110,24 @@ $ hops 'g=sin(2*x)/(2*cos(3*x));T=laplacei(BISECT1(laplace(g)));laplace((exp(x)*
 }
 ```
 
-## Simple sequence notation
+## Polynomial notation
+
+Instead of writing polynomials using sums of various powers of x, one can simply
+enclose the coefficients in square brackets.  For example, *[1,2,3]* is equivalent
+to *1 + 2x + 3x^2*.
+
+```
+$ hops '[1,2,3]'
+{"hops":"[1,2,3]","seq":[1,2,3,0,0,0,0,0,0,0,0,0,0,0,0]}
+$ hops '1/(1-[0,1,1])'
+{"hops":"1/(1-[0,1,1])","seq":[1,1,2,3,5,8,13,21,34,55,89,144,233,377,610]}
+```
+
+## Sequence notation
 
 We have seen how to define a few different sequences using generating
 functions and functional equations. HOPS also supports a more naive way
-of specifying sequences. Here's a simple finite sequence:
-
-```
-$ hops '{1,2,3}'
-{
-  "hops":"{1,2,3}",
-  "seq":[1,2,3]
-}
-```
-
-We can also use ellipses to build infinite sequences:
+of specifying infinite sequences using curly brackets.
 
 ```
 $ hops '{1,2,...}'
@@ -197,6 +200,45 @@ $ hops --prec=12 '{1,1,n!/2}'
   "seq":[1,1,1,3,12,60,360,2520,20160,181440,1814400,19958400]
 }
 ```
+
+One can also use curly brackets to specify an indeterminate sequence.  For example,
+*{1,2,3}* signifies an infinite series that is indeterminate beyond the third
+coefficient.  When such series are used in computations, only the determinate
+coefficients are displayed.
+
+```
+$ hops '{1,2,3}'
+{"hops":"{1,2,3}","seq":[1,2,3]}
+$ hops '1/(1-{0,1,1})'
+{"hops":"1/(1-{0,1,1})","seq":[1,1,2]}
+```
+
+Indeterminate sequences are useful in investigating a mostly unknown sequence
+(perhaps enumerating some combinatorial objects). For example, we might know
+that a sequence starts *1,1,2,5,18,77,362* and we want to apply different
+transformations and still know how many terms are definite.  Viewing this
+sequence as the start of an ordinary generating function *f*, we might look at
+*f/(1-2x)*
+
+```
+$ hops '{1,1,2,5,18,77,362}/(1-2*x)'
+{"hops":"{1,1,2,5,18,77,362}/(1-2*x)","seq":[1,3,8,21,60,197,756]}
+```
+and discover that this sequence is in the OEIS:
+
+```
+$ hops '{1,1,2,5,18,77,362}/(1-2*x)' | sloane | jq '.name'
+"Boustrophedon transform of natural numbers, cf. A000027.
+```
+On the other hand, viewing *f* as a polynomial we have
+
+```
+$ hops '[1,1,2,5,18,77,362]/(1-2*x)'
+{"hops":"[1,1,2,5,18,77,362]/(1-2*x)","seq":[1,3,8,21,60,197,756,1512,3024,6048,
+  12096,24192,48384,96768,193536]}
+```
+which is less helpful, and looking up this sequence in the OEIS would not give a
+hit.
 
 ## Composing programs
 

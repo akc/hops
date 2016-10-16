@@ -143,7 +143,7 @@ expr1 = expr1 ("*" | "/" | ".*" | "./") expr1 | expr2
 
 expr2 = ("-" | "+") expr2 | expr3 "!" | expr3 "^" expr3 | expr3 "@" expr3 | expr3
 
-expr3 = "x" | anum | tag | name | lit | "{" { terms } "}" | name "(" expr3 ")" | expr0
+expr3 = "x" | anum | tag | name | lit | "{" { terms } "}" | "[" { terms } "]" | name "(" expr3 ")" | expr0
 
 lit = int
 
