@@ -27,16 +27,15 @@ findPivot = V.findIndex (\row ->  V.head row /= 0)
 swapRows :: Int -> Int -> Matrix a -> Matrix a
 swapRows i j m = m // [(i, m!j), (j, m!i)]
 
-reduceHead :: (Eq a, Fractional a) => Vector a -> Vector a -> Vector a
+reduceHead :: Fractional a => Vector a -> Vector a -> Vector a
 reduceHead u v = V.tail $ V.zipWith (-) v (V.map (*c) u)
     where
       c = V.head v / V.head u
 
-reduceFirstColumn :: (Eq a, Fractional a) => Matrix a -> (a, Matrix a)
+reduceFirstColumn :: Fractional a => Matrix a -> (a, Matrix a)
 reduceFirstColumn m = (V.head u, V.map (reduceHead u) (V.tail m))
     where
       u = V.head m
-
 
 -- | Matrix determinant. It is assumed that the matrix is square.
 det :: (Eq a, Fractional a) => Matrix a -> a

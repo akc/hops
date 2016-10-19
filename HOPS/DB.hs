@@ -51,5 +51,5 @@ readANumDB cfg =
     in V.fromList . map mkSeries . parseStripped . unDB <$> readSeqDB cfg
 
 -- | An empty A-number database
-emptyANumDB :: KnownNat n => Vector (Series n)
+emptyANumDB :: Vector (Series n)
 emptyANumDB = V.empty

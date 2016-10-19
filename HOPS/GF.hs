@@ -277,14 +277,14 @@ rename vs p = (names, subs assoc p)
     names = vs \\ map snd assoc
     assoc = zip (vars' p) vs
 
-lookupANum :: KnownNat n => Int -> Env n -> Maybe (Series n)
+lookupANum :: Int -> Env n -> Maybe (Series n)
 lookupANum i env = aNumEnv env !? (i-1)
 
-lookupVar :: KnownNat n => ByteString -> Env n -> Maybe (Series n)
+lookupVar :: ByteString -> Env n -> Maybe (Series n)
 lookupVar v env = M.lookup v (varEnv env)
 
 -- | Insert a variable binding into the given environment.
-insertVar :: KnownNat n => ByteString -> Series n -> Env n -> Env n
+insertVar :: ByteString -> Series n -> Env n -> Env n
 insertVar v f (Env a vs) = Env a (M.insert v f vs)
 
 aNumPrg :: Int -> Prg
