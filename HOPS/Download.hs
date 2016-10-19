@@ -22,7 +22,7 @@ import Control.Monad.Trans.Resource (runResourceT)
 -- given column, and save it at a specified path.
 download :: Int -> URL -> FilePath -> IO ()
 download col url fpath = do
-    req <- liftIO $ parseUrl url
+    req <- liftIO $ parseUrlThrow url
     man <- newManager tlsManagerSettings
     runResourceT $ do
         response <- http req man

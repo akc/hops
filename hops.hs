@@ -19,7 +19,6 @@ import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Aeson
-import Control.Applicative
 import Control.Parallel.Strategies
 import System.Directory
 import System.IO

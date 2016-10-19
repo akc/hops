@@ -15,7 +15,6 @@ module HOPS.DB
     , emptyANumDB
     ) where
 
-import Control.Applicative
 import GHC.TypeLits
 import Data.Proxy
 import Data.Vector (Vector)
