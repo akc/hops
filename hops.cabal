@@ -12,6 +12,7 @@ Build-type:          Custom
 Extra-Source-Files:  README.md hops.1 tests/cli-properties.sh
 
 Cabal-version:       >=1.9.2
+Tested-With:         GHC == 7.10.3, GHC == 8.0.1
 
 source-repository head
   type:                git
