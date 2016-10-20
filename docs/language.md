@@ -18,6 +18,7 @@ Operation | Meaning
 `f - g`   | difference of *f* and *g*
 `f ^ g`   | *f* to the power *g*
 `f @ g`   | *f* composed with *g* (can also be written *f(g)* when *f* is a name)
+`f ? g`   | coefficients of *f* selected by positive integer coefficients of *g*
 `f * g`   | product of *f* and *g*
 `f / g`   | quotient of *f* and *g*
 `f .* g`  | coefficient-wise/Hadamard product of *f* and *g*
@@ -141,7 +142,7 @@ expr0 = expr0 ("+" | "-") expr0 | expr1
 
 expr1 = expr1 ("*" | "/" | ".*" | "./") expr1 | expr2
 
-expr2 = ("-" | "+") expr2 | expr3 "!" | expr3 "^" expr3 | expr3 "@" expr3 | expr3
+expr2 = ("-" | "+") expr2 | expr3 "!" | expr3 "^" expr3 | expr3 "@" expr3 | expr3 "?" expr3 |expr3
 
 expr3 = "x" | anum | tag | name | lit | "{" { terms } "}" | "[" { terms } "]" | name "(" expr3 ")" | expr0
 

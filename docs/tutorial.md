@@ -240,6 +240,26 @@ $ hops '[1,1,2,5,18,77,362]/(1-2*x)'
 which is less helpful, and looking up this sequence in the OEIS would not give a
 hit.
 
+## Selecting coefficients
+
+One can easily select specific coefficients using the `?` operator.
+```
+$ hops '1/(1-x-x^2)'
+{"hops":"1/(1-x-x^2)","seq":[1,1,2,3,5,8,13,21,34,55,89,144,233,377,610]}
+$ hops '(1/(1-x-x^2))?[4,6]'
+{"hops":"(1/(1-x-x^2))?[4,6]","seq":[5,13]}
+```
+The odd coefficients could be selected as follows:
+```
+$ hops '(1/(1-x-x^2))?{2*n+1}'
+{"hops":"(1/(1-x-x^2))?{2*n+1}","seq":[1,3,8,21,55,144,377]}
+```
+If all you want is a single coefficient, you can use a single integer without brackets:
+```
+$ hops '(1/(1-x-x^2))?14'
+{"hops":"(1/(1-x-x^2))?14","seq":[610]}
+```
+
 ## Composing programs
 
 Using the special variable `stdin` we can compose programs:
