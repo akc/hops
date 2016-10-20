@@ -102,6 +102,7 @@ data Expr2
     | EFac Expr3
     | EPow Expr3 Expr3
     | EComp Expr3 Expr3
+    | ECoef Expr3 Expr3
     | Expr3 Expr3
     deriving (Show, Eq)
 
@@ -126,7 +127,7 @@ data Fun1 = Neg | Fac | Tr1 Name deriving (Show, Eq)
 data Fun2
     = Add | Sub
     | Mul | Div
-    | BDP | Pow | Comp | PtMul | PtDiv
+    | BDP | Pow | Comp | Coef | PtMul | PtDiv
     deriving (Show, Eq)
 
 data Core
@@ -185,6 +186,7 @@ instance Pretty Expr2 where
     pretty (EFac e) = pretty e <> "!"
     pretty (EPow e1 e2) = pretty e1 <> "^" <> pretty e2
     pretty (EComp e1 e2) = pretty e1 <> "@" <> pretty e2
+    pretty (ECoef e1 e2) = pretty e1 <> "?" <> pretty e2
     pretty (Expr3 e) = pretty e
 
 instance Pretty Expr3 where
@@ -235,6 +237,7 @@ subsExpr2 f (EPos e) = EPos (subsExpr2 f e)
 subsExpr2 f (EFac e) = EFac (subsExpr3 f e)
 subsExpr2 f (EPow e1 e2) = EPow (subsExpr3 f e1) (subsExpr3 f e2)
 subsExpr2 f (EComp e1 e2) = EComp (subsExpr3 f e1) (subsExpr3 f e2)
+subsExpr2 f (ECoef e1 e2) = ECoef (subsExpr3 f e1) (subsExpr3 f e2)
 subsExpr2 f (Expr3 e) = Expr3 (subsExpr3 f e)
 
 subsExpr3 :: Subs -> Expr3 -> Expr3
@@ -323,6 +326,7 @@ coreExpr2 (EPos e) = coreExpr2 e
 coreExpr2 (EFac e) = App1 Fac (coreExpr3 e)
 coreExpr2 (EPow e1 e2) = App2 Pow (coreExpr3 e1) (coreExpr3 e2)
 coreExpr2 (EComp e1 e2) = App2 Comp (coreExpr3 e1) (coreExpr3 e2)
+coreExpr2 (ECoef e1 e2) = App2 Coef (coreExpr3 e1) (coreExpr3 e2)
 coreExpr2 (Expr3 e) = coreExpr3 e
 
 coreExpr3 :: Expr3 -> Core
@@ -375,6 +379,7 @@ evalFun2 PtMul = (.*)
 evalFun2 PtDiv = (./)
 evalFun2 Pow = (**)
 evalFun2 Comp = o
+evalFun2 Coef = coeffSeries
 
 evalCore :: KnownNat n => Core -> State (Env n) (Series n)
 evalCore (App1 f e) = evalFun1 f <$> get <*> evalCore e
@@ -436,6 +441,7 @@ expr2
     <|> (expr3 >>= \g ->
                 EPow  g <$> (string "^" *> expr3)
             <|> EComp g <$> (string "@" *> expr3)
+            <|> ECoef g <$> (string "?" *> expr3)
             <|> pure (EFac g) <* string "!"
             <|> pure (Expr3 g))
     <?> "expr2"

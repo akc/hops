@@ -29,6 +29,7 @@ module HOPS.GF.Series
     , precision
     , coeffVector
     , coeffList
+    , coeffSeries
     , leadingCoeff
     , rationalPrefix
     , eval
@@ -123,6 +124,17 @@ coeffVector (Series v) = v
 coeffList :: Series n -> [Rat]
 coeffList = V.toList . coeffVector
 {-# INLINE coeffList #-}
+
+-- | Select certain coefficients of the first series, based on indices from
+-- the second series, returning the selection as a series.  Elements of the
+-- second series that are not positive integers or not less than the precision
+-- are ignored.  Zero is accepted only if it is the first element.
+coeffSeries :: KnownNat n => Series n -> Series n -> Series n
+coeffSeries (Series v) c = series (Proxy :: Proxy n) $ map (v !) cs
+  where
+    terms = [(fromInteger . numerator) x | x <- rationalPrefix c, x >= 0,
+              denominator x == 1, numerator x < fromIntegral (precision c)]
+    cs = if null terms then [] else head terms : filter (/= 0) (tail terms)
 
 -- | The first nonzero coefficient when read from smaller to larger
 -- powers of x. If no such coefficient exists then return 0.
