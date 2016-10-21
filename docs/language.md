@@ -18,7 +18,7 @@ Operation | Meaning
 `f - g`   | difference of *f* and *g*
 `f ^ g`   | *f* to the power *g*
 `f @ g`   | *f* composed with *g* (can also be written *f(g)* when *f* is a name)
-`f ? g`   | coefficients of *f* selected by positive integer coefficients of *g*
+`f ? g`   | coefficients of *f* selected by nonnegative integer coefficients of *g*
 `f * g`   | product of *f* and *g*
 `f / g`   | quotient of *f* and *g*
 `f .* g`  | coefficient-wise/Hadamard product of *f* and *g*

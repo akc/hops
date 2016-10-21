@@ -29,15 +29,16 @@ module HOPS.GF.Series
     , precision
     , coeffVector
     , coeffList
-    , coeffSeries
     , leadingCoeff
     , rationalPrefix
+    , intPrefix
     , eval
     -- * Operations
     , (.*)
     , (./)
     , (!^!)
     , (^!)
+    , (?)
     , o
     , blackDiamond
     , derivative
@@ -125,17 +126,6 @@ coeffList :: Series n -> [Rat]
 coeffList = V.toList . coeffVector
 {-# INLINE coeffList #-}
 
--- | Select certain coefficients of the first series, based on indices from
--- the second series, returning the selection as a series.  Elements of the
--- second series that are not positive integers or not less than the precision
--- are ignored.  Zero is accepted only if it is the first element.
-coeffSeries :: KnownNat n => Series n -> Series n -> Series n
-coeffSeries (Series v) c = series (Proxy :: Proxy n) $ map (v !) cs
-  where
-    terms = [(fromInteger . numerator) x | x <- rationalPrefix c, x >= 0,
-              denominator x == 1, numerator x < fromIntegral (precision c)]
-    cs = if null terms then [] else head terms : filter (/= 0) (tail terms)
-
 -- | The first nonzero coefficient when read from smaller to larger
 -- powers of x. If no such coefficient exists then return 0.
 leadingCoeff :: Series n -> Rat
@@ -150,6 +140,11 @@ leadingCoeff f =
 rationalPrefix :: Series n -> [Rational]
 rationalPrefix = mapMaybe maybeRational . takeWhile isRational . coeffList
 {-# INLINE rationalPrefix #-}
+
+-- | The longest initial segment of coefficients that are `Int`s
+intPrefix :: Series n -> [Int]
+intPrefix = mapMaybe maybeInt . takeWhile isInt . coeffList
+{-# INLINE intPrefix #-}
 
 -- | If @f :: Series n@, then @precision f = n@.
 precision :: Series n -> Int
@@ -304,6 +299,21 @@ comp u v =
       v' = V.tail v
       c  = V.head u
       w  = V.init v
+
+
+dropTrailing :: Eq a => a -> [a] -> [a]
+dropTrailing x = reverse . dropWhile (== x) . reverse
+
+infixr 7 ?
+
+-- | Select certain coefficients of the first series, based on indices from
+-- the second series, returning the selection as a series.  Elements of the
+-- second series that are not nonnegative integers or not less than the precision
+-- are ignored; trailing zeros are alse ignored.
+(?) :: KnownNat n => Series n -> Series n -> Series n
+(?) (Series v) c =
+    series (Proxy :: Proxy n) $ map (v !) $
+        dropTrailing 0 [ x | x <- intPrefix c, x >= 0, x < precision c ]
 
 infixr 7 `o`
 

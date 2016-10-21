@@ -379,7 +379,7 @@ evalFun2 PtMul = (.*)
 evalFun2 PtDiv = (./)
 evalFun2 Pow = (**)
 evalFun2 Comp = o
-evalFun2 Coef = coeffSeries
+evalFun2 Coef = (?)
 
 evalCore :: KnownNat n => Core -> State (Env n) (Series n)
 evalCore (App1 f e) = evalFun1 f <$> get <*> evalCore e
