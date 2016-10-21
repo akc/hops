@@ -300,7 +300,6 @@ comp u v =
       c  = V.head u
       w  = V.init v
 
-
 dropTrailing :: Eq a => a -> [a] -> [a]
 dropTrailing x = reverse . dropWhile (== x) . reverse
 
@@ -309,8 +308,9 @@ infixr 7 ?
 -- | Select certain coefficients of the first series, based on indices from
 -- the second series, returning the selection as a series.  Elements of the
 -- second series that are not nonnegative integers or not less than the precision
--- are ignored; trailing zeros are alse ignored.
+-- are ignored; trailing zeros are also ignored.
 (?) :: KnownNat n => Series n -> Series n -> Series n
+(?) (Series v) c | c == 0 = series (Proxy :: Proxy n) [v ! 0]
 (?) (Series v) c =
     series (Proxy :: Proxy n) $ map (v !) $
         dropTrailing 0 [ x | x <- intPrefix c, x >= 0, x < precision c ]
