@@ -31,12 +31,14 @@ module HOPS.GF.Series
     , coeffList
     , leadingCoeff
     , rationalPrefix
+    , intPrefix
     , eval
     -- * Operations
     , (.*)
     , (./)
     , (!^!)
     , (^!)
+    , (?)
     , o
     , blackDiamond
     , derivative
@@ -138,6 +140,11 @@ leadingCoeff f =
 rationalPrefix :: Series n -> [Rational]
 rationalPrefix = mapMaybe maybeRational . takeWhile isRational . coeffList
 {-# INLINE rationalPrefix #-}
+
+-- | The longest initial segment of coefficients that are `Int`s
+intPrefix :: Series n -> [Int]
+intPrefix = mapMaybe maybeInt . takeWhile isInt . coeffList
+{-# INLINE intPrefix #-}
 
 -- | If @f :: Series n@, then @precision f = n@.
 precision :: Series n -> Int
@@ -292,6 +299,21 @@ comp u v =
       v' = V.tail v
       c  = V.head u
       w  = V.init v
+
+dropTrailing :: Eq a => a -> [a] -> [a]
+dropTrailing x = reverse . dropWhile (== x) . reverse
+
+infixr 7 ?
+
+-- | Select certain coefficients of the first series, based on indices from
+-- the second series, returning the selection as a series.  Elements of the
+-- second series that are not nonnegative integers or not less than the precision
+-- are ignored; trailing zeros are also ignored.
+(?) :: KnownNat n => Series n -> Series n -> Series n
+(?) (Series v) c | c == 0 = series (Proxy :: Proxy n) [v ! 0]
+(?) (Series v) c =
+    series (Proxy :: Proxy n) $ map (v !) $
+        dropTrailing 0 [ x | x <- intPrefix c, x >= 0, x < precision c ]
 
 infixr 7 `o`
 

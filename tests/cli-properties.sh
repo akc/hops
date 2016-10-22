@@ -119,3 +119,19 @@ check "$hops --forall --prec=20 'stdin' | head -5" \
 # Polynomial notation
 check "$hops --prec=10 '1/(1-[0,1,1])'" \
 '{"hops":"1/(1-[0,1,1])","seq":[1,1,2,3,5,8,13,21,34,55]}'
+
+# Extracting coeffs
+check "$hops --prec=10 '{n+1}?0'" \
+'{"hops":"{n+1}?0","seq":[1]}'
+
+check "$hops --prec=10 '{n+1}?[1,5]'" \
+'{"hops":"{n+1}?[1,5]","seq":[2,6]}'
+
+check "$hops --prec=10 '{n+1}?17'" \
+'{"hops":"{n+1}?17","seq":[]}'
+
+check "$hops --prec=10 '{n+1}?(1/(1-2*x))'" \
+'{"hops":"{n+1}?(1/(1-2*x))","seq":[2,3,5,9]}'
+
+check "$hops --prec=10 '{n+1}?(1/x)'" \
+'{"hops":"{n+1}?(1/x)","seq":[]}'

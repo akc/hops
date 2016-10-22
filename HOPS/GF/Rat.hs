@@ -12,6 +12,7 @@ module HOPS.GF.Rat
     , maybeInteger
     , maybeInt
     , isRational
+    , isInt
     , factorial
     , binomial
     , choose
@@ -31,11 +32,6 @@ data Rat
     -- | Division by zero.
     | DZ
       deriving (Eq, Ord, Show, Read)
-
--- | `maybeRational` of @Val x@ is @Just x@, otherwise it is `Nothing`.
-maybeRational :: Rat -> Maybe Rational
-maybeRational (Val x) = Just x
-maybeRational _       = Nothing
 
 -- | Addition and multiplication tables:
 --
@@ -150,25 +146,37 @@ lift _ Indet = Indet
 lift _ DZ = DZ
 {-# INLINE lift #-}
 
--- | Is the given element a known rational?
+-- | Is the given element a rational?
 isRational :: Rat -> Bool
 isRational (Val _) = True
 isRational _       = False
 {-# INLINE isRational #-}
 
+-- | Is the given element an Int?
+isInt :: Rat -> Bool
+isInt (Val r) | denominator r == 1 =
+    let i = numerator r
+        minInt = toInteger (minBound :: Int)
+        maxInt = toInteger (maxBound :: Int)
+    in minInt <= i && i <= maxInt
+isInt _  = False
+
+-- | `maybeRational` of @Val x@ is @Just x@, otherwise it is `Nothing`.
+maybeRational :: Rat -> Maybe Rational
+maybeRational (Val x) = Just x
+maybeRational _       = Nothing
+
+-- | `maybeInteger` of @Val x@ is `Just` the numerator of @x@ if the
+-- denominator of @x@ is 1, otherwise it is `Nothing`.
 maybeInteger :: Rat -> Maybe Integer
 maybeInteger (Val r) | denominator r == 1 = Just (numerator r)
 maybeInteger _ = Nothing
 {-# INLINE maybeInteger #-}
 
+-- | Like `maybeInteger` but return `Nothing` when the integer is out of
+-- range for an `Int`.
 maybeInt :: Rat -> Maybe Int
-maybeInt (Val r) | denominator r == 1 =
-    let i = numerator r
-        minInt = toInteger (minBound :: Int)
-        maxInt = toInteger (maxBound :: Int)
-    in if minInt <= i && i <= maxInt
-       then Just (fromInteger i)
-       else Nothing
+maybeInt x@(Val r) | isInt x = Just (fromInteger (numerator r))
 maybeInt _ = Nothing
 {-# INLINE maybeInt #-}
 

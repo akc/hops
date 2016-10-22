@@ -820,6 +820,13 @@ prop_Determinant =
     forAll (resize 6 arbitrary) $ \m ->
         det m == determinant (m :: Matrix Rational)
 
+prop_Coefficients = coeffs f == r && coeffs g == r && coeffs h == [8]
+  where
+    r = [1,3,8,21,55,144,377,987,2584,6765]
+    f = runPrg empty20 "(1/(1-[0,1,1]))?[2*n+1]"
+    g = runPrg empty20 "(1/(1-[0,1,1]))?{2*n+1}"
+    h = runPrg empty20 "(1/(1-[0,1,1]))?5"
+
 tests =
     [ ("Prg-monoid/id-1",        check 100 prop_Prg_id1)
     , ("Prg-monoid/id-2",        check 100 prop_Prg_id2)
@@ -1003,6 +1010,7 @@ tests =
     , ("A088789",                check   1 prop_A088789)
     , ("A049140",                check   1 prop_A049140)
     , ("Determinant",            check 100 prop_Determinant)
+    , ("Coefficients",           check   1 prop_Coefficients)
     ]
 
 main =
