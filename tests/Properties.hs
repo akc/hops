@@ -231,6 +231,7 @@ prop_BOUS2_u     = areEq "BOUS2     {5,4,3,2,1}"       "{5,9,16,33,84}"        [
 prop_BOUS2i_u    = areEq "BOUS2i    {5,4,3,2,1}"       "{5,-1,0,-5,4}"         []
 prop_CATALAN_u   = areEq "CATALAN   {1,1,1,1,1}"       "{1,1,2,5,14}"          []
 prop_CATALANi_u  = areEq "CATALANi  {1,1,2,5,14}"      "{1,1,1,1,1}"           []
+prop_CYC_u       = areEq "CYC       {0,1,1,1,1,1}"     "{0,1,2,3,5,7}"         []
 prop_DIFF_u      = areEq "DIFF      {9,4,1,0,1,4,9}"   "{-5,-3,-1,1,3,5}"      []
 prop_INVERT_u    = areEq "INVERT    {1,2,3,4,5}"       "{1,3,8,21,55}"         []
 prop_INVERTi_u   = areEq "INVERTi   {1,3,8,21,55}"     "{1,2,3,4,5}"           []
@@ -245,12 +246,15 @@ prop_LOG_u       = areEq "LOG       {1,3,10,41}"       "{1,2,3,4}"             [
 prop_CONV_u      = areEq "CONV      {1,2,3,4,5}"       "{1,4,10,20,35}"        []
 prop_CONVi_u     = areEq "CONVi     {1,4,10,20,35}"    "{1,2,3,4,5}"           []
 prop_EXPCONV_u   = areEq "EXPCONV   {1,4,9,16,25}"     "{1,8,50,248,1048}"     []
+prop_MSET_u      = areEq "MSET      {0,1,0,1}" "[1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7]" []
 prop_NEGATE_u    = areEq "NEGATE    {5,4,3,2,1}"       "{5,-4,-3,-2,-1}"       []
 prop_PRODS_u     = areEq "PRODS     {1,2,3,4,5}"       "{1,2,6,24,120}"        []
+prop_PSET_u      = areEq "PSET      {1,2,3}" "[1,2,4,6,6,6,4,2,1,0,0,0,0,0,0,0,0,0,0,0]" []
 prop_PSUM_u      = areEq "PSUM      {1,2,3,4,5}"       "{1,3,6,10,15}"         []
 prop_PSUMSIGN_u  = areEq "PSUMSIGN  {1,2,3,4,5}"       "{1,1,2,2,3}"           []
 prop_REVERT_u    = areEq "REVERT    {1,2,3,4,5}"       "{1,-2,5,-14,42}"       []
 prop_REVEGF_u    = areEq "REVEGF    {1,2,3,4,5}"       "{1,-4,39,-616,13505}"  []
+prop_SEQ_u       = areEq "SEQ       {0,1,1,0,0,0}"     "{1,1,2,3,5,8}"
 prop_STIRLING_u  = areEq "STIRLING  {1,2,3,4,5}"       "{1,3,10,37,151}"       []
 prop_STIRLINGi_u = areEq "STIRLINGi {1,3,10,37,151}"   "{1,2,3,4,5}"           []
 prop_TRISECT0_u  = areEq "TRISECT0  {0,1,2,3,4,5,6}"   "{0,3,6}"               []
@@ -258,10 +262,11 @@ prop_TRISECT1_u  = areEq "TRISECT1  {0,1,2,3,4,5,6}"   "{1,4}"                 [
 prop_TRISECT2_u  = areEq "TRISECT2  {0,1,2,3,4,5,6}"   "{2,5}"                 []
 prop_POINT_u     = areEq "POINT     {1,1,4,27,256}"    "{0,1,8,81,1024}"       []
 prop_WEIGHT_u    = areEq "WEIGHT    {1,1,1,1,1,1,1,1}" "{1,1,2,2,3,4,5,6}"     []
-prop_PARTITION_u = areEq "PARTITION {1,3,5,13}"        "{1,1,2,2}"             []
+prop_PARTITION_u = areEq "PARTITION {1,3,5}" "[1,1,1,2,2,3,4,4,5,6,7,8,9,10,11,13,14,15,17,18]" []
 prop_HANKEL_u    = areEq "HANKEL    {6,5,4,3,2,1}"     "{6,-1,0,0}"            []
 prop_lHANKEL_u   = areEq "lHANKEL   {1,4,9,16,25,36}"  "{7,17,31,49}"          []
-
+prop_I_u         = areEq "I         {2,4}"             "[0,0,1,0,1]"
+prop_IC_u        = areEq "IC        {2,4}"   "[1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]" []
 prop_LEFT                  = areEq "LEFT(f)" "D(f./{n!}) .* {n!}"
 prop_RIGHT              cs = not (null cs) ==> areEq "RIGHT(f)" "1 + x*f" cs
 prop_M2i_M2                = areEq "M2i(M2(f))" "f"
@@ -803,6 +808,15 @@ prop_A049140 = take (length a049140) (coeffs f) == a049140
   where
     f = runPrg empty20 "REVERT(1 - x - x^3)"
 
+a008965 =
+    [ 1, 2, 3, 5, 7, 13, 19, 35, 59, 107, 187, 351, 631, 1181, 2191, 4115
+    , 7711, 14601, 27595
+    ]
+
+prop_A008965 = take (length a008965) (tail (coeffs f)) == a008965
+  where
+    f = runPrg empty20 "CYC(I({n+1}))"
+
 -- Naive cofactor implementation of determinant
 determinant :: Num a => Vector (Vector a) -> a
 determinant m =
@@ -847,6 +861,7 @@ tests =
     , ("unit/BISECT1",           check   1 prop_BISECT1_u)
     , ("unit/CATALAN",           check   1 prop_CATALAN_u)
     , ("unit/CATALANi",          check   1 prop_CATALANi_u)
+    , ("unit/CYC",               check   1 prop_CYC_u)
     , ("unit/DIFF",              check   1 prop_DIFF_u)
     , ("unit/INVERT",            check   1 prop_INVERT_u)
     , ("unit/INVERTi",           check   1 prop_INVERTi_u)
@@ -866,7 +881,9 @@ tests =
     , ("unit/CONV",              check   1 prop_CONV_u)
     , ("unit/CONVi",             check   1 prop_CONVi_u)
     , ("unit/EXPCONV",           check   1 prop_EXPCONV_u)
+    , ("unit/MSET",              check   1 prop_MSET_u)
     , ("unit/NEGATE",            check   1 prop_NEGATE_u)
+    , ("unit/PSET",              check   1 prop_PSET_u)
     , ("unit/PRODS",             check   1 prop_PRODS_u)
     , ("unit/PSUM",              check   1 prop_PSUM_u)
     , ("unit/PSUMSIGN",          check   1 prop_PSUMSIGN_u)
@@ -882,6 +899,8 @@ tests =
     , ("unit/PARTITION",         check   1 prop_PARTITION_u)
     , ("unit/HANKEL",            check   1 prop_HANKEL_u)
     , ("unit/lHANKEL",           check   1 prop_lHANKEL_u)
+    , ("unit/I",                 check   1 prop_I_u)
+    , ("unit/IC",                check   1 prop_IC_u)
     , ("LEFT",                   check 100 prop_LEFT)
     , ("RIGHT",                  check 100 prop_RIGHT)
     , ("M2i.M2=id",              check 100 prop_M2i_M2)
@@ -1009,6 +1028,7 @@ tests =
     , ("A066397",                check   1 prop_A066397)
     , ("A088789",                check   1 prop_A088789)
     , ("A049140",                check   1 prop_A049140)
+    , ("A008965",                check   1 prop_A008965)
     , ("Determinant",            check 100 prop_Determinant)
     , ("Coefficients",           check   1 prop_Coefficients)
     ]

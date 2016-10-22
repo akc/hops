@@ -77,6 +77,7 @@ Transform      | Meaning
 `CATALANi(f)`  | `f@(x*(1-x))`
 `CONV(f)`      | `f^2`
 `CONVi(f)`     | `sqrt(f)`
+`CYC(f)`       | `sum[(phi(k)/k)*log(1/(1-f(x^k)))], k>0`; phi = totient function
 `DIFF(f)`      | `LEFT(f)-f`
 `EULER(f)`     | [Euler transform](http://mathworld.wolfram.com/EulerTransform.html)
 `EULERi(f)`    | inverse [Euler transform](http://mathworld.wolfram.com/EulerTransform.html)
@@ -84,6 +85,8 @@ Transform      | Meaning
 `EXP(f)`       | `g={1/n!}@(laplacei(x*f));laplace(g-1)/x`
 `HANKEL(f)`    | [Hankel transform](https://cs.uwaterloo.ca/journals/JIS/VOL4/LAYMAN/hankel.html)
 `lHANKEL(f)`   | `g=f.*f-LEFT(f).*RIGHT(f);LEFT(g)`
+`I(f)`         | if `f={a_k}` then `I(f)={b_i}` where `b_(a_k)=1`; else `b_i=0`
+`IC(f)`        | "Complement" of `I(f)`: substituting 0 for 1 and 1 for 0.
 `INVERT(f)`    | `LEFT(1/(1-x*f))`
 `INVERTi(f)`   | `LEFT(-1/(1+x*f))`
 `LAH(f)`       | `g=(laplacei(f))@(x/(1-x));laplace(g)`
@@ -94,10 +97,12 @@ Transform      | Meaning
 `M2i(f)`       | `(f + f(0))/2`
 `MOBIUS(f)`    | See [[1](https://oeis.org/transforms.txt)]
 `MOBIUSi(f)`   | See [[1](https://oeis.org/transforms.txt)]
+`MSET(f)`      | if `f={a_k}` then `MSET(f)=product[(1-x^k)^(-a_k)], k>0`
 `NEGATE(f)`    | `(1-x/(1-x)).*f`
-`PARTITION(f)` | See [[1](https://oeis.org/transforms.txt)]
+`PARTITION(f)` | See [[1](https://oeis.org/transforms.txt)] (Includes constant term)
 `POINT(f)`     | `laplace(x*D(laplacei(f)))`
 `PRODS(f)`     | if `f = {a0,a1,a2,...}` then `PRODS(f)={a0,a0*a1,a0*a1*a2,...}`
+`PSET(f)`      | if `f={a_k}` then `PSET(f)=product[(1+x^k)^a_k], k>0`
 `PSUM(f)`      | `f/(1-x)`
 `PSUMSIGN(f)`  | `f/(1+x)`
 `REVERT(f)`    | `LEFT(revert(x*f))`
