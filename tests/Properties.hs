@@ -246,10 +246,10 @@ prop_LOG_u       = areEq "LOG       {1,3,10,41}"       "{1,2,3,4}"             [
 prop_CONV_u      = areEq "CONV      {1,2,3,4,5}"       "{1,4,10,20,35}"        []
 prop_CONVi_u     = areEq "CONVi     {1,4,10,20,35}"    "{1,2,3,4,5}"           []
 prop_EXPCONV_u   = areEq "EXPCONV   {1,4,9,16,25}"     "{1,8,50,248,1048}"     []
-prop_MSET_u      = areEq "MSET      {0,1,0,1}" "[1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6,7,7]" []
+prop_MSET_u      = areEq "MSET      {0,1,0,1}"         "{1,1,1,2}"             []
 prop_NEGATE_u    = areEq "NEGATE    {5,4,3,2,1}"       "{5,-4,-3,-2,-1}"       []
 prop_PRODS_u     = areEq "PRODS     {1,2,3,4,5}"       "{1,2,6,24,120}"        []
-prop_PSET_u      = areEq "PSET      {1,2,3}" "[1,2,4,6,6,6,4,2,1,0,0,0,0,0,0,0,0,0,0,0]" []
+prop_PSET_u      = areEq "PSET      {0,2,1}"           "{1,2,2}"               []
 prop_PSUM_u      = areEq "PSUM      {1,2,3,4,5}"       "{1,3,6,10,15}"         []
 prop_PSUMSIGN_u  = areEq "PSUMSIGN  {1,2,3,4,5}"       "{1,1,2,2,3}"           []
 prop_REVERT_u    = areEq "REVERT    {1,2,3,4,5}"       "{1,-2,5,-14,42}"       []
@@ -317,6 +317,7 @@ prop_PSUMSIGN  = areEq "PSUMSIGN(f)"  "f/(1+x)"
 prop_STIRLING  = areEq "STIRLING(f)"  "((x*f ./ {n!})@({0,1/n!}) .* {n!})/x"
 prop_STIRLINGi = areEq "STIRLINGi(f)" "((x*f ./ {n!})@({0,(-1)^(n+1)/n}) .* {n!})/x"
 prop_POINT     = areEq "POINT(f)"     "x*D(f./{n!}) .* {n!}"
+prop_SEQ       = areEq "SEQ(x*f)"     "I({2*n+1})@(x*f) + IC({2*n+1})@(x*f)"
 
 prop_Distrib1 :: Series 20 -> Series 20 -> Series 20 -> Bool
 prop_Distrib1 f g h = f*(g+h) == f*g + f*h
@@ -1031,6 +1032,7 @@ tests =
     , ("A008965",                check   1 prop_A008965)
     , ("Determinant",            check 100 prop_Determinant)
     , ("Coefficients",           check   1 prop_Coefficients)
+    , ("SEQ identity",           check  50 prop_SEQ)
     ]
 
 main =

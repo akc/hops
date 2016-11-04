@@ -155,16 +155,18 @@ weight f =
     gs = zipWith (\n c -> (1 + xpow n) ^! c) [1::Int ..] cs
 
 multiset :: KnownNat n => Transform n
-multiset f = if null cs then xpow 0 else 1 / product gs
+multiset f = mask + if null cs then xpow 0 else 1 / product gs
   where
     cs = intPrefix f
     gs = zipWith (\k c -> (1 - xpow k) ^ c) [1::Int ..] (tail cs)
+    mask = series (Proxy :: Proxy n) $ replicate (length cs) 0
 
 powerset :: KnownNat n => Transform n
-powerset f =if null cs then xpow 0 else product gs
+powerset f = mask + if null cs then xpow 0 else product gs
   where
     cs = intPrefix f
     gs = zipWith (\k c -> (1 + xpow k) ^ c) [1::Int ..] (tail cs)
+    mask = series (Proxy :: Proxy n) $ replicate (length cs) 0
 
 ccycle :: KnownNat n => Transform n
 ccycle f = sum $ map g [1::Int .. precision f - 1]
