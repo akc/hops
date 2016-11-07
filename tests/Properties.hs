@@ -317,7 +317,6 @@ prop_PSUMSIGN  = areEq "PSUMSIGN(f)"  "f/(1+x)"
 prop_STIRLING  = areEq "STIRLING(f)"  "((x*f ./ {n!})@({0,1/n!}) .* {n!})/x"
 prop_STIRLINGi = areEq "STIRLINGi(f)" "((x*f ./ {n!})@({0,(-1)^(n+1)/n}) .* {n!})/x"
 prop_POINT     = areEq "POINT(f)"     "x*D(f./{n!}) .* {n!}"
-prop_SEQ       = areEq "SEQ(x*f)"     "I({2*n+1})@(x*f) + IC({2*n+1})@(x*f)"
 
 prop_Distrib1 :: Series 20 -> Series 20 -> Series 20 -> Bool
 prop_Distrib1 f g h = f*(g+h) == f*g + f*h
@@ -842,6 +841,39 @@ prop_Coefficients = coeffs f == r && coeffs g == r && coeffs h == [8]
     g = runPrg empty20 "(1/(1-[0,1,1]))?{2*n+1}"
     h = runPrg empty20 "(1/(1-[0,1,1]))?5"
 
+prop_SEQ f g = tSEQ xf == tI g `o` xf + tIC g `o` xf
+  where
+    xf = f * xpow 1 :: Series 20
+    Just tI = lookupTransform "I"
+    Just tIC = lookupTransform "IC"
+    Just tSEQ = lookupTransform "SEQ"
+
+mset :: KnownNat n => Transform n
+mset f
+  | constant f /= 0 = infty
+  | otherwise =
+      let term k = (f `o` xpow k) / fromIntegral k
+      in exp $ sum $ term <$> [1 .. precision f - 1]
+
+prop_MSET cs =
+  forAll (frequency [(19, return 0),(1, arbitrary)]) $ \c ->
+      let Just tMSET = lookupTransform "MSET"
+          f = series (Proxy :: Proxy 12) (c:cs)
+      in tMSET f == mset f
+
+pset :: KnownNat n => Transform n
+pset f
+  | constant f /= 0 = infty
+  | otherwise =
+      let term k = (-1)^(k+1) * (f `o` xpow k) / fromIntegral k
+      in exp $ sum $ term <$> [1 .. precision f - 1]
+
+prop_PSET cs =
+  forAll (frequency [(19, return 0),(1, arbitrary)]) $ \c ->
+      let Just tPSET = lookupTransform "PSET"
+          f = series (Proxy :: Proxy 12) (c:cs)
+      in tPSET f == pset f
+
 tests =
     [ ("Prg-monoid/id-1",        check 100 prop_Prg_id1)
     , ("Prg-monoid/id-2",        check 100 prop_Prg_id2)
@@ -1033,6 +1065,8 @@ tests =
     , ("Determinant",            check 100 prop_Determinant)
     , ("Coefficients",           check   1 prop_Coefficients)
     , ("SEQ identity",           check  50 prop_SEQ)
+    , ("MSET identity",          check  50 prop_MSET)
+    , ("PSET identity",          check  50 prop_PSET)
     ]
 
 main =

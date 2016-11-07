@@ -154,19 +154,29 @@ weight f =
     cs = map Val (rationalPrefix f)
     gs = zipWith (\n c -> (1 + xpow n) ^! c) [1::Int ..] cs
 
-multiset :: KnownNat n => Transform n
-multiset f = mask + if null cs then xpow 0 else 1 / product gs
+mask :: KnownNat n => Transform n
+mask = series (Proxy :: Proxy n) . tail . scanl h 0 . coeffList
   where
-    cs = intPrefix f
-    gs = zipWith (\k c -> (1 - xpow k) ^ c) [1::Int ..] (tail cs)
-    mask = series (Proxy :: Proxy n) $ replicate (length cs) 0
+    h DZ _      = DZ
+    h x (Val _) = x
+    h _ Indet   = Indet
+    h _ DZ      = DZ
+
+multiset :: KnownNat n => Transform n
+multiset f
+    | constant f /= 0 = infty
+    | otherwise       = mask f + 1 / product gs
+  where
+    cs = rationalPrefix f
+    gs = zipWith (\k c -> (1 - xpow k) ^! Val c) [1::Int ..] (tail cs)
 
 powerset :: KnownNat n => Transform n
-powerset f = mask + if null cs then xpow 0 else product gs
+powerset f
+    | constant f /= 0 = infty
+    | otherwise       = mask f + product gs
   where
-    cs = intPrefix f
-    gs = zipWith (\k c -> (1 + xpow k) ^ c) [1::Int ..] (tail cs)
-    mask = series (Proxy :: Proxy n) $ replicate (length cs) 0
+    cs = rationalPrefix f
+    gs = zipWith (\k c -> (1 + xpow k) ^! Val c) [1::Int ..] (tail cs)
 
 ccycle :: KnownNat n => Transform n
 ccycle f = sum $ map g [1::Int .. precision f - 1]
@@ -241,7 +251,7 @@ associations =
     , ("lHANKEL",    \f -> let g = f .* f - shiftLeft f .* shiftRight f in shiftLeft g)
     , ("HANKEL",     lift hankel)
     , ("I",          rseq)
-    , ("IC",         rseqComp)
+    , ("IC",         rseq')
     , ("INVERTi",    \f -> shiftLeft $ -1/(1+x*f))
     , ("INVERT",     \f -> shiftLeft $ 1/(1-x*f))
     , ("LAHi",       \f -> laplace(laplacei f `o` (x/(1+x))))
