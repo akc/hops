@@ -400,9 +400,6 @@ evalCorePrgNext prog (env, f) =
     foldl' (\(_, ev) c -> runState (evalCore c) ev) (env, f) prog
 {-# INLINE evalCorePrgNext #-}
 
-nil :: KnownNat n => Series n
-nil = series (Proxy :: Proxy n) []
-
 -- | Evaluate a program in a given environment.
 evalCorePrg :: KnownNat n => Env n -> CorePrg -> Series n
 evalCorePrg env prog = fst (trail !! precision f0)

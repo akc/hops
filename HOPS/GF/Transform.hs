@@ -16,7 +16,6 @@ module HOPS.GF.Transform
 
 import GHC.TypeLits
 import Data.Proxy
-import Data.List hiding (partition, uncons)
 import Data.Ratio
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
@@ -155,19 +154,39 @@ weight f =
     cs = map Val (rationalPrefix f)
     gs = zipWith (\n c -> (1 + xpow n) ^! c) [1::Int ..] cs
 
-increasing :: Ord a => [a] -> Bool
-increasing cs = and (zipWith (<=) cs (drop 1 cs))
-
-partition :: KnownNat n => Transform n
-partition f =
-    if null cs || any (<= 0) cs || not (increasing cs)
-        then series (Proxy :: Proxy n) []
-        else lift h (shiftLeft (1/g))
+mask :: KnownNat n => Transform n
+mask = series (Proxy :: Proxy n) . tail . scanl h 0 . coeffList
   where
-    h  = V.imap $ \i c -> if i < length cs then c else Indet
-    x  = xpow 1
-    g  = product $ map (\c -> 1 - x ^! c) cs
-    cs = nub $ map Val (rationalPrefix f)
+    h DZ _      = DZ
+    h x (Val _) = x
+    h _ Indet   = Indet
+    h _ DZ      = DZ
+
+multiset :: KnownNat n => Transform n
+multiset f
+    | constant f /= 0 = infty
+    | otherwise       = mask f + 1 / product gs
+  where
+    cs = rationalPrefix f
+    gs = zipWith (\k c -> (1 - xpow k) ^! Val c) [1::Int ..] (tail cs)
+
+powerset :: KnownNat n => Transform n
+powerset f
+    | constant f /= 0 = infty
+    | otherwise       = mask f + product gs
+  where
+    cs = rationalPrefix f
+    gs = zipWith (\k c -> (1 + xpow k) ^! Val c) [1::Int ..] (tail cs)
+
+ccycle :: KnownNat n => Transform n
+ccycle f = sum $ map g [1::Int .. precision f - 1]
+  where
+    g k = fromRational (fromIntegral (totient k) % fromIntegral k) *
+            log ( 1/(1-f `o` xpow k))
+
+totient :: Int -> Int
+totient 1 = 1
+totient a = length $ filter (\k -> gcd a k == 1) [1..a-1]
 
 -- T019: a[j+2]-2*a[j+1]+a[j] where a[j] = j-th term of the sequence
 t019 :: KnownNat n => Transform n
@@ -222,6 +241,7 @@ associations =
     , ("CATALANi",   \f -> f `o` (x*(1-x)))
     , ("CONVi",      sqrt)
     , ("CONV",       \f -> f*f)
+    , ("CYC",        ccycle)
     , ("DIFF",       lift finDiff)
     , ("D",          derivative)
     , ("EULERi",     euleri)
@@ -230,6 +250,8 @@ associations =
     , ("EXP",        \f -> shiftLeft $ laplace (exp (laplacei (x*f))))
     , ("lHANKEL",    \f -> let g = f .* f - shiftLeft f .* shiftRight f in shiftLeft g)
     , ("HANKEL",     lift hankel)
+    , ("I",          rseq)
+    , ("IC",         rseq')
     , ("INVERTi",    \f -> shiftLeft $ -1/(1+x*f))
     , ("INVERT",     \f -> shiftLeft $ 1/(1-x*f))
     , ("LAHi",       \f -> laplace(laplacei f `o` (x/(1+x))))
@@ -240,15 +262,18 @@ associations =
     , ("M2",         lift m2)
     , ("MOBIUSi",    lift mobiusi)
     , ("MOBIUS",     lift mobius)
+    , ("MSET",       multiset)
     , ("NEGATE",     \f -> (1 - x/(1-x)) .* f)
-    , ("PARTITION",  partition)
+    , ("PARTITION",  multiset . rseq)
     , ("POINT",      \f -> x*derivative f)
     , ("PRODS",      lift $ V.drop 1 . V.scanl (*) (Val (toRational (1::Int))))
+    , ("PSET",       powerset)
     , ("PSUMSIGN",   \f -> (f/(1+x)) .* spine f)
     , ("PSUM",       lift $ V.drop 1 . V.scanl (+) (Val (toRational (0::Int))))
     , ("REVERT",     \f -> shiftLeft $ revert (x*f))
     , ("REVEGF",     \f -> shiftLeft $ laplace $ revert ((x*f)./(1+x*laplace(1/(1-x)))))
     , ("RIGHT",      shiftRight)
+    , ("SEQ",        \f -> 1/(1 - f))
     , ("STIRLINGi",  \f -> shiftLeft $ laplace $ laplacei (x*f) `o` log (x+1))
     , ("STIRLING",   \f -> shiftLeft $ laplace $ laplacei (x*f) `o` (exp x - 1))
     , ("T019",       t019)
