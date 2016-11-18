@@ -57,6 +57,8 @@ data Expr2
 data Expr3
     = ELit Integer
     | EN
+    | EDZ
+    | EIndet
     | Expr0 Expr0
     deriving (Show, Eq)
 
@@ -100,6 +102,8 @@ instance Pretty Expr2 where
 instance Pretty Expr3 where
     pretty (ELit x)  = pretty x
     pretty EN = "n"
+    pretty EDZ = "DZ"
+    pretty EIndet = "Indet"
     pretty (Expr0 e) = paren (pretty e)
 
 indet :: Core
@@ -158,7 +162,9 @@ coreExpr2 (Expr3 e)    = coreExpr3 e
 
 coreExpr3 :: Expr3 -> Core
 coreExpr3 (ELit c)  = fromInteger c
-coreExpr3 EN = N
+coreExpr3 EN        = N
+coreExpr3 EDZ       = Lit DZ
+coreExpr3 EIndet    = Lit Indet
 coreExpr3 (Expr0 e) = coreExpr0 e
 
 --------------------------------------------------------------------------------
@@ -240,5 +246,7 @@ expr2
 expr3 :: Parser Expr3
 expr3
     = string "n" *> return EN
+   <|> const EDZ <$> string "DZ"
+   <|> const EIndet <$> string "Indet"
    <|> ELit <$> decimal
    <|> Expr0 <$> parens expr0 <?> "expr3"

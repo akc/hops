@@ -108,6 +108,8 @@ data Expr2
 
 data Expr3
     = EX
+    | EDZ
+    | EIndet
     | EA Int -- An A-number
     | ETag Int
     | EVar Name
@@ -137,7 +139,7 @@ data Core
     | A   {-# UNPACK #-} !Int
     | Tag {-# UNPACK #-} !Int
     | Var {-# UNPACK #-} !Name
-    | Lit !Integer
+    | Lit !Rat
     | Rats !R.Core
     | Let {-# UNPACK #-} !Name !Core
     deriving (Show)
@@ -191,6 +193,8 @@ instance Pretty Expr2 where
 
 instance Pretty Expr3 where
     pretty EX = "x"
+    pretty EDZ = "DZ"
+    pretty EIndet = "Indet"
     pretty (EA i) = B.cons 'A' (pad 6 i)
     pretty (ETag i) = "TAG" <> pad 6 i
     pretty (EVar s) = s
@@ -331,10 +335,12 @@ coreExpr2 (Expr3 e) = coreExpr3 e
 
 coreExpr3 :: Expr3 -> Core
 coreExpr3 EX = X
+coreExpr3 EDZ = Lit DZ
+coreExpr3 EIndet = Lit Indet
 coreExpr3 (EA i) = A i
 coreExpr3 (ETag i) = Tag i
 coreExpr3 (EVar s) = Var s
-coreExpr3 (ELit t) = Lit t
+coreExpr3 (ELit t) = Lit $ fromInteger t
 coreExpr3 (Tr s e) = App1 (Tr1 s) (coreExpr3 e)
 coreExpr3 (ERats r) = Rats (R.core r)
 coreExpr3 (Expr0 e) = coreExpr0 e
@@ -388,7 +394,7 @@ evalCore X = return $ polynomial (Proxy :: Proxy n) [0,1]
 evalCore (A i) = fromMaybe nil . lookupANum i <$> get
 evalCore (Tag _) = return nil
 evalCore (Var v) = fromMaybe nil . lookupVar v <$> get
-evalCore (Lit c) = return $ polynomial (Proxy :: Proxy n) [Val (toRational c)]
+evalCore (Lit c) = return $ polynomial (Proxy :: Proxy n) [c]
 evalCore (Rats r) = return $ R.evalCore r
 evalCore (Let v e) = do
     (f, env) <- runState (evalCore e) <$> get
@@ -450,6 +456,8 @@ expr2
 expr3 :: Parser Expr3
 expr3
      =  ELit     <$> decimal
+    <|> const EDZ <$> string "DZ"
+    <|> const EIndet <$> string "Indet"
     <|> EA       <$> aNumInt
     <|> ETag     <$> tag
     <|> Tr       <$> name <*> expr3

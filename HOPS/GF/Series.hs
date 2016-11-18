@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 
@@ -59,7 +60,9 @@ import Data.Ratio
 import Data.Maybe
 import Data.Vector (Vector, (!), (//))
 import qualified Data.Vector as V
+import qualified Data.ByteString.Char8 as B
 import HOPS.GF.Rat
+import HOPS.Pretty
 
 -- | A truncated power series is represented as a (dense) vector of
 -- coefficients. The precision (maximum number of coefficients) is
@@ -112,6 +115,9 @@ instance KnownNat n => Floating (Series n) where
     acosh f = c0 acosh f + integral (derivative f / sqrt (restrict f^(2::Int) - 1))
     atanh f = c0 atanh f + integral (derivative f / (1 - restrict f^(2::Int)))
     sqrt f = f ^! (1/2)
+
+instance Pretty (Series n) where
+    pretty f = B.concat ["{", B.intercalate "," (map pretty (coeffList f)), "}"]
 
 -- | The underlying vector of coefficients. E.g.
 --

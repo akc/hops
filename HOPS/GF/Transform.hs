@@ -31,9 +31,6 @@ type Transform n = Series n -> Series n
 facSeries :: KnownNat n => Series n
 facSeries = series (Proxy :: Proxy n) $ scanl (*) 1 (map fromIntegral [1::Int ..])
 
-spine :: Transform n
-spine (Series u) = Series $ V.map (const (Val 1)) u
-
 lift :: (Vector Rat -> Vector Rat) -> Series n -> Series n
 lift f (Series cs) = Series (f cs)
 
@@ -81,18 +78,6 @@ shiftRight :: Transform n
 shiftRight f@(Series u)
     | V.null u  = f
     | otherwise = Series $ V.cons 1 (V.init u)
-
-m2 :: Vector Rat -> Vector Rat
-m2 u =
-    case uncons u of
-      Nothing      -> V.empty
-      Just (c, u') -> V.cons c (V.map (*2) u')
-
-m2i :: Vector Rat -> Vector Rat
-m2i u =
-    case uncons u of
-      Nothing      -> V.empty
-      Just (c, u') -> V.cons c (V.map (/2) u')
 
 finDiff :: Vector Rat -> Vector Rat
 finDiff u =
@@ -225,8 +210,6 @@ laplacei f = f ./ facSeries
 associations :: KnownNat n => [(ByteString, Transform n)]
 associations =
     [ ("ABS",        \(Series v) -> Series (V.map abs v))
-    , ("AERATE1",    \f -> f `o` x^(2::Int))
-    , ("AERATE2",    \f -> f `o` x^(3::Int))
     , ("BARRY1",     \f -> 1 / (1 - x - x*x*f)) -- Named after Paul Barry
     , ("BARRY2",     \f -> 1 / (1 + x + x*x*f)) -- Named after Paul Barry
     , ("BINOMIALi",  \f -> laplace(exp (-x) * laplacei f))
@@ -237,41 +220,29 @@ associations =
     , ("BOUS2i",     bous2i)
     , ("BOUS2",      bous2)
     , ("BOUS",       \f -> bous2 (1 + x*f))
-    , ("CATALAN",    \f -> let cat = 2/(1+sqrt(1-4*x)) in f `o` (x*cat))
     , ("CATALANi",   \f -> f `o` (x*(1-x)))
-    , ("CONVi",      sqrt)
-    , ("CONV",       \f -> f*f)
+    , ("CATALAN",    \f -> let cat = 2/(1+sqrt(1-4*x)) in f `o` (x*cat))
     , ("CYC",        ccycle)
     , ("DIFF",       lift finDiff)
     , ("D",          derivative)
     , ("EULERi",     euleri)
     , ("EULER",      euler)
-    , ("EXPCONV",    \f -> let g = laplacei f in laplace(g * g))
     , ("EXP",        \f -> shiftLeft $ laplace (exp (laplacei (x*f))))
     , ("lHANKEL",    \f -> let g = f .* f - shiftLeft f .* shiftRight f in shiftLeft g)
     , ("HANKEL",     lift hankel)
     , ("I",          rseq)
     , ("IC",         rseq')
-    , ("INVERTi",    \f -> shiftLeft $ -1/(1+x*f))
-    , ("INVERT",     \f -> shiftLeft $ 1/(1-x*f))
     , ("LAHi",       \f -> laplace(laplacei f `o` (x/(1+x))))
     , ("LAH",        \f -> laplace(laplacei f `o` (x/(1-x))))
     , ("LEFT",       shiftLeft)
     , ("LOG",        \f -> shiftLeft $ laplace(log (1 + laplacei (x*f))))
-    , ("M2i",        lift m2i)
-    , ("M2",         lift m2)
     , ("MOBIUSi",    lift mobiusi)
     , ("MOBIUS",     lift mobius)
     , ("MSET",       multiset)
-    , ("NEGATE",     \f -> (1 - x/(1-x)) .* f)
     , ("PARTITION",  multiset . rseq)
     , ("POINT",      \f -> x*derivative f)
     , ("PRODS",      lift $ V.drop 1 . V.scanl (*) (Val (toRational (1::Int))))
     , ("PSET",       powerset)
-    , ("PSUMSIGN",   \f -> (f/(1+x)) .* spine f)
-    , ("PSUM",       lift $ V.drop 1 . V.scanl (+) (Val (toRational (0::Int))))
-    , ("REVERT",     \f -> shiftLeft $ revert (x*f))
-    , ("REVEGF",     \f -> shiftLeft $ laplace $ revert ((x*f)./(1+x*laplace(1/(1-x)))))
     , ("RIGHT",      shiftRight)
     , ("SEQ",        \f -> 1/(1 - f))
     , ("STIRLINGi",  \f -> shiftLeft $ laplace $ laplacei (x*f) `o` log (x+1))
