@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Copyright   : Anders Claesson 2016
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
@@ -6,12 +7,16 @@
 
 module HOPS.Pretty (Pretty (..)) where
 
-import Data.ByteString.Char8 (ByteString, pack)
+import Data.Ratio
+import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as B
 
 -- Pretty printing
 class Pretty a where
     pretty :: a -> ByteString
 
-
 instance Pretty Integer where
-    pretty = pack . show
+    pretty = B.pack . show
+
+instance (Pretty a, Integral a) => Pretty (Ratio a) where
+    pretty r = B.concat [pretty (numerator r), "/", pretty (denominator r)]

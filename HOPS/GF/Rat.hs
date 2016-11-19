@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Copyright   : Anders Claesson 2015
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
@@ -22,6 +23,8 @@ module HOPS.GF.Rat
 import Data.Ratio
 import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
+import qualified Data.ByteString.Char8 as B
+import HOPS.Pretty
 
 -- | Rationals extended with two elements:
 data Rat
@@ -139,6 +142,11 @@ instance Floating Rat where
         let p = toRational $ sqrt (fromInteger (numerator r) :: Double)
             q = toRational $ sqrt (fromInteger (denominator r) :: Double)
         in Val (p/q)
+
+instance Pretty Rat where
+    pretty DZ = "DZ"
+    pretty Indet = "Indet"
+    pretty (Val r) = B.concat [pretty (numerator r), "/", pretty (denominator r)]
 
 lift :: (Double -> Double) -> Rat -> Rat
 lift f (Val r) = Val $ toRational $ f (fromRational r)
