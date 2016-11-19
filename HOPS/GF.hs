@@ -19,6 +19,7 @@ module HOPS.GF
     , CorePrg
     , Pretty (..)
     , Name
+    , nameSupply
     , packPrg
     , vars
     , anums

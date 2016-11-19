@@ -38,7 +38,7 @@ import HOPS.GF.Transform
 -- Series of the form `x*f` (i.e. the constant term is 0).
 newtype Revertible n = Revertible (Series n) deriving Show
 
--- Series with nonzero constant term (units in Q[[x]]).
+-- Series with nonzero constant term (a unit in Q[[x]]).
 newtype Unit n = Unit (Series n) deriving Show
 
 -- Series with at least one nonzero rational coeff.
@@ -47,16 +47,19 @@ newtype NonNil n = NonNil (Series n) deriving Show
 -- Series with no DZ coeff.
 newtype NonDZ n = NonDZ (Series n) deriving Show
 
--- Series of whose terms are all rationals (i.e. not Indet or DZ).
+-- Series whose terms are all rationals (i.e. not Indet or DZ).
 newtype Full n = Full (Series n) deriving Show
 
--- Series of whose terms are all rationals and at least one is nonzero.
+-- Full series with at least one nonzero rational coeff.
 newtype Full1 n = Full1 (Series n) deriving Show
 
+-- Unit series that is also Full.
 newtype FullUnit n = FullUnit (Series n) deriving Show
 
+-- Revertible NonNil series
 newtype Revertible1 n = Revertible1 (Series n) deriving Show
 
+-- Full Revertible NonNil series.
 newtype FullRevertible1 n = FullRevertible1 (Series n) deriving Show
 
 alpha :: String
@@ -75,7 +78,7 @@ nameGen = B.pack <$> ((:) <$> first <*> rest)
     rest = listOf $ elements (alpha ++ digits ++ "_")
 
 smallRationalGen :: Gen Rational
-smallRationalGen = liftA2 (\x (Positive y) -> x%y) arbitrary arbitrary
+smallRationalGen = (\x (Positive y) -> x%y) <$> arbitrary <*> arbitrary
 
 valGen :: Gen Rat
 valGen = Val <$> frequency [(35, smallRationalGen), (5, arbitrary)]
@@ -290,7 +293,7 @@ evalEqn :: KnownNat n => [Series n] -> ByteString -> (Series n, Series n)
 evalEqn fs eqn = (exec lhs, exec rhs)
   where
     (lhs, rhs) = splitEqn eqn
-    exec = runPrg $ envFromList $ zip ["f","g","h"] fs
+    exec = runPrg $ envFromList (zip nameSupply fs)
 
 areEq :: KnownNat n => [Series n] -> ByteString -> Bool
 areEq fs = uncurry (==) . evalEqn fs
@@ -368,7 +371,6 @@ prop_IC_u        = areEq0 "IC {2,4} == [1,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
 prop_LEFT                     f  = areEq  [f::Series 20] "LEFT(f) == D(f./{n!}) .* {n!}"
 prop_RIGHT             (NonDZ f) = areEq  [f::Series 20] "RIGHT(f) == 1 + x*f"
-prop_M2i_M2                   f  = areEq  [f::Series 20] "f == M2i(M2(f))"
 prop_BINOMIALi_BINOMIAL (Full f) = areEq  [f::Series 20] "f == BINOMIALi(BINOMIAL(f))"
 prop_BINOMIAL_BINOMIALi (Full f) = areEq  [f::Series 20] "f == BINOMIAL(BINOMIALi(f))"
 prop_BOUS2i_BOUS2       (Full f) = areEq  [f::Series 20] "f == BOUS2i(BOUS2(f))"
@@ -383,7 +385,6 @@ prop_LOG_EXP            (Full f) = areEq' [f::Series 15] "f == LOG(EXP(f))"
 prop_EXP_LOG            (Full f) = areEq' [f::Series 20] "f == EXP(LOG(f))"
 prop_MOBIUSi_MOBIUS     (Full f) = areEq  [f::Series 20] "f == MOBIUSi(MOBIUS(f))"
 prop_MOBIUS_MOBIUSi     (Full f) = areEq  [f::Series 20] "f == MOBIUS(MOBIUSi(f))"
-prop_CONVi_CONV         (Full f) = areEq' [f::Series 10] "CONVi(CONV(f)) == abs(f)"
 prop_STIRLINGi_STIRLING (Full f) = areEq' [f::Series 20] "f == STIRLINGi(STIRLING(f))"
 prop_STIRLING_STIRLINGi (Full f) = areEq' [f::Series 10] "f == STIRLING(STIRLINGi(f))"
 prop_BIN1_involutive    (Full f) = areEq' [f::Series  8] "f == BIN1(BIN1(f))"

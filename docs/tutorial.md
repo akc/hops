@@ -344,27 +344,26 @@ directory. Alternatively, you can do this by hand using `wget` and
 
 ## Misc transformations
 
-HOPS knows about many of the
-[transformations used by the OEIS](https://oeis.org/transforms.html).
-As an example, the sequence [A067145](https://oeis.org/A067145)
-claims to shift left under reversion:
+HOPS knows about many combinatorial transformations.
+As an example, the sequence [A038072](https://oeis.org/A038072)
+claims to shift left under the Euler transform:
 
 ```
-$ sloane A067145 | jq '.seq=(.seq[:10]|@csv)'
+$ sloane A038072
 {
-  "hops": "A067145",
-  "name": "Shifts left under reversion.",
-  "seq": "1,1,-1,3,-13,69,-419,2809,-20353,157199"
+  "hops": "A038072",
+  "name": "Shifts left under Euler transform.",
+  "seq": [-1,-1,-1,0,1,2,0,-3,-5,-1]
 }
 ```
 
 Let's test that claim:
 
 ```
-$ hops 'REVERT(A067145)-LEFT(A067145)'
+$ hops 'f=A038072;EULER(f)-LEFT(f)'
 {
-  "hops":"REVERT(A067145)-LEFT(A067145)",
-  "seq":[0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  "hops": "f=A038072;EULER(f)-LEFT(f)",
+  "seq": [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 }
 ```
 
@@ -378,7 +377,6 @@ transformations we are interested in. E.g. if we create a file
 ```
 BINOMIAL(stdin)
 EULER(stdin)
-REVEGF(stdin)
 STIRLING(stdin)
 ```
 then we can apply all of these transforms to `1/(1-x)` as follows:
@@ -392,10 +390,6 @@ $ hops '1/(1-x)' | hops --prec=9 -f transforms.hops
 {
   "hops":"f=1/(1-x);EULER(f)",
   "seq":[1,2,3,5,7,11,15,22]
-}
-{
-  "hops":"f=1/(1-x);REVEGF(f)",
-  "seq":[1,-2,9,-64,625,-7776,117649,-2097152]
 }
 {
   "hops":"f=1/(1-x);STIRLING(f)",
