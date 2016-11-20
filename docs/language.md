@@ -70,9 +70,8 @@ Transform      | Meaning
 `BIN1(f)`      | `g={(-1)^n/n!}*((laplacei(x*f))@(-x));LEFT(laplace(-g))`
 `BISECT0(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT0(f)={a0,a2,a4,...}`
 `BISECT1(f)`   | if `f={a0,a1,a2,a3,a4,...}` then `BISECT1(f)={a1,a3,a5,...}`
-`BOUS2(f)`     | see [[1](https://oeis.org/transforms.txt)]
-`BOUS2i(f)`    | see [[1](https://oeis.org/transforms.txt)]
-`BOUS(f)`      | see [[1](https://oeis.org/transforms.txt)]
+`BOUS(f)`      | The [Boustrophedon transform](https://en.wikipedia.org/wiki/Boustrophedon_transform)
+`BOUSi(f)`     | The inverse [Boustrophedon transform](https://en.wikipedia.org/wiki/Boustrophedon_transform)
 `CATALAN(f)`   | `C=1+x*C^2;f@(x*C)`
 `CATALANi(f)`  | `f@(x*(1-x))`
 `CYC(f)`       | `sum[(phi(k)/k)*log(1/(1-f(x^k)))], k>0`; phi = totient function

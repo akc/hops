@@ -360,9 +360,8 @@ prop_BINOMIALi_u = prop1 "BINOMIALi {1,3,9,27,81}      == {1,2,4,8,16}"
 prop_BIN1_u      = prop1 "BIN1      {2,4,8,16}         == {2,-8,26,-80}"
 prop_BISECT0_u   = prop1 "BISECT0   {0,1,2,3,4,5}      == {0,2,4}"
 prop_BISECT1_u   = prop1 "BISECT1   {0,1,2,3,4,5}      == {1,3,5}"
-prop_BOUS_u      = prop1 "BOUS      {5,4,3,2,1}        == {1,6,15,32,83,262}"
-prop_BOUS2_u     = prop1 "BOUS2     {5,4,3,2,1}        == {5,9,16,33,84}"
-prop_BOUS2i_u    = prop1 "BOUS2i    {5,4,3,2,1}        == {5,-1,0,-5,4}"
+prop_BOUS_u      = prop1 "BOUS      {5,4,3,2,1}        == {5,9,16,33,84}"
+prop_BOUSi_u     = prop1 "BOUSi     {5,4,3,2,1}        == {5,-1,0,-5,4}"
 prop_CATALAN_u   = prop1 "CATALAN   {1,1,1,1,1}        == {1,1,2,5,14}"
 prop_CATALANi_u  = prop1 "CATALANi  {1,1,2,5,14}       == {1,1,1,1,1}"
 prop_CYC_u       = prop1 "CYC       {0,1,1,1,1,1}      == {0,1,2,3,5,7}"
@@ -396,8 +395,8 @@ prop_LEFT                     f  = prop  [f::S20] "LEFT(f) == D(f./{n!}) .* {n!}
 prop_RIGHT             (NonDZ f) = prop  [f::S20] "RIGHT(f) == 1 + x*f"
 prop_BINOMIALi_BINOMIAL (Full f) = prop  [f::S20] "f == BINOMIALi(BINOMIAL(f))"
 prop_BINOMIAL_BINOMIALi (Full f) = prop  [f::S20] "f == BINOMIAL(BINOMIALi(f))"
-prop_BOUS2i_BOUS2       (Full f) = prop  [f::S20] "f == BOUS2i(BOUS2(f))"
-prop_BOUS2_BOUS2i       (Full f) = prop  [f::S20] "f == BOUS2(BOUS2i(f))"
+prop_BOUSi_BOUS         (Full f) = prop  [f::S20] "f == BOUSi(BOUS(f))"
+prop_BOUS_BOUSi         (Full f) = prop  [f::S20] "f == BOUS(BOUSi(f))"
 prop_CATALANi_CATALAN   (Full f) = prop  [f::S20] "f == CATALANi(CATALAN(f))"
 prop_CATALAN_CATALANi   (Full f) = prop  [f::S20] "f == CATALAN(CATALANi(f))"
 prop_LAHi_LAH           (Full f) = prop  [f::S10] "f == LAHi(LAH(f))"
@@ -521,6 +520,9 @@ prop_Motzkin_1   = propN1 (-2) "A001006 == (1-x-(1-2*x-3*x^2)^(1/2))/(2*x^2)"
 prop_Motzkin_2   = prop1' "f=A000108;(f(x/(1+x))-1)/x == A001006"
 prop_Motzkin_3   = propN1 11 "A001006 == 1/(1-x-x^2/(1-x-x^2/(1-x-x^2/(1-x-x^2/(1-x-x^2)))))"
 prop_Motzkin_4   = prop1  "A001006 == M=1+x*M+x^2*M^2"
+prop_Bous_1      = prop1  "A000111 == BOUS([1])"
+prop_Bous_2      = prop1  "A000667 == -BOUS(-1/(1-x))"
+prop_Bous_3      = prop1  "A062162 == BOUS(1/(1+x))"
 prop_Euler       = prop1  "A122045 == 2/({1/n!}+{(-1)^n/n!}).*{n!}"
 prop_Fibonacci_1 = prop1' "LEFT(A000045) == 1/(1-x-x^2)"
 prop_Fibonacci_2 = prop1' "LEFT(A000045) == F=1+(x+x^2)*F"
@@ -604,8 +606,7 @@ tests =
     , ("unit/MOBIUS",            check   1 prop_MOBIUS_u)
     , ("unit/MOBIUSi",           check   1 prop_MOBIUSi_u)
     , ("unit/BOUS",              check   1 prop_BOUS_u)
-    , ("unit/BOUS2",             check   1 prop_BOUS2_u)
-    , ("unit/BOUS2i",            check   1 prop_BOUS2i_u)
+    , ("unit/BOUSi",             check   1 prop_BOUSi_u)
     , ("unit/EULER",             check   1 prop_EULER_u)
     , ("unit/EULERi",            check   1 prop_EULERi_u)
     , ("unit/LAH",               check   1 prop_LAH_u)
@@ -631,8 +632,8 @@ tests =
     , ("RIGHT",                  check 100 prop_RIGHT)
     , ("BINOMIALi.BINOMIAL=id",  check  40 prop_BINOMIALi_BINOMIAL)
     , ("BINOMIAL.BINOMIALi=id",  check  40 prop_BINOMIAL_BINOMIALi)
-    , ("BOUS2i.BOUS2=id",        check  20 prop_BOUS2i_BOUS2)
-    , ("BOUS2.BOUS2i=id",        check  20 prop_BOUS2_BOUS2i)
+    , ("BOUSi.BOUS=id",          check  20 prop_BOUSi_BOUS)
+    , ("BOUS.BOUSi=id",          check  20 prop_BOUS_BOUSi)
     , ("CATALAN.CATALANi=id",    check  20 prop_CATALAN_CATALANi)
     , ("CATALANi.CATALAN=id",    check  20 prop_CATALANi_CATALAN)
     , ("LAHi.LAH=id",            check   5 prop_LAHi_LAH)
@@ -677,6 +678,9 @@ tests =
     , ("Motzkin-2",              check   1 prop_Motzkin_2)
     , ("Motzkin-3",              check   1 prop_Motzkin_3)
     , ("Motzkin-4",              check   1 prop_Motzkin_4)
+    , ("Boustrophedon-1",        check   1 prop_Bous_1)
+    , ("Boustrophedon-2",        check   1 prop_Bous_2)
+    , ("Boustrophedon-3",        check   1 prop_Bous_3)
     , ("Euler",                  check   1 prop_Euler)
     , ("Fibonacci-1",            check   1 prop_Fibonacci_1)
     , ("Fibonacci-2",            check   1 prop_Fibonacci_2)

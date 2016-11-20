@@ -28,6 +28,9 @@ import HOPS.Matrix
 -- | A `Transform` takes a `Series` to another `Series`.
 type Transform n = Series n -> Series n
 
+x :: KnownNat n => Series n
+x = xpow 1
+
 facSeries :: KnownNat n => Series n
 facSeries = series (Proxy :: Proxy n) $ scanl (*) 1 (map fromIntegral [1::Int ..])
 
@@ -143,7 +146,7 @@ mask :: KnownNat n => Transform n
 mask = series (Proxy :: Proxy n) . tail . scanl h 0 . coeffList
   where
     h DZ _      = DZ
-    h x (Val _) = x
+    h v (Val _) = v
     h _ Indet   = Indet
     h _ DZ      = DZ
 
@@ -177,22 +180,17 @@ totient a = length $ filter (\k -> gcd a k == 1) [1..a-1]
 t019 :: KnownNat n => Transform n
 t019 f = ((1-x)*(1-x)*f + (2*a0 - a1)*x - a0) / (x*x)
   where
-    x  = xpow 1
     v  = coeffVector f
     a0 = polynomial (Proxy :: Proxy n) [v!0]
     a1 = polynomial (Proxy :: Proxy n) [v!1]
 
 -- The Boustrophedon transform
-bous2 :: KnownNat n => Transform n
-bous2 f = laplace (laplacei f * (sec x + tan x))
-  where
-    x = xpow 1
+bous :: KnownNat n => Transform n
+bous f = laplace (laplacei f * (sec x + tan x))
 
 -- The inverse Boustrophedon transform
-bous2i :: KnownNat n => Transform n
-bous2i f = laplace (laplacei f / (sec x + tan x))
-  where
-    x = xpow 1
+bousi :: KnownNat n => Transform n
+bousi f = laplace (laplacei f / (sec x + tan x))
 
 hankel :: Vector Rat -> Vector Rat
 hankel v = V.generate n $ \i -> det (hankelN (i+1))
@@ -217,9 +215,8 @@ associations =
     , ("BIN1",       \f -> shiftLeft $ laplace(-exp (-x) * (laplacei (x*f) `o` (-x))))
     , ("BISECT0",    lift bisect0)
     , ("BISECT1",    lift bisect1)
-    , ("BOUS2i",     bous2i)
-    , ("BOUS2",      bous2)
-    , ("BOUS",       \f -> bous2 (1 + x*f))
+    , ("BOUSi",      bousi)
+    , ("BOUS",       bous)
     , ("CATALANi",   \f -> f `o` (x*(1-x)))
     , ("CATALAN",    \f -> let cat = 2/(1+sqrt(1-4*x)) in f `o` (x*cat))
     , ("CYC",        ccycle)
@@ -274,8 +271,6 @@ associations =
     , ("tan",        tan)
     , ("sec",        sec)
     ]
-  where
-    x = xpow 1
 
 dispatch :: KnownNat n => Map ByteString (Transform n)
 dispatch = M.fromList associations
