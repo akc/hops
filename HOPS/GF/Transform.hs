@@ -241,7 +241,7 @@ associations =
     , ("MSET",       multiset)
     , ("PARTITION",  multiset . rseq)
     , ("POINT",      \f -> x*derivative f)
-    , ("PRODS",      lift $ V.drop 1 . V.scanl (*) (Val (toRational (1::Int))))
+    , ("PRODS",      lift $ V.drop 1 . V.scanl (*) 1)
     , ("PSET",       powerset)
     , ("RIGHT",      shiftRight)
     , ("SEQ",        \f -> 1/(1 - f))
