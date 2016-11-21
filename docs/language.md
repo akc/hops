@@ -87,8 +87,8 @@ Transform      | Meaning
 `LAHi(f)`      | `g=(laplacei(f))@(x/(1+x));laplace(g)`
 `LEFT(f)`      | if `f={a0,a1,a2,a3,a4,...}` then `LEFT(f)={a1,a2,a3,...}`
 `LOG(f)`       | `g=log(1+laplacei(x*f));LEFT(laplace(g))`
-`MOBIUS(f)`    | See [[1](https://oeis.org/transforms.txt)]
-`MOBIUSi(f)`   | See [[1](https://oeis.org/transforms.txt)]
+`MOBIUS(f)`    | The [Möbius transform](http://mathworld.wolfram.com/MoebiusTransform.html)
+`MOBIUSi(f)`   | The inverse [Möbius transform](http://mathworld.wolfram.com/MoebiusTransform.html)
 `MSET(f)`      | if `f={a_k}` then `MSET(f)=product[(1-x^k)^(-a_k)], k>0`
 `PARTITION(f)` | See [[1](https://oeis.org/transforms.txt)] (Includes constant term)
 `POINT(f)`     | `laplace(x*D(laplacei(f)))`
