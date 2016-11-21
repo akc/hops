@@ -90,7 +90,7 @@ Transform      | Meaning
 `MOBIUS(f)`    | The [Möbius transform](http://mathworld.wolfram.com/MoebiusTransform.html)
 `MOBIUSi(f)`   | The inverse [Möbius transform](http://mathworld.wolfram.com/MoebiusTransform.html)
 `MSET(f)`      | if `f={a_k}` then `MSET(f)=product[(1-x^k)^(-a_k)], k>0`
-`PARTITION(f)` | See [[1](https://oeis.org/transforms.txt)] (Includes constant term)
+`PARTITION(f)` | See <https://oeis.org/transforms.txt> (Includes constant term)
 `POINT(f)`     | `laplace(x*D(laplacei(f)))`
 `PRODS(f)`     | if `f = {a0,a1,a2,...}` then `PRODS(f)={a0,a0*a1,a0*a1*a2,...}`
 `PSET(f)`      | if `f={a_k}` then `PSET(f)=product[(1+x^k)^a_k], k>0`
@@ -102,8 +102,6 @@ Transform      | Meaning
 `TRISECT1(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a1,a4,a7,...}`
 `TRISECT2(f)`  | if `f={a0,a1,a2,a3,a4,...}` then `TRISECT0(f)={a2,a5,a8,...}`
 `WEIGHT(f)`    | if `f={a0,a1,a2,...}` then `WEIGHT(f)=(1+x^n)^a0*(1+x^n)^a1*...`
-
-[1] <https://oeis.org/transforms.txt>
 
 ## A grammar for HOPS scripts
 
