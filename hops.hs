@@ -29,7 +29,6 @@ import HOPS.Config
 import HOPS.Download
 import HOPS.DB
 import HOPS.GF
-import HOPS.GF.Series
 
 versionString :: String
 versionString = "0.6.0"

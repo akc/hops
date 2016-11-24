@@ -30,13 +30,10 @@ import Test.QuickCheck
 import Test.QuickCheck.Test
 import Test.QuickCheck.Modifiers
 import HOPS.OEIS
-import HOPS.Matrix
+import HOPS.Utils.Matrix
 import HOPS.GF
 import qualified HOPS.GF.Const as C
 import qualified HOPS.GF.Rats as R
-import HOPS.GF.Series
-import HOPS.GF.Transform
--- import StubDB
 
 type S5  = Series 5
 type S10 = Series 10
@@ -124,7 +121,7 @@ instance KnownNat n => Arbitrary (NonNil n) where
     arbitrary = NonNil <$> arbitrary `suchThat` nonzeroLeadingVal
 
 instance KnownNat n => Arbitrary (NonDZ n) where
-    arbitrary = NonDZ . series (Proxy :: Proxy n) <$> arbitrary `suchThat` (all (/= DZ))
+    arbitrary = NonDZ . series (Proxy :: Proxy n) <$> arbitrary `suchThat` notElem DZ
 
 instance KnownNat n => Arbitrary (Full n) where
     arbitrary = Full . series (Proxy :: Proxy n) <$> valGenStream
@@ -261,40 +258,19 @@ check n = quickCheckWithResult stdArgs {maxSuccess = n}
 evalPrg :: KnownNat n => Env n -> Prg -> Series n
 evalPrg env = evalCorePrg env . core
 
+evalPrg1 :: KnownNat n => Prg -> Series n
+evalPrg1 = evalCorePrg emptyEnv . core
+
 runPrg :: KnownNat n => Env n -> ByteString -> Series n
 runPrg env = evalPrg env . fromMaybe (error "parse error") . parsePrg
 
 runPrg1 :: KnownNat n => ByteString -> Series n
-runPrg1 = runPrg (Env V.empty M.empty)
+runPrg1 = runPrg emptyEnv
 
 ogf :: KnownNat n => Proxy n -> [Integer] -> Series n
 ogf n = series n . map (Val . fromIntegral)
 
-poly :: KnownNat n => Proxy n -> [Integer] -> Series n
-poly n = polynomial n . map (Val . fromIntegral)
-
 ogf20 = ogf (Proxy :: Proxy 20)
-poly20 = poly (Proxy :: Proxy 20)
-empty20 = Env V.empty M.empty :: Env 20
-runPrg20 = runPrg empty20
-
-ogf40 = ogf (Proxy :: Proxy 40)
-poly40 = poly (Proxy :: Proxy 40)
-empty40 = Env V.empty M.empty :: Env 40
-runPrg40 = runPrg empty40
-
-envFromList :: KnownNat n => [(ByteString, Series n)] -> Env n
-envFromList assoc = Env V.empty (M.fromList assoc)
-
-stdinTr :: KnownNat n => ByteString -> Series n -> Series n
-stdinTr prg f = runPrg (envFromList [("stdin", f)]) prg
-
-splitEqn :: ByteString -> (ByteString, ByteString)
-splitEqn bs = (lhs', rhs')
-  where
-    (lhs, _:rhs) = break B.null (B.split '=' bs)
-    lhs' = B.intercalate "=" lhs
-    rhs' = B.intercalate "=" rhs
 
 stubDB :: KnownNat n => Vector (Series n)
 stubDB = nilVec // [(i-1, series' xs) | (ANum i, xs) <- stubDBaList]
@@ -305,6 +281,13 @@ stubDB = nilVec // [(i-1, series' xs) | (ANum i, xs) <- stubDBaList]
 stubDBaList :: [(ANum, Sequence)]
 stubDBaList = unsafePerformIO (parseStripped <$> B.readFile "tests/stub.db")
 {-# NOINLINE stubDBaList #-}
+
+splitEqn :: ByteString -> (ByteString, ByteString)
+splitEqn bs = (lhs', rhs')
+  where
+    (lhs, _:rhs) = break B.null (B.split '=' bs)
+    lhs' = B.intercalate "=" lhs
+    rhs' = B.intercalate "=" rhs
 
 evalEqn :: KnownNat n => [Series n] -> ByteString -> (Series n, Series n)
 evalEqn fs eqn = (exec lhs, exec rhs)
@@ -336,21 +319,15 @@ propN1 m = propN m [nil::S20]
 propN1' :: ByteString -> Bool
 propN1' = prop' [nil::S20]
 
-toRatsString :: Show a => [a] -> String
-toRatsString xs = "{" ++ intercalate "," (map show xs) ++ "}"
-
 prop_Prg_id1 p = mempty <> p == (p :: Prg)
 prop_Prg_id2 p = p <> mempty == (p :: Prg)
 prop_Prg_assoc p q r = p <> (q <> r) == (p <> q) <> (r :: Prg)
 
-prop_Prg_value p = evalPrg' p == evalPrg' q
+prop_Prg_value p = evalPrg1 p == (evalPrg1 q :: Series 40)
   where
-    evalPrg' = evalPrg empty40
     q = p <> fromJust (parsePrg "stdin") :: Prg
 
-prop_Rat_power_u :: Bool
 prop_Rat_power_u = (1/4) !^! (3/2) == Val (1 % 8)
-
 prop_Neg_power_u = prop1 "{-(-1)^n} == -1/(1+x)"
 
 prop_LEFT_u      = prop1 "LEFT      {4,3,2,1}          == {3,2,1}"
@@ -440,16 +417,16 @@ prop_Powers_of_2 f = prop [f::Series 30] "{2^n} == 1/(1-2*x)"
 
 dropTrailingZeros = reverse . dropWhile (== 0) . reverse
 
-prop_ListOfCoeffs f = runPrg1 (pretty f) == (f :: Series 2)
+prop_ListOfCoeffs f = runPrg1 (pretty f) == (f :: Series 100)
 
-prop_Polynomial (Full f) = runPrg1 p == (f :: S20)
+prop_Polynomial (Full f) = runPrg1 p == (f :: S10)
   where
     cs = coeffList f
     term c i = B.concat [pretty c, "*x^", pretty i]
     p = B.intercalate "+" (zipWith term cs [0::Integer ..])
 
 -- Arithmetic progression
-prop_AP a b = ogf20 [a,b..] == runPrg20 (B.concat ["{", pretty a, ",", pretty b, ",...}"])
+prop_AP a b = ogf20 [a,b..] == runPrg1 (B.concat ["{", pretty a, ",", pretty b, ",...}"])
 
 prop_Geometric1 c = prop [ogf20 [c^i | i<-[0..]]] (B.pack $ printf "f == {(%s)^n}" (show c))
 prop_Geometric2 c = prop [ogf20 [c^i | i<-[0..]]] (B.pack $ printf "f == 1/(1 - %s*x)" (show c))
@@ -472,11 +449,11 @@ prop_Integration_by_parts f g =
 
 prop_IncreasingForests = prop1' "tree=integral(forest);forest=exp(tree) == 1/(1-x)"
 
-prop_Unit_circle (FullRevertible1 f) = prop' [f::Series 15] "cos(f)^2 + sin(f)^2 == 1"
+prop_Unit_circle (FullRevertible1 f) = prop' [f::S10] "cos(f)^2 + sin(f)^2 == 1"
 
 prop_Exact_sqrt c d =
     let prg = B.pack ("sqrt({(" ++ show c ++ ")^2/(" ++ show d ++ ")^2})")
-    in runPrg empty20 prg ~= ogf20 [abs c::Integer] / ogf20 [abs d::Integer]
+    in runPrg1 prg ~= ogf20 [abs c::Integer] / ogf20 [abs d::Integer]
 
 prop_sinh        (Revertible1 f) = prop' [f::S10] "sinh(f)      == (exp(f)-exp(-f))/2"
 prop_cosh    (FullRevertible1 f) = prop' [f::S10] "cosh(f)      == (exp(f)+exp(-f))/2"
@@ -557,11 +534,10 @@ prop_Determinant =
     forAll (resize 6 arbitrary) $ \m ->
         det m == determinant (m :: Matrix Rational)
 
-prop_Coefficients = and
-    [ prop [f] "f == (1/(1-[0,1,1]))?[2*n+1]"
-    , prop [f] "f == (1/(1-[0,1,1]))?{2*n+1}"
-    , prop [a] "f == (1/(1-[0,1,1]))?5"
-    ]
+prop_Coefficients =
+    prop [f] "f == (1/(1-[0,1,1]))?[2*n+1]" &&
+    prop [f] "f == (1/(1-[0,1,1]))?{2*n+1}" &&
+    prop [a] "f == (1/(1-[0,1,1]))?5"
   where
     f = ogf20 [1,3,8,21,55,144,377,987,2584,6765]
     a = ogf20 [8]
@@ -582,8 +558,8 @@ pset f
       let term k = (-1)^(k+1) * (f `o` xpow k) / fromIntegral k
       in exp $ sum $ term <$> [1 .. precision f - 1]
 
-prop_MSET (Revertible f) = areSimEq [f::Series 13, mset f] "MSET(f) == g"
-prop_PSET (Revertible f) = areSimEq [f::Series 13, pset f] "PSET(f) == g"
+prop_MSET (Revertible f) = uncurry (~=) $ evalEqn [f::S10, mset f] "MSET(f) == g"
+prop_PSET (Revertible f) = uncurry (~=) $ evalEqn [f::S10, pset f] "PSET(f) == g"
 
 tests =
     [ ("Prg-monoid/id-1",        check 100 prop_Prg_id1)

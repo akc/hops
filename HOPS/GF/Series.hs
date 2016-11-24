@@ -35,6 +35,7 @@ module HOPS.GF.Series
     , constant
     , leadingCoeff
     , rationalPrefix
+    , integerPrefix
     , intPrefix
     , eval
     -- * Operations
@@ -151,6 +152,11 @@ leadingCoeff f =
 rationalPrefix :: Series n -> [Rational]
 rationalPrefix = mapMaybe maybeRational . takeWhile isRational . coeffList
 {-# INLINE rationalPrefix #-}
+
+-- | The longest initial segment of coefficients that are integral
+integerPrefix :: Series n -> [Integer]
+integerPrefix = mapMaybe maybeInteger . takeWhile isInteger . coeffList
+{-# INLINE integerPrefix #-}
 
 -- | The longest initial segment of coefficients that are `Int`s
 intPrefix :: Series n -> [Int]

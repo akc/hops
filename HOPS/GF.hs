@@ -9,14 +9,15 @@
 --
 
 module HOPS.GF
-    ( Expr0 (..)
+    ( module HOPS.GF.Series
+    , module HOPS.GF.Transform
+    , Expr0 (..)
     , Expr1 (..)
     , Expr2 (..)
     , Expr3 (..)
     , Cmd (..)
     , PackedPrg (..)
     , Prg (..)
-    , CorePrg
     , Pretty (..)
     , Name
     , nameSupply
@@ -27,9 +28,14 @@ module HOPS.GF
     , aNumPrg
     , tagPrg
     -- Core
+    , Fun1 (..)
+    , Fun2 (..)
+    , Core (..)
+    , CorePrg
     , core
     -- Eval
     , Env (..)
+    , emptyEnv
     , evalCorePrg
     , evalCorePrgs
     -- Parse
@@ -45,6 +51,7 @@ import Data.Monoid
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
+import qualified Data.Vector as V
 import Data.Map.Lazy (Map)
 import qualified Data.Map.Lazy as M
 import Data.ByteString.Char8 (ByteString)
@@ -55,7 +62,7 @@ import Control.Monad
 import Control.Monad.Trans.State
 import Control.Applicative
 import HOPS.Pretty
-import HOPS.Utils
+import HOPS.Utils.Parse
 import HOPS.OEIS
 import HOPS.GF.Series
 import HOPS.GF.Transform
@@ -145,6 +152,33 @@ data Core
     | Let {-# UNPACK #-} !Name !Core
     deriving (Show)
 
+instance Num Core where
+    (+) = App2 Add
+    (-) = App2 Sub
+    (*) = App2 Mul
+    abs = App1 (Tr1 "abs")
+    signum = App1 (Tr1 "sgn")
+    fromInteger = Lit . fromInteger
+
+instance Fractional Core where
+    fromRational = Lit . fromRational
+    (/) = App2 Div
+
+instance Floating Core where
+    pi = Lit pi
+    exp = App1 (Tr1 "exp")
+    log = App1 (Tr1 "log")
+    sin = App1 (Tr1 "sin")
+    cos = App1 (Tr1 "cos")
+    asin = App1 (Tr1 "asin")
+    acos = App1 (Tr1 "acos")
+    atan = App1 (Tr1 "atan")
+    sinh = App1 (Tr1 "sinh")
+    cosh = App1 (Tr1 "cosh")
+    asinh = App1 (Tr1 "asinh")
+    acosh = App1 (Tr1 "acosh")
+    atanh = App1 (Tr1 "atanh")
+
 type CorePrg = [Core]
 
 -- | A program is a list of commands, where a command is either a power
@@ -210,6 +244,14 @@ instance Pretty Cmd where
 
 instance Pretty Prg where
     pretty = B.intercalate ";" . map pretty . commands
+
+-- | @pad d n@ packs the integer @n@ into a `ByteString` padding with
+-- \'0\' on the right to achieve length @d@.
+--
+-- > pad 6 123 = "000123"
+--
+pad :: Int -> Int -> ByteString
+pad d n = B.replicate (d - B.length s) '0' <> s where s = B.pack (show n)
 
 -- | A compact representation of a `Prg` as a wrapped `ByteString`.
 packPrg :: Prg -> PackedPrg
@@ -370,6 +412,9 @@ anumsCore _ = []
 -- Eval
 --------------------------------------------------------------------------------
 
+emptyEnv :: Env n
+emptyEnv = Env V.empty M.empty
+
 evalFun1 :: KnownNat n => Fun1 -> Env n -> Series n -> Series n
 evalFun1 Neg     _   = negate
 evalFun1 Fac     _   = fac
@@ -407,7 +452,11 @@ evalCorePrgNext prog (env, f) =
     foldl' (\(_, ev) c -> runState (evalCore c) ev) (env, f) prog
 {-# INLINE evalCorePrgNext #-}
 
--- | Evaluate a program in a given environment.
+-- | Evaluate a program in a given environment. E.g.
+--
+-- > evalCorePrg (emptyEnv :: Env 4) [ log (1/(1-X)) ]
+-- series (Proxy :: Proxy 4) [Val (0 % 1),Val (1 % 1),Val (1 % 2),Val (1 % 3)]
+--
 evalCorePrg :: KnownNat n => Env n -> CorePrg -> Series n
 evalCorePrg env prog = fst (trail !! precision f0)
   where
