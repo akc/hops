@@ -30,12 +30,10 @@ import Test.QuickCheck
 import Test.QuickCheck.Test
 import Test.QuickCheck.Modifiers
 import HOPS.OEIS
-import HOPS.Matrix
+import HOPS.Utils.Matrix
 import HOPS.GF
 import qualified HOPS.GF.Const as C
 import qualified HOPS.GF.Rats as R
-import HOPS.GF.Series
-import HOPS.GF.Transform
 
 type S5  = Series 5
 type S10 = Series 10
@@ -256,9 +254,6 @@ f ~== g = as `isPrefixOf` bs || bs `isPrefixOf` as
 
 check :: Testable prop => Int -> prop -> IO Result
 check n = quickCheckWithResult stdArgs {maxSuccess = n}
-
-emptyEnv :: KnownNat n => Env n
-emptyEnv = Env V.empty M.empty
 
 evalPrg :: KnownNat n => Env n -> Prg -> Series n
 evalPrg env = evalCorePrg env . core

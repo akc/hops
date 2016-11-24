@@ -5,7 +5,7 @@
 --
 -- Bare-bones matrix library; just enough to compute determinants.
 
-module HOPS.Matrix
+module HOPS.Utils.Matrix
     ( Matrix
     , matrix
     , det

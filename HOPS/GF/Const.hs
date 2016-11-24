@@ -27,7 +27,7 @@ import Data.Monoid
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 import HOPS.GF.Series
-import HOPS.Utils
+import HOPS.Utils.Parse
 import HOPS.Pretty
 
 -- | An expression for a constant. Supports addition, subtraction,

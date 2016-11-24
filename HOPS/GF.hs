@@ -9,14 +9,15 @@
 --
 
 module HOPS.GF
-    ( Expr0 (..)
+    ( module HOPS.GF.Series
+    , module HOPS.GF.Transform
+    , Expr0 (..)
     , Expr1 (..)
     , Expr2 (..)
     , Expr3 (..)
     , Cmd (..)
     , PackedPrg (..)
     , Prg (..)
-    , CorePrg
     , Pretty (..)
     , Name
     , nameSupply
@@ -27,9 +28,14 @@ module HOPS.GF
     , aNumPrg
     , tagPrg
     -- Core
+    , Fun1 (..)
+    , Fun2 (..)
+    , Core (..)
+    , CorePrg
     , core
     -- Eval
     , Env (..)
+    , emptyEnv
     , evalCorePrg
     , evalCorePrgs
     -- Parse
@@ -45,6 +51,7 @@ import Data.Monoid
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
+import qualified Data.Vector as V
 import Data.Map.Lazy (Map)
 import qualified Data.Map.Lazy as M
 import Data.ByteString.Char8 (ByteString)
@@ -55,7 +62,7 @@ import Control.Monad
 import Control.Monad.Trans.State
 import Control.Applicative
 import HOPS.Pretty
-import HOPS.Utils
+import HOPS.Utils.Parse
 import HOPS.OEIS
 import HOPS.GF.Series
 import HOPS.GF.Transform
@@ -210,6 +217,14 @@ instance Pretty Cmd where
 
 instance Pretty Prg where
     pretty = B.intercalate ";" . map pretty . commands
+
+-- | @pad d n@ packs the integer @n@ into a `ByteString` padding with
+-- \'0\' on the right to achieve length @d@.
+--
+-- > pad 6 123 = "000123"
+--
+pad :: Int -> Int -> ByteString
+pad d n = B.replicate (d - B.length s) '0' <> s where s = B.pack (show n)
 
 -- | A compact representation of a `Prg` as a wrapped `ByteString`.
 packPrg :: Prg -> PackedPrg
@@ -369,6 +384,9 @@ anumsCore _ = []
 --------------------------------------------------------------------------------
 -- Eval
 --------------------------------------------------------------------------------
+
+emptyEnv :: Env n
+emptyEnv = Env V.empty M.empty
 
 evalFun1 :: KnownNat n => Fun1 -> Env n -> Series n -> Series n
 evalFun1 Neg     _   = negate

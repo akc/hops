@@ -23,7 +23,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.ByteString.Char8 (ByteString)
 import HOPS.GF.Series
-import HOPS.Matrix
+import HOPS.Utils.Matrix
 
 -- | A `Transform` takes a `Series` to another `Series`.
 type Transform n = Series n -> Series n

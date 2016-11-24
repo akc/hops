@@ -32,7 +32,7 @@ import Data.Aeson
 import qualified Data.Attoparsec.ByteString as A
 import Data.Attoparsec.ByteString.Char8
 import Control.Monad
-import HOPS.Utils
+import HOPS.Utils.Parse
 
 -- | A sequence of rational numbers.
 type Sequence = [Rational]
