@@ -13,6 +13,7 @@ module HOPS.GF.Rat
     , maybeInteger
     , maybeInt
     , isRational
+    , isInteger
     , isInt
     , factorial
     , binomial
@@ -168,6 +169,11 @@ isInt (Val r) | denominator r == 1 =
         maxInt = toInteger (maxBound :: Int)
     in minInt <= i && i <= maxInt
 isInt _  = False
+
+-- | Is the given element an Integer?
+isInteger :: Rat -> Bool
+isInteger (Val r) | denominator r == 1 = True
+isInteger _ = False
 
 -- | `maybeRational` of @Val x@ is @Just x@, otherwise it is `Nothing`.
 maybeRational :: Rat -> Maybe Rational

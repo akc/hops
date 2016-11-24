@@ -152,6 +152,33 @@ data Core
     | Let {-# UNPACK #-} !Name !Core
     deriving (Show)
 
+instance Num Core where
+    (+) = App2 Add
+    (-) = App2 Sub
+    (*) = App2 Mul
+    abs = App1 (Tr1 "abs")
+    signum = App1 (Tr1 "sgn")
+    fromInteger = Lit . fromInteger
+
+instance Fractional Core where
+    fromRational = Lit . fromRational
+    (/) = App2 Div
+
+instance Floating Core where
+    pi = Lit pi
+    exp = App1 (Tr1 "exp")
+    log = App1 (Tr1 "log")
+    sin = App1 (Tr1 "sin")
+    cos = App1 (Tr1 "cos")
+    asin = App1 (Tr1 "asin")
+    acos = App1 (Tr1 "acos")
+    atan = App1 (Tr1 "atan")
+    sinh = App1 (Tr1 "sinh")
+    cosh = App1 (Tr1 "cosh")
+    asinh = App1 (Tr1 "asinh")
+    acosh = App1 (Tr1 "acosh")
+    atanh = App1 (Tr1 "atanh")
+
 type CorePrg = [Core]
 
 -- | A program is a list of commands, where a command is either a power
@@ -425,7 +452,11 @@ evalCorePrgNext prog (env, f) =
     foldl' (\(_, ev) c -> runState (evalCore c) ev) (env, f) prog
 {-# INLINE evalCorePrgNext #-}
 
--- | Evaluate a program in a given environment.
+-- | Evaluate a program in a given environment. E.g.
+--
+-- > evalCorePrg (emptyEnv :: Env 4) [ log (1/(1-X)) ]
+-- series (Proxy :: Proxy 4) [Val (0 % 1),Val (1 % 1),Val (1 % 2),Val (1 % 3)]
+--
 evalCorePrg :: KnownNat n => Env n -> CorePrg -> Series n
 evalCorePrg env prog = fst (trail !! precision f0)
   where
