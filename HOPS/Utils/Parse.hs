@@ -7,7 +7,9 @@
 --
 
 module HOPS.Utils.Parse
-    ( paren
+    ( bracket
+    , curly
+    , paren
     , parens
     , oneOf
     , chainl1
@@ -19,6 +21,12 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
+
+bracket :: ByteString -> ByteString
+bracket s = "[" <> s <> "]"
+
+curly :: ByteString -> ByteString
+curly s = "{" <> s <> "}"
 
 paren :: ByteString -> ByteString
 paren s = "(" <> s <> ")"

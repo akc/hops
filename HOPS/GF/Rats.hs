@@ -32,6 +32,7 @@ import Control.Applicative
 import HOPS.Pretty
 import qualified HOPS.GF.Const as C
 import HOPS.GF.Series
+import HOPS.Utils.Parse
 
 data Term
     = Ellipsis
@@ -39,7 +40,7 @@ data Term
     | Fun C.Expr
     deriving (Show, Eq)
 
-data SequenceType = Poly | Ser deriving (Show, Eq)
+data SequenceType = Poly | Ser deriving (Show, Eq, Ord)
 
 -- | An expression defining a sequence.
 type Rats = ([C.Expr], Term, SequenceType)
@@ -50,11 +51,9 @@ instance Pretty Term where
     pretty (Fun f) = pretty f
 
 instance Pretty Rats where
-    pretty (cs, t, stype) = bra <>
-        B.intercalate "," (map pretty cs ++ [pretty t]) <> ket
-      where (bra, ket) = case stype of
-              Poly -> ("[", "]")
-              Ser  -> ("{", "}")
+    pretty (cs, t, stype) =
+        let (bra, ket) = sequencetype ("[", "]") ("{", "}") stype
+        in bra <> B.intercalate "," (map pretty cs ++ [pretty t]) <> ket
 
 --------------------------------------------------------------------------------
 -- Core
@@ -62,16 +61,22 @@ instance Pretty Rats where
 
 type Core = ([C.Core], C.Core, SequenceType)
 
+instance Pretty Core where
+    pretty (cs, c, Poly) = bracket $ B.intercalate "," $ map pretty (cs ++ [c])
+    pretty (cs, c, Ser ) = curly   $ B.intercalate "," $ map pretty (cs ++ [c])
+
+sequencetype :: a -> a -> SequenceType -> a
+sequencetype x _ Poly = x
+sequencetype _ y Ser  = y
+
 core :: Rats -> Core
 core (es, t, stype) =
     let cs = map C.core es
-        fill = case stype of
-                Poly -> C.zero
-                Ser -> C.indet
+        fill = sequencetype C.zero C.indet stype
     in case t of
-      Ellipsis   -> ( []              , newtonPoly cs, stype )
-      Constant e -> ( cs ++ [C.core e], fill         , stype )
-      Fun e      -> ( cs              , C.core e     , stype )
+        Ellipsis   -> ( []              , newtonPoly cs, stype )
+        Constant e -> ( cs ++ [C.core e], fill         , stype )
+        Fun e      -> ( cs              , C.core e     , stype )
 
 newtonPoly :: [C.Core] -> C.Core
 newtonPoly es =
@@ -87,10 +92,9 @@ newtonPoly es =
 
 evalCore :: KnownNat n => Core -> Series n
 evalCore (es, t, stype) =
-    let f = case stype of
-          Poly -> polynomial
-          Ser  -> series
-    in f (Proxy :: Proxy n) $ zipWith C.evalCore [0..] (es ++ repeat t)
+    sequencetype polynomial series stype (Proxy :: Proxy n) $
+        zipWith C.evalCore [0..] (es ++ repeat t)
+
 --------------------------------------------------------------------------------
 -- Parse
 --------------------------------------------------------------------------------

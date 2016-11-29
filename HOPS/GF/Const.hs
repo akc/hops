@@ -62,9 +62,20 @@ data Expr3
     | Expr0 Expr0
     deriving (Show, Eq)
 
-data Fun1 = Neg | Fac deriving Show
+data Fun1 = Neg | Fac deriving (Show, Eq, Ord)
 
-data Fun2 = Add | Sub | Mul | Div | Pow deriving Show
+instance Pretty Fun1 where
+    pretty Neg = "-"
+    pretty Fac = "!"
+
+data Fun2 = Add | Sub | Mul | Div | Pow deriving (Show, Eq, Ord)
+
+instance Pretty Fun2 where
+    pretty Add = "+"
+    pretty Sub = "-"
+    pretty Mul = "*"
+    pretty Div = "/"
+    pretty Pow = "^"
 
 data Core
     = App1 Fun1 Core
@@ -72,7 +83,14 @@ data Core
     | Binom Int        -- binomial(N,k)
     | Lit Rat
     | N
-    deriving Show
+    deriving (Show, Eq, Ord)
+
+instance Pretty Core where
+    pretty (App1 f e) = pretty f <> paren (pretty e)
+    pretty (App2 op e1 e2) = paren (pretty e1 <> pretty op <> pretty e2)
+    pretty (Binom k) = "binom" <> paren (pretty N <> "," <> pretty k)
+    pretty (Lit t) = maybe (pretty t) pretty $ maybeInteger t
+    pretty N = "n"
 
 instance Num Core where
     (+) = App2 Add
@@ -100,7 +118,7 @@ instance Pretty Expr2 where
     pretty (Expr3 e)  = pretty e
 
 instance Pretty Expr3 where
-    pretty (ELit x)  = pretty x
+    pretty (ELit x) = pretty x
     pretty EN = "n"
     pretty EDZ = "DZ"
     pretty EIndet = "Indet"

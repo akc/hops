@@ -11,6 +11,7 @@
 module HOPS.GF
     ( module HOPS.GF.Series
     , module HOPS.GF.Transform
+    , module HOPS.Pretty
     , Expr0 (..)
     , Expr1 (..)
     , Expr2 (..)
@@ -18,7 +19,6 @@ module HOPS.GF
     , Cmd (..)
     , PackedPrg (..)
     , Prg (..)
-    , Pretty (..)
     , Name
     , nameSupply
     , packPrg
@@ -132,13 +132,30 @@ data Cmd                -- A command is
     | Asgmt Name Expr0  -- an assignment
     deriving (Show, Eq)
 
-data Fun1 = Neg | Fac | Tr1 Name deriving (Show, Eq)
+data Fun1 = Neg | Fac | Tr1 Name deriving (Show, Eq, Ord)
+
+instance Pretty Fun1 where
+    pretty Neg = "-"
+    pretty Fac = "!"
+    pretty (Tr1 s) = s
 
 data Fun2
     = Add | Sub
     | Mul | Div
     | BDP | Pow | Comp | Coef | PtMul | PtDiv
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord)
+
+instance Pretty Fun2 where
+    pretty Add   = "+"
+    pretty Sub   = "-"
+    pretty Mul   = "*"
+    pretty Div   = "/"
+    pretty BDP   = "<>"
+    pretty Pow   = "^"
+    pretty Comp  = "@"
+    pretty Coef  = "?"
+    pretty PtMul = ".*"
+    pretty PtDiv = "./"
 
 data Core
     = App1 !Fun1 !Core
@@ -150,7 +167,18 @@ data Core
     | Lit !Rat
     | Rats !R.Core
     | Let {-# UNPACK #-} !Name !Core
-    deriving (Show)
+    deriving (Show, Eq, Ord)
+
+instance Pretty Core where
+    pretty (App1 f e) = pretty f <> paren (pretty e)
+    pretty (App2 op e1 e2) = paren (pretty e1 <> pretty op <> pretty e2)
+    pretty X = "x"
+    pretty (A i) = B.cons 'A' (pad 6 i)
+    pretty (Tag i) = "TAG" <> pad 6 i
+    pretty (Var s) = s
+    pretty (Lit t) = maybe (pretty t) pretty $ maybeInteger t
+    pretty (Rats r) = pretty r
+    pretty (Let s e) = s <> "=" <> pretty e
 
 instance Num Core where
     (+) = App2 Add
@@ -170,14 +198,14 @@ instance Floating Core where
     log = App1 (Tr1 "log")
     sin = App1 (Tr1 "sin")
     cos = App1 (Tr1 "cos")
-    asin = App1 (Tr1 "asin")
-    acos = App1 (Tr1 "acos")
-    atan = App1 (Tr1 "atan")
+    asin = App1 (Tr1 "arcsin")
+    acos = App1 (Tr1 "arccos")
+    atan = App1 (Tr1 "arctan")
     sinh = App1 (Tr1 "sinh")
     cosh = App1 (Tr1 "cosh")
-    asinh = App1 (Tr1 "asinh")
-    acosh = App1 (Tr1 "acosh")
-    atanh = App1 (Tr1 "atanh")
+    asinh = App1 (Tr1 "arsinh")
+    acosh = App1 (Tr1 "arcosh")
+    atanh = App1 (Tr1 "artanh")
 
 type CorePrg = [Core]
 

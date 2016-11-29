@@ -15,6 +15,9 @@ import qualified Data.ByteString.Char8 as B
 class Pretty a where
     pretty :: a -> ByteString
 
+instance Pretty Int where
+    pretty = B.pack . show
+
 instance Pretty Integer where
     pretty = B.pack . show
 
