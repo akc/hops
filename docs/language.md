@@ -61,8 +61,6 @@ Function       | Meaning
 Transform      | Meaning
 ---------------|----------------------------------------
 `ABS(f)`       | coefficient-wise absolute value
-`AERATE1(f)`   | `f(x^2)`
-`AERATE2(f)`   | `f(x^3)`
 `BARRY1(f)`    | `1/(1-x-x^2*f)`
 `BARRY2(f)`    | `1/(1+x+x^2*f)`
 `BINOMIAL(f)`  | `g=exp(x)*laplacei(f);laplace(g)`
