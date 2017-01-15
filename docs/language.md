@@ -14,22 +14,22 @@ programs.
 
 Operation | Meaning
 ----------|-------------------------------------------------
-`f + g`   | sum of *f* and *g*
-`f - g`   | difference of *f* and *g*
-`f ^ g`   | *f* to the power *g*
-`f @ g`   | *f* composed with *g* (can also be written *f(g)* when *f* is a name)
-`f ? g`   | coefficients of *f* selected by nonnegative integer coefficients of *g*
-`f * g`   | product of *f* and *g*
-`f / g`   | quotient of *f* and *g*
-`f .* g`  | coefficient-wise/Hadamard product of *f* and *g*
-`f ./ g`  | coefficient-wise quotient of *f* and *g*
+`f + g`   | sum of `f` and `g`
+`f - g`   | difference of `f` and `g`
+`f ^ g`   | `f` to the power `g`
+`f @ g`   | `f` composed with `g` (can also be written `f(g)` when `f` is a name)
+`f ? g`   | coefficients of `f` selected by nonnegative integer coefficients of `g`
+`f * g`   | product of `f` and `g`
+`f / g`   | quotient of `f` and `g`
+`f .* g`  | coefficient-wise/Hadamard product of `f` and `g`
+`f ./ g`  | coefficient-wise quotient of `f` and `g`
 
 ## Derivative and integral
 
-Operation   | Meaning
-------------|--------------------------------------------
-D(f)        | derivative of *f*
-integral(f) | integral of *f*
+Operation     | Meaning
+--------------|--------------------------------------------
+`D(f)`        | derivative of `f`
+`integral(f)` | integral of `f`
 
 ## Functions
 
@@ -54,15 +54,13 @@ Function       | Meaning
 `artanh(f)`    | area hyperbolic tangent function
 `laplace(f)`   | `f .* {n!}`
 `laplacei(f)`  | `f ./ {n!}`
-`revert(f)`    | the compositional inverse of *f*
+`revert(f)`    | the compositional inverse of `f`
 
 ## Transforms
 
 Transform      | Meaning
 ---------------|----------------------------------------
 `ABS(f)`       | coefficient-wise absolute value
-`AERATE1(f)`   | `f(x^2)`
-`AERATE2(f)`   | `f(x^3)`
 `BARRY1(f)`    | `1/(1-x-x^2*f)`
 `BARRY2(f)`    | `1/(1+x+x^2*f)`
 `BINOMIAL(f)`  | `g=exp(x)*laplacei(f);laplace(g)`
