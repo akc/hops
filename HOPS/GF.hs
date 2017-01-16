@@ -28,8 +28,6 @@ module HOPS.GF
     , aNumPrg
     , tagPrg
     -- Core
-    , Fun1 (..)
-    , Fun2 (..)
     , Core (..)
     , CorePrg
     , core
@@ -48,6 +46,7 @@ import Data.Proxy
 import Data.Maybe
 import Data.List
 import Data.Monoid
+import Data.Traversable (sequence)
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
@@ -122,7 +121,7 @@ data Expr3
     | ETag Int
     | EVar Name
     | ELit Integer
-    | Tr Name Expr3 -- A named transform
+    | EApp Name [Expr0] -- A named transform
     | ERats R.Rats
     | Expr0 Expr0
     deriving (Show, Eq)
@@ -132,34 +131,8 @@ data Cmd                -- A command is
     | Asgmt Name Expr0  -- an assignment
     deriving (Show, Eq)
 
-data Fun1 = Neg | Fac | Tr1 Name deriving (Show, Eq, Ord)
-
-instance Pretty Fun1 where
-    pretty Neg = "-"
-    pretty Fac = "!"
-    pretty (Tr1 s) = s
-
-data Fun2
-    = Add | Sub
-    | Mul | Div
-    | BDP | Pow | Comp | Coef | PtMul | PtDiv
-    deriving (Show, Eq, Ord)
-
-instance Pretty Fun2 where
-    pretty Add   = "+"
-    pretty Sub   = "-"
-    pretty Mul   = "*"
-    pretty Div   = "/"
-    pretty BDP   = "<>"
-    pretty Pow   = "^"
-    pretty Comp  = "@"
-    pretty Coef  = "?"
-    pretty PtMul = ".*"
-    pretty PtDiv = "./"
-
 data Core
-    = App1 !Fun1 !Core
-    | App2 !Fun2 !Core !Core
+    = App !Name ![Core]
     | X
     | A   {-# UNPACK #-} !Int
     | Tag {-# UNPACK #-} !Int
@@ -170,8 +143,7 @@ data Core
     deriving (Show, Eq, Ord)
 
 instance Pretty Core where
-    pretty (App1 f e) = pretty f <> paren (pretty e)
-    pretty (App2 op e1 e2) = paren (pretty e1 <> pretty op <> pretty e2)
+    pretty (App f es) = f <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty X = "x"
     pretty (A i) = B.cons 'A' (pad 6 i)
     pretty (Tag i) = "TAG" <> pad 6 i
@@ -181,31 +153,31 @@ instance Pretty Core where
     pretty (Let s e) = s <> "=" <> pretty e
 
 instance Num Core where
-    (+) = App2 Add
-    (-) = App2 Sub
-    (*) = App2 Mul
-    abs = App1 (Tr1 "abs")
-    signum = App1 (Tr1 "sgn")
+    (+) x y = App "add" [x,y]
+    (-) x y = App "sub" [x,y]
+    (*) x y = App "mul" [x,y]
+    abs x = App "abs" [x]
+    signum x = App "sgn" [x]
     fromInteger = Lit . fromInteger
 
 instance Fractional Core where
     fromRational = Lit . fromRational
-    (/) = App2 Div
+    (/) x y = App "div" [x,y]
 
 instance Floating Core where
     pi = Lit pi
-    exp = App1 (Tr1 "exp")
-    log = App1 (Tr1 "log")
-    sin = App1 (Tr1 "sin")
-    cos = App1 (Tr1 "cos")
-    asin = App1 (Tr1 "arcsin")
-    acos = App1 (Tr1 "arccos")
-    atan = App1 (Tr1 "arctan")
-    sinh = App1 (Tr1 "sinh")
-    cosh = App1 (Tr1 "cosh")
-    asinh = App1 (Tr1 "arsinh")
-    acosh = App1 (Tr1 "arcosh")
-    atanh = App1 (Tr1 "artanh")
+    exp x = App "exp" [x]
+    log x = App "log" [x]
+    sin x = App "sin" [x]
+    cos x = App "cos" [x]
+    asin x = App "arcsin" [x]
+    acos x = App "arccos" [x]
+    atan x = App "arctan" [x]
+    sinh x = App "sinh" [x]
+    cosh x = App "cosh" [x]
+    asinh x = App "arsinh" [x]
+    acosh x = App "arcosh" [x]
+    atanh x = App "artanh" [x]
 
 type CorePrg = [Core]
 
@@ -262,7 +234,7 @@ instance Pretty Expr3 where
     pretty (ETag i) = "TAG" <> pad 6 i
     pretty (EVar s) = s
     pretty (ELit t) = pretty t
-    pretty (Tr s e) = s <> pretty e
+    pretty (EApp s es) = s <> (paren $ foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty (ERats r) = pretty r
     pretty (Expr0 e) = paren $ pretty e
 
@@ -317,7 +289,7 @@ subsExpr2 f (Expr3 e) = Expr3 (subsExpr3 f e)
 
 subsExpr3 :: Subs -> Expr3 -> Expr3
 subsExpr3 f (EVar s) = EVar (f s)
-subsExpr3 f (Tr s e) = Tr s (subsExpr3 f e)
+subsExpr3 f (EApp s es) = EApp s (map (subsExpr0 f) es)
 subsExpr3 f (Expr0 e) = Expr0 (subsExpr0 f e)
 subsExpr3 _ e = e
 
@@ -383,25 +355,25 @@ coreCmd (Expr e) = coreExpr0 e
 coreCmd (Asgmt s e) = Let s (coreExpr0 e)
 
 coreExpr0 :: Expr0 -> Core
-coreExpr0 (EAdd e1 e2) = App2 Add (coreExpr0 e1) (coreExpr0 e2)
-coreExpr0 (ESub e1 e2) = App2 Sub (coreExpr0 e1) (coreExpr0 e2)
+coreExpr0 (EAdd e1 e2) = App "add" [coreExpr0 e1, coreExpr0 e2]
+coreExpr0 (ESub e1 e2) = App "sub" [coreExpr0 e1, coreExpr0 e2]
 coreExpr0 (Expr1 e) = coreExpr1 e
 
 coreExpr1 :: Expr1 -> Core
-coreExpr1 (EMul e1 e2) = App2 Mul (coreExpr1 e1) (coreExpr1 e2)
-coreExpr1 (EDiv e1 e2) = App2 Div (coreExpr1 e1) (coreExpr1 e2)
-coreExpr1 (EBDP e1 e2) = App2 BDP (coreExpr1 e1) (coreExpr1 e2)
-coreExpr1 (EPtMul e1 e2) = App2 PtMul (coreExpr1 e1) (coreExpr1 e2)
-coreExpr1 (EPtDiv e1 e2) = App2 PtDiv (coreExpr1 e1) (coreExpr1 e2)
+coreExpr1 (EMul e1 e2) = App "mul" [coreExpr1 e1, coreExpr1 e2]
+coreExpr1 (EDiv e1 e2) = App "div" [coreExpr1 e1, coreExpr1 e2]
+coreExpr1 (EBDP e1 e2) = App "bdp" [coreExpr1 e1, coreExpr1 e2]
+coreExpr1 (EPtMul e1 e2) = App "ptmul" [coreExpr1 e1, coreExpr1 e2]
+coreExpr1 (EPtDiv e1 e2) = App "ptdiv" [coreExpr1 e1, coreExpr1 e2]
 coreExpr1 (Expr2 e) = coreExpr2 e
 
 coreExpr2 :: Expr2 -> Core
-coreExpr2 (ENeg e) = App1 Neg (coreExpr2 e)
+coreExpr2 (ENeg e) = App "neg" [coreExpr2 e]
 coreExpr2 (EPos e) = coreExpr2 e
-coreExpr2 (EFac e) = App1 Fac (coreExpr3 e)
-coreExpr2 (EPow e1 e2) = App2 Pow (coreExpr3 e1) (coreExpr3 e2)
-coreExpr2 (EComp e1 e2) = App2 Comp (coreExpr3 e1) (coreExpr3 e2)
-coreExpr2 (ECoef e1 e2) = App2 Coef (coreExpr3 e1) (coreExpr3 e2)
+coreExpr2 (EFac e) = App "fac" [coreExpr3 e]
+coreExpr2 (EPow e1 e2) = App "pow" [coreExpr3 e1, coreExpr3 e2]
+coreExpr2 (EComp e1 e2) = App "comp" [coreExpr3 e1, coreExpr3 e2]
+coreExpr2 (ECoef e1 e2) = App "coef" [coreExpr3 e1, coreExpr3 e2]
 coreExpr2 (Expr3 e) = coreExpr3 e
 
 coreExpr3 :: Expr3 -> Core
@@ -412,7 +384,7 @@ coreExpr3 (EA i) = A i
 coreExpr3 (ETag i) = Tag i
 coreExpr3 (EVar s) = Var s
 coreExpr3 (ELit t) = Lit $ fromInteger t
-coreExpr3 (Tr s e) = App1 (Tr1 s) (coreExpr3 e)
+coreExpr3 (EApp s es) = App s (map coreExpr0 es)
 coreExpr3 (ERats r) = Rats (R.core r)
 coreExpr3 (Expr0 e) = coreExpr0 e
 
@@ -420,8 +392,7 @@ varsCorePrg :: CorePrg -> [Name]
 varsCorePrg = nub . (>>= varsCore)
 
 varsCore :: Core -> [Name]
-varsCore (App1 _ e) = varsCore e
-varsCore (App2 _ e1 e2) = varsCore e1 ++ varsCore e2
+varsCore (App _ es) = concatMap varsCore es
 varsCore (Var s) = [s]
 varsCore (Let s e) = s : varsCore e
 varsCore _ = []
@@ -430,8 +401,7 @@ anumsCorePrg :: CorePrg -> [Int]
 anumsCorePrg = nub . (>>= anumsCore)
 
 anumsCore :: Core -> [Int]
-anumsCore (App1 _ e) = anumsCore e
-anumsCore (App2 _ e1 e2) = anumsCore e1 ++ anumsCore e2
+anumsCore (App _ es) = concatMap anumsCore es
 anumsCore (A i) = [i]
 anumsCore (Let _ e) = anumsCore e
 anumsCore _ = []
@@ -443,27 +413,20 @@ anumsCore _ = []
 emptyEnv :: Env n
 emptyEnv = Env V.empty M.empty
 
-evalFun1 :: KnownNat n => Fun1 -> Env n -> Series n -> Series n
-evalFun1 Neg     _   = negate
-evalFun1 Fac     _   = fac
-evalFun1 (Tr1 t) env =
-    fromMaybe (fromMaybe nil (lookupVar t env) `o`) (lookupTransform t)
-
-evalFun2 :: KnownNat n => Fun2 -> Series n -> Series n -> Series n
-evalFun2 Add = (+)
-evalFun2 Sub = (-)
-evalFun2 Mul = (*)
-evalFun2 Div = (/)
-evalFun2 BDP = blackDiamond
-evalFun2 PtMul = (.*)
-evalFun2 PtDiv = (./)
-evalFun2 Pow = (**)
-evalFun2 Comp = o
-evalFun2 Coef = (?)
+evalName :: KnownNat n => Name -> Env n -> [Series n] -> Series n
+evalName t env ss =
+  case lookupTransform t of
+    Nothing -> case ss of
+                 [s] -> fromMaybe nil (lookupVar t env) `o` s
+                 _   -> nil
+    Just (Transform1 f) -> case ss of
+                             [s] -> f s
+                             _   -> nil
+    Just (TransformAny f) -> f ss
+    Just (TransformK k f) -> if length ss == k then f ss else nil
 
 evalCore :: KnownNat n => Core -> State (Env n) (Series n)
-evalCore (App1 f e) = evalFun1 f <$> get <*> evalCore e
-evalCore (App2 f e1 e2) = evalFun2 f <$> evalCore e1 <*> evalCore e2
+evalCore (App f es) = evalName f <$> get <*> sequence (map evalCore es)
 evalCore X = return $ polynomial (Proxy :: Proxy n) [0,1]
 evalCore (A i) = fromMaybe nil . lookupANum i <$> get
 evalCore (Tag _) = return nil
@@ -533,12 +496,13 @@ expr2
 
 expr3 :: Parser Expr3
 expr3
-     =  ELit     <$> decimal
+     =  EApp     <$> name <*> (parens $ sepBy expr0 (char ','))
+    <|> ELit     <$> decimal
     <|> const EDZ <$> string "DZ"
     <|> const EIndet <$> string "Indet"
     <|> EA       <$> aNumInt
     <|> ETag     <$> tag
-    <|> Tr       <$> name <*> expr3
+    <|> EApp     <$> name <*> ((pure . Expr1 . Expr2 . Expr3) <$> expr3)
     <|> EVar     <$> var
     <|> const EX <$> string "x"
     <|> ERats    <$> R.rats
