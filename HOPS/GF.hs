@@ -46,7 +46,6 @@ import Data.Proxy
 import Data.Maybe
 import Data.List
 import Data.Monoid
-import Data.Traversable (sequence)
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
@@ -234,7 +233,7 @@ instance Pretty Expr3 where
     pretty (ETag i) = "TAG" <> pad 6 i
     pretty (EVar s) = s
     pretty (ELit t) = pretty t
-    pretty (EApp s es) = s <> (paren $ foldl' (<>) "" $ intersperse "," $ map pretty es)
+    pretty (EApp s es) = s <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty (ERats r) = pretty r
     pretty (Expr0 e) = paren $ pretty e
 
@@ -392,16 +391,16 @@ varsCorePrg :: CorePrg -> [Name]
 varsCorePrg = nub . (>>= varsCore)
 
 varsCore :: Core -> [Name]
-varsCore (App _ es) = concatMap varsCore es
+varsCore (App _ es) = varsCore =<< es
 varsCore (Var s) = [s]
 varsCore (Let s e) = s : varsCore e
 varsCore _ = []
 
 anumsCorePrg :: CorePrg -> [Int]
-anumsCorePrg = nub . (>>= anumsCore)
+anumsCorePrg = nub . (anumsCore =<<)
 
 anumsCore :: Core -> [Int]
-anumsCore (App _ es) = concatMap anumsCore es
+anumsCore (App _ es) = anumsCore =<< es
 anumsCore (A i) = [i]
 anumsCore (Let _ e) = anumsCore e
 anumsCore _ = []
@@ -426,7 +425,7 @@ evalName t env ss =
     Just (TransformK k f) -> if length ss == k then f ss else nil
 
 evalCore :: KnownNat n => Core -> State (Env n) (Series n)
-evalCore (App f es) = evalName f <$> get <*> sequence (map evalCore es)
+evalCore (App f es) = evalName f <$> get <*> mapM evalCore es
 evalCore X = return $ polynomial (Proxy :: Proxy n) [0,1]
 evalCore (A i) = fromMaybe nil . lookupANum i <$> get
 evalCore (Tag _) = return nil
@@ -496,7 +495,7 @@ expr2
 
 expr3 :: Parser Expr3
 expr3
-     =  EApp     <$> name <*> (parens $ sepBy expr0 (char ','))
+     =  EApp     <$> name <*> parens (sepBy expr0 (char ','))
     <|> ELit     <$> decimal
     <|> const EDZ <$> string "DZ"
     <|> const EIndet <$> string "Indet"

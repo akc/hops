@@ -119,12 +119,12 @@ dirichlet _ = V.empty
 dirichleti :: Vector Rat -> Vector Rat
 dirichleti f = foldl' upd (V.replicate (length f) 0) [1..length f]
   where
-    upd g 1 = g // [(0, 1 / (V.head f))]
+    upd g 1 = g // [(0, 1 / V.head f)]
     upd g n = let s = sum [ (f ! (n `div` d - 1)) * (g ! (d - 1))
                           | d <- [1..n-1]
                           , n `mod` d == 0
                           ]
-              in g // [(n-1, -s / (V.head f))]
+              in g // [(n-1, -s / V.head f)]
 
 
 restrictToPrefix :: Int -> Vector Rat -> Vector Rat
