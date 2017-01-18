@@ -66,6 +66,9 @@ newtype Revertible1 n = Revertible1 (Series n) deriving Show
 -- Full Revertible NonNil series.
 newtype FullRevertible1 n = FullRevertible1 (Series n) deriving Show
 
+-- Full invertible series (has non-zero unit coefficient).
+newtype FullInvertible n = FullInvertible (Series n) deriving Show
+
 alpha :: String
 alpha = ['A'..'Z'] ++ ['a'..'z']
 
@@ -117,6 +120,9 @@ nonzeroVal _ = False
 nonzeroLeadingVal :: Series n -> Bool
 nonzeroLeadingVal = nonzeroVal . leadingCoeff
 
+nonzeroConstant :: Series n -> Bool
+nonzeroConstant = nonzeroVal . constant
+
 instance KnownNat n => Arbitrary (NonNil n) where
     arbitrary = NonNil <$> arbitrary `suchThat` nonzeroLeadingVal
 
@@ -141,6 +147,10 @@ instance KnownNat n => Arbitrary (Revertible1 n) where
 instance KnownNat n => Arbitrary (FullRevertible1 n) where
     arbitrary = FullRevertible1
       <$> (series (Proxy :: Proxy n) . (0:) <$> valGenStream) `suchThat` nonzeroLeadingVal
+
+instance KnownNat n => Arbitrary (FullInvertible n) where
+    arbitrary = FullInvertible
+      <$> (series (Proxy :: Proxy n) <$> valGenStream) `suchThat` nonzeroConstant
 
 instance Arbitrary Prg where
     arbitrary = Prg <$> listOf arbitrary
@@ -184,7 +194,7 @@ instance Arbitrary Expr3 where
         , ( 3, ETag   <$> arbitrary)
         , (20, EVar   <$> nameGen  )
         , (33, ELit   <$> arbitrary)
-        , ( 1, Tr     <$> nameGen <*> arbitrary)
+        , ( 1, EApp   <$> nameGen <*> arbitrary)
         , ( 7, ERats  <$> ratsGen  )
         , ( 1, Expr0  <$> arbitrary)
         ]
@@ -345,6 +355,7 @@ prop_CYC_u       = prop1 "CYC       {0,1,1,1,1,1}      == {0,1,2,3,5,7}"
 prop_DIFF_u      = prop1 "DIFF      {9,4,1,0,1,4,9}    == {-5,-3,-1,1,3,5}"
 prop_MOBIUS_u    = prop1 "MOBIUS    {1,3,4,7,6,12}     == {1,2,3,4,5,6}"
 prop_MOBIUSi_u   = prop1 "MOBIUSi   {1,2,3,4,5,6}      == {1,3,4,7,6,12}"
+prop_DIRICHLETi_u= prop1 "DIRICHLETi{1,1,1,1,1,1,1,1}  == {1,-1,-1,0,-1,1,-1,0}"
 prop_EULER_u     = prop1 "EULER     {1,1,0,0,0,0,0}    == {1,2,2,3,3,4,4}"
 prop_EULERi_u    = prop1 "EULERi    {1,2,2,3,3,4,4}    == {1,1,0,0,0,0,0}"
 prop_LAH_u       = prop1 "LAH       {5,4,3,2,1}        == {5,4,11,44,229}"
@@ -384,6 +395,8 @@ prop_LOG_EXP            (Full f) = prop' [f::S10] "f == LOG(EXP(f))"
 prop_EXP_LOG            (Full f) = prop' [f::S10] "f == EXP(LOG(f))"
 prop_MOBIUSi_MOBIUS     (Full f) = prop  [f::S10] "f == MOBIUSi(MOBIUS(f))"
 prop_MOBIUS_MOBIUSi     (Full f) = prop  [f::S10] "f == MOBIUS(MOBIUSi(f))"
+prop_DIRICHLET_DIRICHLETi1 (FullInvertible f) = prop  [f::S20] "1 == DIRICHLET(f,DIRICHLETi(f))"
+prop_DIRICHLET_DIRICHLETi2 (FullInvertible f) = prop  [f::S20] "1 == DIRICHLET(DIRICHLETi(f),f)"
 prop_STIRLINGi_STIRLING (Full f) = prop' [f::S10] "f == STIRLINGi(STIRLING(f))"
 prop_STIRLING_STIRLINGi (Full f) = prop' [f::S10] "f == STIRLING(STIRLINGi(f))"
 prop_BIN1_involutive    (Full f) = prop' [f::S10] "f == BIN1(BIN1(f))"
@@ -544,14 +557,14 @@ prop_Coefficients =
 
 prop_SEQ (Revertible f) g = prop [f,g::Series 30] "SEQ(f) == I(g)@f + IC(g)@f"
 
-mset :: KnownNat n => Transform n
+mset :: KnownNat n => Series n -> Series n
 mset f
   | constant f /= 0 = infty
   | otherwise =
       let term k = (f `o` xpow k) / fromIntegral k
       in exp $ sum $ term <$> [1 .. precision f - 1]
 
-pset :: KnownNat n => Transform n
+pset :: KnownNat n => Series n -> Series n
 pset f
   | constant f /= 0 = infty
   | otherwise =
@@ -581,6 +594,7 @@ tests =
     , ("unit/DIFF",              check   1 prop_DIFF_u)
     , ("unit/MOBIUS",            check   1 prop_MOBIUS_u)
     , ("unit/MOBIUSi",           check   1 prop_MOBIUSi_u)
+    , ("unit/DIRICHLETi",        check   1 prop_DIRICHLETi_u)
     , ("unit/BOUS",              check   1 prop_BOUS_u)
     , ("unit/BOUSi",             check   1 prop_BOUSi_u)
     , ("unit/EULER",             check   1 prop_EULER_u)
@@ -620,6 +634,8 @@ tests =
     , ("EXP.LOG=id",             check 100 prop_EXP_LOG)
     , ("MOBIUSi_MOBIUS=id",      check 100 prop_MOBIUSi_MOBIUS)
     , ("MOBIUS.MOBIUSi=id",      check 100 prop_MOBIUS_MOBIUSi)
+    , ("DIRICHLET.DIRICHLETi1=1",check 100 prop_DIRICHLET_DIRICHLETi1)
+    , ("DIRICHLET.DIRICHLETi2=1",check 100 prop_DIRICHLET_DIRICHLETi2)
     , ("STIRLINGi_STIRLING=id",  check 100 prop_STIRLINGi_STIRLING)
     , ("STIRLING.STIRLINGi=id",  check 100 prop_STIRLING_STIRLINGi)
     , ("BIN1/involutive",        check 100 prop_BIN1_involutive)
