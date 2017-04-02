@@ -9,7 +9,7 @@
 --
 
 module HOPS.DB
-    ( DB (..), Sequences
+    ( DB (..)
     , readSeqDB
     , readANumDB
     , emptyANumDB
@@ -17,7 +17,7 @@ module HOPS.DB
 
 import GHC.TypeLits
 import Data.Proxy
-import Data.Vector (Vector)
+import Data.Vector (Vector, (//))
 import qualified Data.Vector as V
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -25,29 +25,29 @@ import System.Directory
 import HOPS.GF.Series
 import HOPS.OEIS
 import HOPS.Config
-
--- | An empty data declaration used with the phantom `DB` data type.
-data Sequences
+import Paths_hops
 
 -- | A data base (DB) is just a wrapped `ByteString`.
-newtype DB a = DB {unDB :: ByteString} deriving Show
+newtype DB = DB {unDB :: ByteString} deriving Show
 
 -- | Read the DB at the given location.
-readDB :: FilePath -> IO (DB a)
+readDB :: FilePath -> IO DB
 readDB fpath = doesFileExist fpath >>= \b ->
-    if b then DB <$> B.readFile fpath
-         else error "No local A-number database; run 'hops --update' first."
+    DB <$> (B.readFile =<< if b then return fpath
+                                else getDataFileName "data/stub.db")
 
 -- | Read the sequence DB (derived from \"stripped.gz\").
-readSeqDB :: Config -> IO (DB Sequences)
+readSeqDB :: Config -> IO DB
 readSeqDB = readDB . seqDBPath
 
 -- | Create a vector that at index 'n' contains the sequence with
 -- A-number 'n'.
 readANumDB :: KnownNat n => Config -> IO  (Vector (Series n))
-readANumDB cfg =
-    let mkSeries = series (Proxy :: Proxy n) . map Val . snd
-    in V.fromList . map mkSeries . parseStripped . unDB <$> readSeqDB cfg
+readANumDB cfg = do
+    entries <- parseStripped . unDB <$> readSeqDB cfg
+    let series' = series (Proxy :: Proxy n) . map Val
+    let pairs = [ (unANum a - 1, series' s) | (a, s) <- entries ]
+    return $ V.replicate 350000 (series' []) // pairs
 
 -- | An empty A-number database
 emptyANumDB :: Vector (Series n)

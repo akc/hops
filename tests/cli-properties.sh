@@ -18,8 +18,6 @@ check () {
   fi
 }
 
-[ -f ~/.oeis-data/stripped ] || $hops --update
-
 check "$hops --prec=12 'f=tanh(log(1+x)); laplace(f)'" \
 '{"hops":"f=tanh(log(1+x));laplace(f)","seq":[0,1,-1,0,6,-30,90,0,-2520,22680,-113400,0]}'
 
