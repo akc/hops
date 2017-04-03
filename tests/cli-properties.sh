@@ -40,8 +40,8 @@ check "$hops --prec 10 A014307" \
 check "$hops --prec 10 'A=sqrt(exp(x)/(2-exp(x)));laplace(A)'" \
 '{"hops":"A=sqrt(exp(x)/(2-exp(x)));laplace(A)","seq":[1,1,2,7,35,226,1787,16717,180560,2211181]}'
 
-check "$hops --prec 10 'A=1+integral(A^3*exp(-x));laplace(A)'" \
-'{"hops":"A=1+integral(A^3*exp(-x));laplace(A)","seq":[1,1,2,7,35,226,1787,16717,180560,2211181]}'
+check "$hops --prec 10 'A=1+int(A^3*exp(-x));laplace(A)'" \
+'{"hops":"A=1+int(A^3*exp(-x));laplace(A)","seq":[1,1,2,7,35,226,1787,16717,180560,2211181]}'
 
 check "$hops --prec 12 'f=1+x*f(f-1);(f-1)/x'" \
 '{"hops":"f=1+x*f(f-1);(f-1)/x","seq":[1,1,2,6,23,104,531,2982,18109,117545,808764]}'
@@ -87,12 +87,12 @@ check "$hops --prec 32 'f=1+x*f(x^2)'" \
 '{"hops":"f=1+x*f(x^2)","seq":[1,1,0,1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1]}'
 
 # Catalan transform of 2^n gives central binomials
-check "$hops --prec=20 'CATALAN({2^n})-{(2*n)!/(n!)^2}'" \
-'{"hops":"CATALAN({2^n})-{(2*n)!/(n!)^2}","seq":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}'
+check "$hops --prec=20 'C=1+x*C^2;{2^n}@(x*C)-{(2*n)!/(n!)^2}'" \
+'{"hops":"C=1+x*C^2;{2^n}@(x*C)-{(2*n)!/(n!)^2}","seq":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}'
 
 # Inverse Catalan transform of central binomials gives 2^n
-check "$hops --prec=20 '{2^n}-CATALANi({(2*n)!/(n!)^2})'" \
-'{"hops":"{2^n}-CATALANi({(2*n)!/(n!)^2})","seq":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}'
+check "$hops --prec=20 'f={(2*n)!/(n!)^2};{2^n}-f@(x*(1-x))'" \
+'{"hops":"f={(2*n)!/(n!)^2};{2^n}-f@(x*(1-x))","seq":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}'
 
 # Square root of Goldbach's conjecture
 check "$hops --prec=30 'sqrt(A002372)'" \
@@ -104,8 +104,8 @@ check "$hops --prec=30 'sqrt(A000302)-A000984'" \
 
 # https://oeis.org/A079144 -- Number of labeled interval orders
 check "$hops --prec=32 \
-'T=laplacei(BISECT1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))'" \
-'{"hops":"T=laplacei(BISECT1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))","seq":[1,1,3,19,207,3451,81663,2602699,107477247,5581680571,356046745023,27365431508779,2494237642655487,266005087863259291,32815976815540917183,4636895313201764853259]}'
+'T=laplacei(bisect1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))'" \
+'{"hops":"T=laplacei(bisect1(laplace(sin(2*x)/(2*cos(3*x)))));laplace((exp(x)*T)@(x/24))","seq":[1,1,3,19,207,3451,81663,2602699,107477247,5581680571,356046745023,27365431508779,2494237642655487,266005087863259291,32815976815540917183,4636895313201764853259]}'
 
 check "$hops --forall --prec=20 'stdin' | head -5" \
 '{"hops":"f=A000001;f","seq":[0,1,1,1,2,1,2,1,5,2,2,1,5,1,2,1,14,1,5,1]}
@@ -133,3 +133,7 @@ check "$hops --prec=10 '{n+1}?(1/(1-2*x))'" \
 
 check "$hops --prec=10 '{n+1}?(1/x)'" \
 '{"hops":"{n+1}?(1/x)","seq":[]}'
+
+# https://oeis.org/A034695
+check "$hops --prec=15 'dirichlet(A000005,A007426)' " \
+'{"hops":"dirichlet(A000005,A007426)","seq":[1,6,6,21,6,36,6,56,21,36,6,126,6,36,36]}'

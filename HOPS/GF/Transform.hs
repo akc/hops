@@ -79,15 +79,10 @@ trisect2 u =
       Nothing      -> V.empty
       Just (_, u') -> V.snoc (trisect1 u') Indet
 
-shiftLeft :: Series n -> Series n
-shiftLeft f@(Series u)
+shift :: Series n -> Series n
+shift f@(Series u)
     | V.null u  = f
     | otherwise = Series $ V.snoc (V.tail u) Indet
-
-shiftRight :: Series n -> Series n
-shiftRight f@(Series u)
-    | V.null u  = f
-    | otherwise = Series $ V.cons 1 (V.init u)
 
 finDiff :: Vector Rat -> Vector Rat
 finDiff u =
@@ -132,7 +127,7 @@ restrictToPrefix n = V.imap $ \i c -> if i < n then c else Indet
 
 euler :: KnownNat n => Series n -> Series n
 euler f =
-    lift (restrictToPrefix (length cs)) $ shiftLeft (1 / product gs)
+    lift (restrictToPrefix (length cs)) $ shift (1 / product gs)
   where
     cs = map Val (rationalPrefix f)
     gs = zipWith (\k c -> (1 - xpow k) ^! c) [1::Int ..] cs
@@ -151,7 +146,7 @@ euleri (Series u) = Series $ V.generate (V.length u) (\i -> term (i+1))
 
 weight :: KnownNat n => Series n -> Series n
 weight f =
-    lift (restrictToPrefix (length cs)) $ shiftLeft (product gs)
+    lift (restrictToPrefix (length cs)) $ shift (product gs)
   where
     cs = map Val (rationalPrefix f)
     gs = zipWith (\n c -> (1 + xpow n) ^! c) [1::Int ..] cs
@@ -222,53 +217,38 @@ laplacei f = f ./ facSeries
 associations :: KnownNat n => [(ByteString, Transform n)]
 associations =
   map (Transform1 <$>)
-    [ ("ABS",        \(Series v) -> Series (V.map abs v))
-    , ("BARRY1",     \f -> 1 / (1 - x - x*x*f)) -- Named after Paul Barry
-    , ("BARRY2",     \f -> 1 / (1 + x + x*x*f)) -- Named after Paul Barry
-    , ("BINOMIALi",  \f -> laplace(exp (-x) * laplacei f))
-    , ("BINOMIAL",   \f -> laplace(exp x * laplacei f))
-    , ("BIN1",       \f -> shiftLeft $ laplace(-exp (-x) * (laplacei (x*f) `o` (-x))))
-    , ("BISECT0",    lift bisect0)
-    , ("BISECT1",    lift bisect1)
-    , ("BOUSi",      bousi)
-    , ("BOUS",       bous)
-    , ("CATALANi",   \f -> f `o` (x*(1-x)))
-    , ("CATALAN",    \f -> let cat = 2/(1+sqrt(1-4*x)) in f `o` (x*cat))
-    , ("CYC",        ccycle)
-    , ("DIFF",       lift finDiff)
-    , ("D",          derivative)
-    , ("DIRICHLETi", lift dirichleti)
-    , ("EULERi",     euleri)
-    , ("EULER",      euler)
-    , ("EXP",        \f -> shiftLeft $ laplace (exp (laplacei (x*f))))
-    , ("lHANKEL",    \f -> let g = f .* f - shiftLeft f .* shiftRight f in shiftLeft g)
-    , ("HANKEL",     lift hankel)
-    , ("I",          rseq)
-    , ("IC",         rseq')
-    , ("LAHi",       \f -> laplace(laplacei f `o` (x/(1+x))))
-    , ("LAH",        \f -> laplace(laplacei f `o` (x/(1-x))))
-    , ("LEFT",       shiftLeft)
-    , ("LOG",        \f -> shiftLeft $ laplace(log (1 + laplacei (x*f))))
-    , ("MOBIUSi",    \f -> liftAny dirichlet [1/(1-x), f])
-    , ("MOBIUS",     \f -> liftAny dirichlet [lift dirichleti (1/(1-x)), f])
-    , ("MSET",       multiset)
-    , ("PARTITION",  multiset . rseq)
-    , ("POINT",      \f -> x*derivative f)
-    , ("PRODS",      lift $ V.drop 1 . V.scanl (*) 1)
-    , ("PSET",       powerset)
-    , ("RIGHT",      shiftRight)
-    , ("SEQ",        \f -> 1/(1 - f))
-    , ("STIRLINGi",  \f -> shiftLeft $ laplace $ laplacei (x*f) `o` log (x+1))
-    , ("STIRLING",   \f -> shiftLeft $ laplace $ laplacei (x*f) `o` (exp x - 1))
+    [ ("absolute",   \(Series v) -> Series (V.map abs v))
+    , ("bisect0",    lift bisect0)
+    , ("bisect1",    lift bisect1)
+    , ("bousi",      bousi)
+    , ("bous",       bous)
+    , ("cyc",        ccycle)
+    , ("dirichleti", lift dirichleti)
+    , ("euleri",     euleri)
+    , ("euler",      euler)
+    , ("hankel",     lift hankel)
+    , ("indicator",  rseq)
+    , ("indicatorc", rseq')
+    , ("shift",      shift)
+    , ("mobiusi",    \f -> liftAny dirichlet [1/(1-x), f])
+    , ("mobius",     \f -> liftAny dirichlet [lift dirichleti (1/(1-x)), f])
+    , ("mset",       multiset)
+    , ("partition",  multiset . rseq)
+    , ("point",      \f -> x*derivative f)
+    , ("prods",      lift $ V.drop 1 . V.scanl (*) 1)
+    , ("pset",       powerset)
+    , ("seq",        \f -> 1/(1 - f))
     , ("T019",       t019)
-    , ("TRISECT0",   lift trisect0)
-    , ("TRISECT1",   lift trisect1)
-    , ("TRISECT2",   lift trisect2)
-    , ("WEIGHT",     weight)
+    , ("trisect0",   lift trisect0)
+    , ("trisect1",   lift trisect1)
+    , ("trisect2",   lift trisect2)
+    , ("weight",     weight)
     , ("laplacei",   laplacei)
     , ("laplace",    laplace)
     , ("revert",     revert)
-    , ("integral",   integral)
+    , ("diff",       derivative)
+    , ("int",        integral)
+    , ("delta",      lift finDiff)
     , ("sqrt",       sqrt)
     , ("abs",        abs)
     , ("log",        log)
@@ -300,7 +280,7 @@ associations =
     , ("coef",       \[f,g] -> (?) f g)
     , ("ptmul",      \[f,g] -> (.*) f g)
     , ("ptdiv",      \[f,g] -> (./) f g)
-    , ("DIRICHLET",  liftAny dirichlet)
+    , ("dirichlet",  liftAny dirichlet)
     ]
 
 dispatch :: KnownNat n => Map ByteString (Transform n)
