@@ -34,6 +34,8 @@ import HOPS.Utils.Matrix
 import HOPS.GF
 import qualified HOPS.GF.Const as C
 import qualified HOPS.GF.Rats as R
+import HOPS.DB
+import HOPS.Config
 
 type S5  = Series 5
 type S10 = Series 10
@@ -283,14 +285,8 @@ ogf n = series n . map (Val . fromIntegral)
 ogf20 = ogf (Proxy :: Proxy 20)
 
 stubDB :: KnownNat n => Vector (Series n)
-stubDB = nilVec // [(i-1, series' xs) | (ANum i, xs) <- stubDBaList]
-  where
-    nilVec  = V.replicate 555555 nil
-    series' = series (Proxy :: Proxy n) . map Val
-
-stubDBaList :: [(ANum, Sequence)]
-stubDBaList = unsafePerformIO (parseStripped <$> B.readFile "tests/stub.db")
-{-# NOINLINE stubDBaList #-}
+stubDB = unsafePerformIO $ readANumDB =<< getConfig
+{-# NOINLINE stubDB #-}
 
 splitEqn :: ByteString -> (ByteString, ByteString)
 splitEqn bs = (lhs', rhs')

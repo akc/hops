@@ -21,5 +21,5 @@ instance Pretty Int where
 instance Pretty Integer where
     pretty = B.pack . show
 
-instance Pretty a => Pretty (Ratio a) where
+instance (Pretty a, Integral a) => Pretty (Ratio a) where
     pretty r = B.concat [pretty (numerator r), "/", pretty (denominator r)]

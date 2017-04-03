@@ -64,6 +64,8 @@ Library
                        HOPS.GF.Series
                        HOPS.GF.Transform
 
+  Other-modules:       Paths_hops
+
   ghc-options:         -Wall -fno-warn-unused-do-bind
                        -fno-warn-missing-signatures -O2
 
