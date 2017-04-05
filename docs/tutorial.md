@@ -1,6 +1,6 @@
 % HOPS Tutorial
 % Anders Claesson
-% 27 March 2016
+% 5 April 2017
 
 # HOPS Tutorial
 
@@ -336,7 +336,7 @@ $ hops 'A000108-A001006'
 }
 ```
 
-The first time you use A-numbers with `hops` you will be asked to run
+Before using A-numbers with `hops` you should run
 `hops --update`. This will download `https://oeis.org/stripped.gz` and
 unpack it into `.oeis-data/stripped` in your home
 directory. Alternatively, you can do this by hand using `wget` and
@@ -360,10 +360,10 @@ $ sloane A038072
 Let's test that claim:
 
 ```
-$ hops 'f=A038072;EULER(f)-LEFT(f)'
+$ hops 'f=A038072;euler(f)-shift(f)'
 {
-  "hops": "f=A038072;EULER(f)-LEFT(f)",
-  "seq": [0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  "hops": "f=A038072;euler(f)-shift(f)",
+  "seq": "0,0,0,0,0,0,0,0,0,0,0,0,0,0"
 }
 ```
 
@@ -375,25 +375,25 @@ transformations we are interested in. E.g. if we create a file
 `transforms.hops` containing
 
 ```
-BINOMIAL(stdin)
-EULER(stdin)
-STIRLING(stdin)
+stdin^2
+revert(x*stdin)
+dirichlet(stdin,stdin^2)
 ```
 then we can apply all of these transforms to `1/(1-x)` as follows:
 
 ```
-$ hops '1/(1-x)' | hops --prec=9 -f transforms.hops
+$ hops '1/(1-x)' | hops -f transforms.hops
 {
-  "hops":"f=1/(1-x);BINOMIAL(f)",
-  "seq":[1,2,4,8,16,32,64,128,256]
+  "hops": "f=1/(1-x);f^2",
+  "seq": "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"
 }
 {
-  "hops":"f=1/(1-x);EULER(f)",
-  "seq":[1,2,3,5,7,11,15,22]
+  "hops": "f=1/(1-x);revert(x*f)",
+  "seq": "0,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1,1,-1"
 }
 {
-  "hops":"f=1/(1-x);STIRLING(f)",
-  "seq":[1,2,5,15,52,203,877,4140]
+  "hops": "f=1/(1-x);dirichlet(f,f^2)",
+  "seq": "1,3,4,7,6,12,8,15,13,18,12,28,14,24,24"
 }
 ```
 

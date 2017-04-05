@@ -1,6 +1,6 @@
 % HOPS
 % Anders Claesson
-% 27 March 2015
+% 5 April 2017
 
 <h1 style="font-weight:normal; font-size:15px;">
 ![HOPS](hops.png)HOPS - Handy Operations on Power Series
@@ -82,7 +82,6 @@ $ cabal update && cabal install hops
 @misc{hops,
   author = "Anders Claesson",
   title  = "HOPS: Handy Operations on Power Series",
-  year   = 2015,
   howpublished = "\url{http://akc.is/hops}"
 }
 ```
