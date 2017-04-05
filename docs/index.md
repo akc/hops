@@ -46,13 +46,7 @@ See the [documentation](#documentation) section below for more.
 
 ## Installation
 
-The easiest way to get started is to download a prebuilt binary. Such
-binaries can be found on the
-[releases page](https://github.com/akc/hops/releases).
-The binaries are statically linked and should work on any Linux system.
-
-Alternative ways of installing `hops` include
-using the [nix](https://nixos.org/nix/) package manager:
+Using the [nix](https://nixos.org/nix/) package manager:
 
 ```
 $ nix-env -f "<nixpkgs>" -iA haskellPackages.hops
