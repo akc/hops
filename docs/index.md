@@ -63,12 +63,13 @@ $ cabal update && cabal install hops
 - [Tutorial](tutorial/)
 - [Description of the HOPS language](language/)
 - [Man page](man/)
+- [Hackage](http://hackage.haskell.org/package/hops)
 
 ## Contribute
 
 - [Issue tracker](https://github.com/akc/hops/issues) on GitHub
 - [Source code](https://github.com/akc/hops) on GitHub
-- You can also [contact me](http://akc.is/email/) directly
+- You can also [contact me](http://akc.is/contact/) directly
 
 ## How to cite
 
