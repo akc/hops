@@ -418,11 +418,7 @@ evalName t env ss =
     Nothing -> case ss of
                  [s] -> fromMaybe nil (lookupVar t env) `o` s
                  _   -> nil
-    Just (Transform1 f) -> case ss of
-                             [s] -> f s
-                             _   -> nil
-    Just (TransformAny f) -> f ss
-    Just (TransformK k f) -> if length ss == k then f ss else nil
+    Just (Transform k f) -> if length ss == k then f ss else nil
 
 evalCore :: KnownNat n => Core -> State (Env n) (Series n)
 evalCore (App f es) = evalName f <$> get <*> mapM evalCore es
