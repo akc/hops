@@ -12,7 +12,8 @@ power series and integer sequences. It comes with an interpreter and
 command line program called `hops`.
 
 For instance, we can generate the sequence of
-[Catalan numbers](https://oeis.org/A000108) from its generating function:
+[Catalan numbers](https://oeis.org/A000108) from its generating function,
+a functional equation, or an explicit formula for the *n*-th term:
 
 ```
 $ hops --prec=11 '2/(1+sqrt(1-4*x))'
@@ -21,9 +22,6 @@ $ hops --prec=11 '2/(1+sqrt(1-4*x))'
   "seq":[1,1,2,5,14,42,132,429,1430,4862,16796]
 }
 ```
-
-Or, using a functional equation:
-
 ```
 $ hops --prec=11 'C=1+x*C^2'
 {
@@ -31,9 +29,6 @@ $ hops --prec=11 'C=1+x*C^2'
   "seq":[1,1,2,5,14,42,132,429,1430,4862,16796]
 }
 ```
-
-Or, using an explicit formula for the *n*-th term:
-
 ```
 $ hops --prec=11 '{(2*n)!/(n!*(n+1)!)}'
 {
