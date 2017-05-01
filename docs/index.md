@@ -1,17 +1,17 @@
 % HOPS
 % Anders Claesson
-% 5 April 2017
+% 1 May 2017
 
 <h1 style="font-weight:normal; font-size:15px;">
 ![HOPS](hops.png)HOPS - Handy Operations on Power Series
 </h1>
 <hr/>
 
-**HOPS** is a small domain specific scripting language for working with
-power series and integer sequences. It comes with an interpreter
-called `hops`.
+**HOPS** is a small domain specific language for working with
+power series and integer sequences. It comes with an interpreter and
+command line program called `hops`.
 
-Here we generate the sequence of
+For instance, we can generate the sequence of
 [Catalan numbers](https://oeis.org/A000108) from its generating function:
 
 ```
@@ -22,7 +22,7 @@ $ hops --prec=11 '2/(1+sqrt(1-4*x))'
 }
 ```
 
-Or, using an implicit defition:
+Or, using a functional equation:
 
 ```
 $ hops --prec=11 'C=1+x*C^2'
