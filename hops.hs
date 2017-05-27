@@ -20,7 +20,6 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.Aeson (decodeStrict', encode)
 import Control.Parallel.Strategies
-import Control.Monad.Trans.State
 import System.Directory
 import System.IO
 import HOPS.Entry
@@ -101,7 +100,7 @@ stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
 stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 
 evalCoreMany :: KnownNat n => Env n -> [Core] -> [Sequence]
-evalCoreMany env cs = [ rationalPrefix $ fst $ runState (evalCore c) env | c <- cs ]
+evalCoreMany env cs = [ rationalPrefix $ evalCore' env c | c <- cs ]
 
 runPrgs :: KnownNat n => [Env n] -> [Core] -> [Sequence]
 runPrgs envs progs =

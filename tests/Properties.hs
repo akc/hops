@@ -154,13 +154,12 @@ instance KnownNat n => Arbitrary (FullInvertible n) where
     arbitrary = FullInvertible
       <$> (series (Proxy :: Proxy n) <$> valGenStream) `suchThat` nonzeroConstant
 
-instance Arbitrary Prg where
-    arbitrary = Prg <$> listOf arbitrary
-
-instance Arbitrary Cmd where
-    arbitrary = oneof
-        [ Expr  <$> arbitrary
-        , Asgmt <$> nameGen <*> arbitrary
+instance Arbitrary Expr where
+    arbitrary = frequency
+        [ ( 4, return EPass)
+        , (45, Singleton <$> arbitrary)
+        , (45, ELet <$> nameGen <*> arbitrary)
+        , ( 6, ESeq <$> arbitrary <*> arbitrary)
         ]
 
 instance Arbitrary Expr0 where
@@ -198,7 +197,7 @@ instance Arbitrary Expr3 where
         , (33, ELit   <$> arbitrary)
         , ( 1, EApp   <$> nameGen <*> arbitrary)
         , ( 7, ERats  <$> ratsGen  )
-        , ( 1, Expr0  <$> arbitrary)
+        , ( 1, Expr   <$> arbitrary)
         ]
 
 instance Arbitrary C.Expr0 where
@@ -267,17 +266,17 @@ f ~== g = as `isPrefixOf` bs || bs `isPrefixOf` as
 check :: Testable prop => Int -> prop -> IO Result
 check n = quickCheckWithResult stdArgs {maxSuccess = n}
 
-evalPrg :: KnownNat n => Env n -> Prg -> Series n
-evalPrg env = evalCorePrg env . core
+evalExpr :: KnownNat n => Env n -> Expr -> Series n
+evalExpr env = evalCore' env . core
 
-evalPrg1 :: KnownNat n => Prg -> Series n
-evalPrg1 = evalCorePrg emptyEnv . core
+evalExpr1 :: KnownNat n => Expr -> Series n
+evalExpr1 = evalCore' emptyEnv . core
 
-runPrg :: KnownNat n => Env n -> ByteString -> Series n
-runPrg env = evalPrg env . fromMaybe (error "parse error") . parsePrg
+runExpr :: KnownNat n => Env n -> ByteString -> Series n
+runExpr env = evalExpr env . fromMaybe (error "parse error") . parseExpr
 
-runPrg1 :: KnownNat n => ByteString -> Series n
-runPrg1 = runPrg emptyEnv
+runExpr1 :: KnownNat n => ByteString -> Series n
+runExpr1 = runExpr emptyEnv
 
 ogf :: KnownNat n => Proxy n -> [Integer] -> Series n
 ogf n = series n . map (Val . fromIntegral)
@@ -299,7 +298,7 @@ evalEqn :: KnownNat n => [Series n] -> ByteString -> (Series n, Series n)
 evalEqn fs eqn = (exec lhs, exec rhs)
   where
     (lhs, rhs) = splitEqn eqn
-    exec = runPrg $ Env stubDB (M.fromList (zip nameSupply fs))
+    exec = runExpr $ Env stubDB (M.fromList (zip nameSupply fs))
 
 prop :: KnownNat n => [Series n] -> ByteString -> Bool
 prop fs = uncurry (==) . evalEqn fs
@@ -325,13 +324,13 @@ propN1 m = propN m [nil::S20]
 propN1' :: ByteString -> Bool
 propN1' = prop' [nil::S20]
 
-prop_Prg_id1 p = mempty <> p == (p :: Prg)
-prop_Prg_id2 p = p <> mempty == (p :: Prg)
-prop_Prg_assoc p q r = p <> (q <> r) == (p <> q) <> (r :: Prg)
+prop_Expr_id1 p = mempty <> p == (p :: Expr)
+prop_Expr_id2 p = p <> mempty == (p :: Expr)
+prop_Expr_assoc p q r = pretty (p <> (q <> r)) == pretty ((p <> q) <> (r :: Expr))
 
-prop_Prg_value p = evalPrg1 p == (evalPrg1 q :: Series 40)
+prop_Expr_value p = evalExpr1 p == (evalExpr1 q :: Series 40)
   where
-    q = p <> fromJust (parsePrg "stdin") :: Prg
+    q = p <> fromJust (parseExpr "stdin") :: Expr
 
 prop_Rat_power_u = (1/4) !^! (3/2) == Val (1 % 8)
 prop_Neg_power_u = prop1 "{-(-1)^n} == -1/(1+x)"
@@ -392,16 +391,16 @@ prop_Powers_of_2 f = prop [f::Series 30] "{2^n} == 1/(1-2*x)"
 
 dropTrailingZeros = reverse . dropWhile (== 0) . reverse
 
-prop_ListOfCoeffs f = runPrg1 (pretty f) == (f :: Series 100)
+prop_ListOfCoeffs f = runExpr1 (pretty f) == (f :: Series 100)
 
-prop_Polynomial (Full f) = runPrg1 p == (f :: S10)
+prop_Polynomial (Full f) = runExpr1 p == (f :: S10)
   where
     cs = coeffList f
     term c i = B.concat [pretty c, "*x^", pretty i]
     p = B.intercalate "+" (zipWith term cs [0::Integer ..])
 
 -- Arithmetic progression
-prop_AP a b = ogf20 [a,b..] == runPrg1 (B.concat ["{", pretty a, ",", pretty b, ",...}"])
+prop_AP a b = ogf20 [a,b..] == runExpr1 (B.concat ["{", pretty a, ",", pretty b, ",...}"])
 
 prop_Geometric1 c = prop [ogf20 [c^i | i<-[0..]]] (B.pack $ printf "f == {(%s)^n}" (show c))
 prop_Geometric2 c = prop [ogf20 [c^i | i<-[0..]]] (B.pack $ printf "f == 1/(1 - %s*x)" (show c))
@@ -428,7 +427,7 @@ prop_Unit_circle (FullRevertible1 f) = prop' [f::S10] "cos(f)^2 + sin(f)^2 == 1"
 
 prop_Exact_sqrt c d =
     let prg = B.pack ("sqrt({(" ++ show c ++ ")^2/(" ++ show d ++ ")^2})")
-    in runPrg1 prg ~= ogf20 [abs c::Integer] / ogf20 [abs d::Integer]
+    in runExpr1 prg ~= ogf20 [abs c::Integer] / ogf20 [abs d::Integer]
 
 prop_sinh        (Revertible1 f) = prop' [f::S10] "sinh(f)      == (exp(f)-exp(-f))/2"
 prop_cosh    (FullRevertible1 f) = prop' [f::S10] "cosh(f)      == (exp(f)+exp(-f))/2"
@@ -537,134 +536,134 @@ prop_mset (Revertible f) = uncurry (~=) $ evalEqn [f::S10, mset f] "mset(f) == g
 prop_pset (Revertible f) = uncurry (~=) $ evalEqn [f::S10, pset f] "pset(f) == g"
 
 tests =
-    [ ("Prg-monoid/id-1",        check 100 prop_Prg_id1)
-    , ("Prg-monoid/id-2",        check 100 prop_Prg_id2)
-    , ("Prg-monoid/associative", check 100 prop_Prg_assoc)
-    , ("Prg-monoid/value",       check 100 prop_Prg_value)
-    , ("unit/Rat-Power",         check   1 prop_Rat_power_u)
-    , ("unit/Neg-Power",         check   1 prop_Neg_power_u)
-    , ("unit/shift",             check   1 prop_shift_u)
-    , ("unit/bisect0",           check   1 prop_bisect0_u)
-    , ("unit/bisect1",           check   1 prop_bisect1_u)
-    , ("unit/cyc",               check   1 prop_cyc_u)
-    , ("unit/delta",             check   1 prop_delta_u)
-    , ("unit/mobius",            check   1 prop_mobius_u)
-    , ("unit/mobiusi",           check   1 prop_mobiusi_u)
-    , ("unit/dirichleti",        check   1 prop_dirichleti_u)
-    , ("unit/bous",              check   1 prop_bous_u)
-    , ("unit/bousi",             check   1 prop_bousi_u)
-    , ("unit/euler",             check   1 prop_euler_u)
-    , ("unit/euleri",            check   1 prop_euleri_u)
-    , ("unit/mset",              check   1 prop_mset_u)
-    , ("unit/pset",              check   1 prop_pset_u)
-    , ("unit/prods",             check   1 prop_prods_u)
-    , ("unit/trisect0",          check   1 prop_trisect0_u)
-    , ("unit/trisect1",          check   1 prop_trisect1_u)
-    , ("unit/trisect2",          check   1 prop_trisect2_u)
-    , ("unit/point",             check   1 prop_point_u)
-    , ("unit/weight",            check   1 prop_weight_u)
-    , ("unit/partition",         check   1 prop_partition_u)
-    , ("unit/hankel",            check   1 prop_hankel_u)
-    , ("unit/indicator",         check   1 prop_indicator_u)
-    , ("unit/indicatorc",        check   1 prop_indicatorc_u)
-    , ("shift",                  check 100 prop_shift)
-    , ("bousi.bous=id",          check  20 prop_bousi_bous)
-    , ("bous.bousi=id",          check  20 prop_bous_bousi)
-    , ("euleri.euler=id",        check   5 prop_euleri_euler)
-    , ("euler.euleri=id",        check   5 prop_euler_euleri)
-    , ("mobiusi_mobius=id",      check 100 prop_mobiusi_mobius)
-    , ("mobius.mobiusi=id",      check 100 prop_mobius_mobiusi)
-    , ("dirichlet.dirichleti1=1",check 100 prop_dirichlet_dirichleti1)
-    , ("dirichlet.dirichleti2=1",check 100 prop_dirichlet_dirichleti2)
-    , ("delta = expr",           check 100 prop_delta)
+    [ ("Expr-monoid/id-1",        check 100 prop_Expr_id1)
+    , ("Expr-monoid/id-2",        check 100 prop_Expr_id2)
+    , ("Expr-monoid/associative", check 100 prop_Expr_assoc)
+    , ("Expr-monoid/value",       check 100 prop_Expr_value)
+    , ("unit/Rat-Power",          check   1 prop_Rat_power_u)
+    , ("unit/Neg-Power",          check   1 prop_Neg_power_u)
+    , ("unit/shift",              check   1 prop_shift_u)
+    , ("unit/bisect0",            check   1 prop_bisect0_u)
+    , ("unit/bisect1",            check   1 prop_bisect1_u)
+    , ("unit/cyc",                check   1 prop_cyc_u)
+    , ("unit/delta",              check   1 prop_delta_u)
+    , ("unit/mobius",             check   1 prop_mobius_u)
+    , ("unit/mobiusi",            check   1 prop_mobiusi_u)
+    , ("unit/dirichleti",         check   1 prop_dirichleti_u)
+    , ("unit/bous",               check   1 prop_bous_u)
+    , ("unit/bousi",              check   1 prop_bousi_u)
+    , ("unit/euler",              check   1 prop_euler_u)
+    , ("unit/euleri",             check   1 prop_euleri_u)
+    , ("unit/mset",               check   1 prop_mset_u)
+    , ("unit/pset",               check   1 prop_pset_u)
+    , ("unit/prods",              check   1 prop_prods_u)
+    , ("unit/trisect0",           check   1 prop_trisect0_u)
+    , ("unit/trisect1",           check   1 prop_trisect1_u)
+    , ("unit/trisect2",           check   1 prop_trisect2_u)
+    , ("unit/point",              check   1 prop_point_u)
+    , ("unit/weight",             check   1 prop_weight_u)
+    , ("unit/partition",          check   1 prop_partition_u)
+    , ("unit/hankel",             check   1 prop_hankel_u)
+    , ("unit/indicator",          check   1 prop_indicator_u)
+    , ("unit/indicatorc",         check   1 prop_indicatorc_u)
+    , ("shift",                   check 100 prop_shift)
+    , ("bousi.bous=id",           check  20 prop_bousi_bous)
+    , ("bous.bousi=id",           check  20 prop_bous_bousi)
+    , ("euleri.euler=id",         check   5 prop_euleri_euler)
+    , ("euler.euleri=id",         check   5 prop_euler_euleri)
+    , ("mobiusi_mobius=id",       check 100 prop_mobiusi_mobius)
+    , ("mobius.mobiusi=id",       check 100 prop_mobius_mobiusi)
+    , ("dirichlet.dirichleti1=1", check 100 prop_dirichlet_dirichleti1)
+    , ("dirichlet.dirichleti2=1", check 100 prop_dirichlet_dirichleti2)
+    , ("delta = expr",            check 100 prop_delta)
     , ("point = x*diff(f./{n!}).*{n!}", check 100 prop_point)
-    , ("distributive1",          check 100 prop_Distrib1)
-    , ("distributive2",          check 100 prop_Distrib2)
-    , ("distributive3",          check 100 prop_Distrib3)
-    , ("reflexivity",            check 100 prop_Reflexivity)
-    , ("eval: [2^n]",            check 100 prop_Powers_of_2)
-    , ("eval: x@f=f",            check 100 prop_Compose1)
-    , ("eval: f@x=f",            check 100 prop_Compose2)
-    , ("Bell-1",                 check   1 prop_Bell_1)
-    , ("Bell-2",                 check   1 prop_Bell_2)
-    , ("Bell-3",                 check   1 prop_Bell_3)
-    , ("Bell-4",                 check   1 prop_Bell_4)
-    , ("Bessel",                 check   1 prop_Bessel)
-    , ("Catalan-1",              check   1 prop_Catalan_1)
-    , ("Catalan-2",              check   1 prop_Catalan_2)
-    , ("Catalan-3",              check   1 prop_Catalan_3)
-    , ("Catalan-4",              check   1 prop_Catalan_4)
-    , ("Motzkin-1",              check   1 prop_Motzkin_1)
-    , ("Motzkin-2",              check   1 prop_Motzkin_2)
-    , ("Motzkin-3",              check   1 prop_Motzkin_3)
-    , ("Motzkin-4",              check   1 prop_Motzkin_4)
-    , ("Boustrophedon-1",        check   1 prop_Bous_1)
-    , ("Boustrophedon-2",        check   1 prop_Bous_2)
-    , ("Boustrophedon-3",        check   1 prop_Bous_3)
-    , ("Euler",                  check   1 prop_Euler)
-    , ("Fibonacci-1",            check   1 prop_Fibonacci_1)
-    , ("Fibonacci-2",            check   1 prop_Fibonacci_2)
-    , ("List of coeffs",         check 100 prop_ListOfCoeffs)
-    , ("Polynomial",             check  50 prop_Polynomial)
-    , ("Arithmetic progression", check 100 prop_AP)
-    , ("Geometric series 1",     check 100 prop_Geometric1)
-    , ("Geometric series 2",     check 100 prop_Geometric2)
-    , ("Labeled trees 1",        check   1 prop_Labeled_trees_1)
-    , ("Labeled trees 2",        check   1 prop_Labeled_trees_2)
-    , ("Unlabeled trees",        check   1 prop_Unlabeled_trees)
-    , ("Labeled graphs",         check   1 prop_Labeled_graphs)
+    , ("distributive1",           check 100 prop_Distrib1)
+    , ("distributive2",           check 100 prop_Distrib2)
+    , ("distributive3",           check 100 prop_Distrib3)
+    , ("reflexivity",             check 100 prop_Reflexivity)
+    , ("eval: [2^n]",             check 100 prop_Powers_of_2)
+    , ("eval: x@f=f",             check 100 prop_Compose1)
+    , ("eval: f@x=f",             check 100 prop_Compose2)
+    , ("Bell-1",                  check   1 prop_Bell_1)
+    , ("Bell-2",                  check   1 prop_Bell_2)
+    , ("Bell-3",                  check   1 prop_Bell_3)
+    , ("Bell-4",                  check   1 prop_Bell_4)
+    , ("Bessel",                  check   1 prop_Bessel)
+    , ("Catalan-1",               check   1 prop_Catalan_1)
+    , ("Catalan-2",               check   1 prop_Catalan_2)
+    , ("Catalan-3",               check   1 prop_Catalan_3)
+    , ("Catalan-4",               check   1 prop_Catalan_4)
+    , ("Motzkin-1",               check   1 prop_Motzkin_1)
+    , ("Motzkin-2",               check   1 prop_Motzkin_2)
+    , ("Motzkin-3",               check   1 prop_Motzkin_3)
+    , ("Motzkin-4",               check   1 prop_Motzkin_4)
+    , ("Boustrophedon-1",         check   1 prop_Bous_1)
+    , ("Boustrophedon-2",         check   1 prop_Bous_2)
+    , ("Boustrophedon-3",         check   1 prop_Bous_3)
+    , ("Euler",                   check   1 prop_Euler)
+    , ("Fibonacci-1",             check   1 prop_Fibonacci_1)
+    , ("Fibonacci-2",             check   1 prop_Fibonacci_2)
+    , ("List of coeffs",          check 100 prop_ListOfCoeffs)
+    , ("Polynomial",              check  50 prop_Polynomial)
+    , ("Arithmetic progression",  check 100 prop_AP)
+    , ("Geometric series 1",      check 100 prop_Geometric1)
+    , ("Geometric series 2",      check 100 prop_Geometric2)
+    , ("Labeled trees 1",         check   1 prop_Labeled_trees_1)
+    , ("Labeled trees 2",         check   1 prop_Labeled_trees_2)
+    , ("Unlabeled trees",         check   1 prop_Unlabeled_trees)
+    , ("Labeled graphs",          check   1 prop_Labeled_graphs)
     , ("Connected labeled graphs", check 1 prop_Connected_labeled_graphs)
     , ("Derivative of geometric",  check 1 prop_D_of_geometric)
-    , ("Product rule",           check  50 prop_Product_rule)
-    , ("Reciprocal rule",        check  50 prop_Reciprocal_rule)
-    , ("Chain rule",             check  50 prop_Chain_rule)
-    , ("Fund Thm of Calc 1",     check 100 prop_Fundamental1)
-    , ("Fund Thm of Calc 2",     check 100 prop_Fundamental2)
-    , ("Integration by parts",   check 100 prop_Integration_by_parts)
-    , ("A235802",                check   1 prop_A235802)
-    , ("A001710-1",              check   1 prop_A001710_1)
-    , ("A001710-2",              check   1 prop_A001710_2)
-    , ("A075834",                check   1 prop_A075834)
-    , ("A003149",                check   1 prop_A003149)
-    , ("Fredholm-Rueppel",       check   1 prop_Fredholm_Rueppel)
-    , ("A000670-1",              check   1 prop_A000670_1)
-    , ("A000670-2",              check   1 prop_A000670_2)
-    , ("A000670-3",              check   1 prop_A000670_3)
-    , ("A000670-4",              check   1 prop_A000670_4)
-    , ("Increasing forests",     check   1 prop_IncreasingForests)
-    , ("Unit circle",            check  20 prop_Unit_circle)
-    , ("Exact sqrt",             check  50 prop_Exact_sqrt)
-    , ("Derivative of sin",      check  50 prop_D_of_sin)
-    , ("Derivative of cos",      check  50 prop_D_of_cos)
-    , ("Derivative of tan",      check  50 prop_D_of_tan)
-    , ("Derivative of arcsin",   check  50 prop_D_of_arcsin)
-    , ("Derivative of arccos",   check  50 prop_D_of_arccos)
-    , ("Derivative of arctan",   check  50 prop_D_of_arctan)
-    , ("Derivative of sinh",     check  50 prop_D_of_sinh)
-    , ("Derivative of cosh",     check  50 prop_D_of_cosh)
-    , ("Derivative of tanh",     check  50 prop_D_of_tanh)
-    , ("Derivative of arsinh",   check   5 prop_D_of_arsinh)
-    , ("Derivative of arcosh",   check   5 prop_D_of_arcosh)
-    , ("Derivative of artanh",   check  50 prop_D_of_artanh)
-    , ("sinh",                   check  50 prop_sinh)
-    , ("cosh",                   check  50 prop_cosh)
-    , ("tanh",                   check  50 prop_tanh)
-    , ("Hyperbolic unit",        check  50 prop_Hyperbolic_unit)
-    , ("arsinh",                 check  50 prop_arsinh)
-    , ("artanh",                 check  50 prop_artanh)
-    , ("A012259-1",              check   1 prop_A012259_1)
-    , ("A012259-2",              check   1 prop_A012259_2)
-    , ("A012259-3",              check   1 prop_A012259_3)
-    , ("A202152",                check   1 prop_A202152)
-    , ("A191422",                check   1 prop_A191422)
-    , ("A088789",                check   1 prop_A088789)
-    , ("A049140",                check   1 prop_A049140)
-    , ("A008965",                check   1 prop_A008965)
-    , ("Determinant",            check 100 prop_Determinant)
-    , ("Coefficients",           check   1 prop_Coefficients)
-    , ("seq identity",           check  50 prop_seq)
-    , ("mset identity",          check  50 prop_mset)
-    , ("pset identity",          check  50 prop_pset)
+    , ("Product rule",            check  50 prop_Product_rule)
+    , ("Reciprocal rule",         check  50 prop_Reciprocal_rule)
+    , ("Chain rule",              check  50 prop_Chain_rule)
+    , ("Fund Thm of Calc 1",      check 100 prop_Fundamental1)
+    , ("Fund Thm of Calc 2",      check 100 prop_Fundamental2)
+    , ("Integration by parts",    check 100 prop_Integration_by_parts)
+    , ("A235802",                 check   1 prop_A235802)
+    , ("A001710-1",               check   1 prop_A001710_1)
+    , ("A001710-2",               check   1 prop_A001710_2)
+    , ("A075834",                 check   1 prop_A075834)
+    , ("A003149",                 check   1 prop_A003149)
+    , ("Fredholm-Rueppel",        check   1 prop_Fredholm_Rueppel)
+    , ("A000670-1",               check   1 prop_A000670_1)
+    , ("A000670-2",               check   1 prop_A000670_2)
+    , ("A000670-3",               check   1 prop_A000670_3)
+    , ("A000670-4",               check   1 prop_A000670_4)
+    , ("Increasing forests",      check   1 prop_IncreasingForests)
+    , ("Unit circle",             check  20 prop_Unit_circle)
+    , ("Exact sqrt",              check  50 prop_Exact_sqrt)
+    , ("Derivative of sin",       check  50 prop_D_of_sin)
+    , ("Derivative of cos",       check  50 prop_D_of_cos)
+    , ("Derivative of tan",       check  50 prop_D_of_tan)
+    , ("Derivative of arcsin",    check  50 prop_D_of_arcsin)
+    , ("Derivative of arccos",    check  50 prop_D_of_arccos)
+    , ("Derivative of arctan",    check  50 prop_D_of_arctan)
+    , ("Derivative of sinh",      check  50 prop_D_of_sinh)
+    , ("Derivative of cosh",      check  50 prop_D_of_cosh)
+    , ("Derivative of tanh",      check  50 prop_D_of_tanh)
+    , ("Derivative of arsinh",    check   5 prop_D_of_arsinh)
+    , ("Derivative of arcosh",    check   5 prop_D_of_arcosh)
+    , ("Derivative of artanh",    check  50 prop_D_of_artanh)
+    , ("sinh",                    check  50 prop_sinh)
+    , ("cosh",                    check  50 prop_cosh)
+    , ("tanh",                    check  50 prop_tanh)
+    , ("Hyperbolic unit",         check  50 prop_Hyperbolic_unit)
+    , ("arsinh",                  check  50 prop_arsinh)
+    , ("artanh",                  check  50 prop_artanh)
+    , ("A012259-1",               check   1 prop_A012259_1)
+    , ("A012259-2",               check   1 prop_A012259_2)
+    , ("A012259-3",               check   1 prop_A012259_3)
+    , ("A202152",                 check   1 prop_A202152)
+    , ("A191422",                 check   1 prop_A191422)
+    , ("A088789",                 check   1 prop_A088789)
+    , ("A049140",                 check   1 prop_A049140)
+    , ("A008965",                 check   1 prop_A008965)
+    , ("Determinant",             check 100 prop_Determinant)
+    , ("Coefficients",            check   1 prop_Coefficients)
+    , ("seq identity",            check  50 prop_seq)
+    , ("mset identity",           check  50 prop_mset)
+    , ("pset identity",           check  50 prop_pset)
     ]
 
 main =

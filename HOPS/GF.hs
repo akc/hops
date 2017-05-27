@@ -33,6 +33,7 @@ module HOPS.GF
     , Env (..)
     , emptyEnv
     , evalCore
+    , evalCore'
     -- Parse
     , parseExpr
     , parseExprErr
@@ -126,7 +127,7 @@ data Expr3
     | ELit Integer
     | EApp Name [Expr0] -- A named transform
     | ERats R.Rats
-    | Expr0 Expr0
+    | Expr Expr
     deriving (Show, Eq)
 
 -- tr01 :: Expr0 -> Expr1
@@ -254,7 +255,7 @@ instance Pretty Expr3 where
     pretty (ELit t) = pretty t
     pretty (EApp s es) = s <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty (ERats r) = pretty r
-    pretty (Expr0 e) = paren $ pretty e
+    pretty (Expr e) = paren $ pretty e
 
 -- | @pad d n@ packs the integer @n@ into a `ByteString` padding with
 -- \'0\' on the right to achieve length @d@.
@@ -307,7 +308,7 @@ subsExpr2 f (Expr3 e) = Expr3 (subsExpr3 f e)
 subsExpr3 :: Subs -> Expr3 -> Expr3
 subsExpr3 f (EVar s) = EVar (f s)
 subsExpr3 f (EApp s es) = EApp s (map (subsExpr0 f) es)
-subsExpr3 f (Expr0 e) = Expr0 (subsExpr0 f e)
+subsExpr3 f (Expr e) = Expr (subsExpr f e)
 subsExpr3 _ e = e
 
 subs :: [(Name, Name)] -> Expr -> Expr
@@ -323,25 +324,17 @@ nameSupply = B.words "f g h p q r s t u v w"
           ++ [ B.pack ('f':show i) | i <- [0::Int ..] ]
 
 lastExpr :: Expr -> Expr
-lastExpr EPass = error "empty expression"
-lastExpr e@(Singleton _) = e
-lastExpr e@(ELet _ _) = e
 lastExpr (ESeq _ e) = lastExpr e
+lastExpr e = e
 
 normalForm :: [Name] -> Expr -> ([Name], Expr)
-normalForm vs EPass = (vs, EPass)
-normalForm vs e@(Singleton e0) = let u:us = vs \\ vars' e in (us, ELet u e0)
-normalForm vs e@(ELet _ _) = (vs, e)
-normalForm vs (ESeq e1 e2) = let (us, e3) = normalForm vs e2 in (us, ESeq e1 e3)
-
--- nfEnd :: [Name] -> Prg -> ([Name], Prg)
--- nfEnd vs prog@(Prg cmds) = (ws, Prg cmds')
---   where
---     (ws, cmds') = nfEnd' cmds
---     nfEnd' []       = (vs, [])
---     nfEnd' [Expr e] = let u:us = vs \\ vars' prog in (us, [Asgmt u e])
---     nfEnd' [a]      = (vs, [a])
---     nfEnd' (c:cs)   = let (us, cs') = nfEnd' cs in (us, c:cs')
+normalForm vs e = nf e
+  where
+    nf EPass = (vs, EPass)
+    nf (Singleton e0) = let u:us = vs \\ vars' e in (us, ELet u e0)
+    nf e1@(ELet _ _) = (vs, e1)
+    nf (ESeq e1 EPass) = nf e1
+    nf (ESeq e1 e2) = let (us, e3) = nf e2 in (us, ESeq e1 e3)
 
 rename :: [Name] -> Expr -> ([Name], Expr)
 rename vs p = (names, subs assoc p)
@@ -410,7 +403,7 @@ coreExpr3 (EVar s) = Var s
 coreExpr3 (ELit t) = Lit $ fromInteger t
 coreExpr3 (EApp s es) = App s (map coreExpr0 es)
 coreExpr3 (ERats r) = Rats (R.core r)
-coreExpr3 (Expr0 e) = coreExpr0 e
+coreExpr3 (Expr e) = coreExpr e
 
 varsCore :: Core -> [Name]
 varsCore Pass = []
@@ -479,6 +472,9 @@ evalCore c = go 1
          then return f
          else go (n+1)
 
+evalCore' :: KnownNat n => Env n -> Core -> Series n
+evalCore' env c = fst $ runState (evalCore c) env
+
 --------------------------------------------------------------------------------
 -- Parse
 --------------------------------------------------------------------------------
@@ -489,7 +485,6 @@ assignment = (,) <$> var <*> (string "=" >> expr0)
 expr :: Parser Expr
 expr = chainl1 (uncurry ELet <$> assignment <|> Singleton <$> expr0) (const ESeq <$> string ";")
        <* (string ";" <|> pure "")
-       <* endOfInput
 
 expr0 :: Parser Expr0
 expr0 = chainl1 (Expr1 <$> expr1) (op <$> oneOf "+ -") <?> "expr0"
@@ -525,7 +520,7 @@ expr2
 
 expr3 :: Parser Expr3
 expr3
-     =  EApp     <$> name <*> parens (sepBy expr0 (char ','))
+     =  EApp     <$> name <*> parens (expr0 `sepBy` (char ','))
     <|> ELit     <$> decimal
     <|> const EDZ <$> string "DZ"
     <|> const EIndet <$> string "Indet"
@@ -535,7 +530,7 @@ expr3
     <|> EVar     <$> var
     <|> const EX <$> string "x"
     <|> ERats    <$> R.rats
-    <|> Expr0    <$> parens expr0
+    <|> Expr     <$> parens expr
     <?> "expr3"
 
 reserved :: [Name]
@@ -550,7 +545,7 @@ var = name >>= \s -> if s `elem` reserved then mzero else return s
 
 -- | Parse an expression
 parseExpr :: ByteString -> Maybe Expr
-parseExpr = parse_ expr . B.takeWhile (/='#') . B.filter f
+parseExpr = parse_ (expr <* endOfInput) . B.takeWhile (/='#') . B.filter f
   where
     f '\t' = False
     f ' '  = False
