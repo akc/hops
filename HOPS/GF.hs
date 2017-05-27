@@ -130,21 +130,24 @@ data Expr3
     | Expr Expr
     deriving (Show, Eq)
 
--- tr01 :: Expr0 -> Expr1
--- tr01 (Expr1 e) = e
--- tr01 e = Expr2 (Expr3 (Expr0 e))
+to0 :: Expr -> Expr0
+to0 (Singleton e) = e
+to0 e = Expr1 (Expr2 (Expr3 (Expr e)))
 
--- tr30 :: Expr3 -> Expr0
--- tr30 (Expr0 e) = e
--- tr30 e = Expr1 (Expr2 (Expr3 e))
+to1 :: Expr -> Expr1
+to1 (Singleton (Expr1 e)) = e
+to1 e = Expr2 (Expr3 (Expr e))
 
--- instance Num Expr0 where
---     e1 + e2 = EAdd e1 e2
---     e1 - e2 = ESub e1 e2
---     e1 * e2 = Expr1 $ EMul (tr01 e1) (tr01 e2)
---     fromInteger = tr30 . ELit
---     abs = tr30 . EApp "abs" . pure
---     signum = tr30 . EApp "sgn" . pure
+from3 :: Expr3 -> Expr
+from3 = Singleton . Expr1 . Expr2 . Expr3
+
+instance Num Expr where
+    e1 + e2 = Singleton $ EAdd (to0 e1) (to0 e2)
+    e1 - e2 = Singleton $ ESub (to0 e1) (to0 e2)
+    e1 * e2 = Singleton $ Expr1 $ EMul (to1 e1) (to1 e2)
+    fromInteger = from3 . ELit
+    abs = from3 . EApp "abs" . pure . to0
+    signum = from3 . EApp "sgn" . pure . to0
 
 data Core
     = Pass
