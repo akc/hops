@@ -18,8 +18,9 @@ import Data.Monoid
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Aeson
+import Data.Aeson (decodeStrict', encode)
 import Control.Parallel.Strategies
+import Control.Monad.Trans.State
 import System.Directory
 import System.IO
 import HOPS.Entry
@@ -37,7 +38,7 @@ seqsURL :: String
 seqsURL = "https://oeis.org/stripped.gz"
 
 data Input (n :: Nat)
-    = RunPrgs (Env n) [Prg] [CorePrg] [Entry]
+    = RunPrgs (Env n) [Expr] [Core] [Entry]
     | TagSeqs Int [Sequence]
     | UpdateDBs FilePath FilePath
     | Empty
@@ -58,16 +59,16 @@ decodeErr = fromMaybe (error "error decoding JSON") . decodeStrict'
 readEntries :: IO [Entry]
 readEntries = map decodeErr <$> readStdin
 
-readPrgs :: Options -> IO ([Prg], [CorePrg])
+readPrgs :: Options -> IO ([Expr], [Core])
 readPrgs opts = do
-    prgs <- filter (not . null . commands) . map parsePrgErr <$>
+    prgs <- map parseExprErr <$>
                 if script opts == ""
                 then return (map B.pack (program opts))
                 else lines' <$> BL.readFile (script opts)
     return (prgs, map core prgs)
 
 mkEntry :: (ANum, Sequence) -> Entry
-mkEntry (ANum a, s) = Entry (aNumPrg a) s []
+mkEntry (ANum a, s) = Entry (aNumExpr a) s []
 
 readDB :: Config -> IO [Entry]
 readDB = fmap (map mkEntry . parseStripped . unDB) . readSeqDB
@@ -99,10 +100,13 @@ printOutput (Entries es) = mapM_ (BL.putStrLn . encode) es
 stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
 stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 
-runPrgs :: KnownNat n => [Env n] -> [CorePrg] -> [Sequence]
+evalCoreMany :: KnownNat n => Env n -> [Core] -> [Sequence]
+evalCoreMany env cs = [ rationalPrefix $ fst $ runState (evalCore c) env | c <- cs ]
+
+runPrgs :: KnownNat n => [Env n] -> [Core] -> [Sequence]
 runPrgs envs progs =
-    concat ( [rationalPrefix <$> evalCorePrgs e progs
-             | e <- envs
+    concat ( [ evalCoreMany env progs
+             | env <- envs
              ] `using` parBuffer 256 rdeepseq )
 
 hops :: KnownNat n => Proxy n -> Input n -> IO Output
@@ -117,7 +121,7 @@ hops n inp =
           return NOP
 
       TagSeqs i0 ts ->
-          return $ Entries [ Entry (tagPrg i) t [] | (i, t) <- zip [i0 .. ] ts ]
+          return $ Entries [ Entry (tagExpr i) t [] | (i, t) <- zip [i0 .. ] ts ]
 
       Empty -> putStrLn ("hops " ++ versionString) >> return NOP
 

@@ -249,6 +249,7 @@ associations =
     , ("delta",      \[f] -> lift finDiff f)
     , ("sqrt",       \[f] -> sqrt f)
     , ("abs",        \[f] -> abs f)
+    , ("sgn",        \[f] -> x/abs f)
     , ("log",        \[f] -> log f)
     , ("exp",        \[f] -> exp f)
     , ("arsinh",     \[f] -> asinh f)
