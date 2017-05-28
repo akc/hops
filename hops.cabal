@@ -13,7 +13,7 @@ Extra-Source-Files:  README.md hops.1 tests/cli-properties.sh
 Data-Files:          data/stub.db
 
 Cabal-version:       >=1.9.2
-Tested-With:         GHC == 7.10.3, GHC == 8.0.1
+Tested-With:         GHC == 8.0.2
 
 source-repository head
   type:                git
