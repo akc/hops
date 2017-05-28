@@ -266,10 +266,10 @@ check :: Testable prop => Int -> prop -> IO Result
 check n = quickCheckWithResult stdArgs {maxSuccess = n}
 
 evalExpr :: KnownNat n => Env n -> Expr -> Series n
-evalExpr env = evalCore' env . core
+evalExpr env = evalCore env . core
 
 evalExpr1 :: KnownNat n => Expr -> Series n
-evalExpr1 = evalCore' emptyEnv . core
+evalExpr1 = evalCore emptyEnv . core
 
 runExpr :: KnownNat n => Env n -> ByteString -> Series n
 runExpr env = evalExpr env . fromMaybe (error "parse error") . parseExpr

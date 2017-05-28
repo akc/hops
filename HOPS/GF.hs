@@ -32,8 +32,8 @@ module HOPS.GF
     -- Eval
     , Env (..)
     , emptyEnv
+    , evalCoreS
     , evalCore
-    , evalCore'
     -- Parse
     , parseExpr
     , parseExprErr
@@ -426,43 +426,43 @@ evalName t env ss =
                  _   -> nil
     Just (Transform k f) -> if length ss == k then f ss else nil
 
-evalCoreS :: KnownNat n => Core -> State (Env n) (Series n)
-evalCoreS (App f es) = evalName f <$> get <*> mapM evalCoreS es
-evalCoreS X = return $ polynomial (Proxy :: Proxy n) [0,1]
-evalCoreS (A i) = fromMaybe nil . lookupANum i <$> get
-evalCoreS (Tag _) = return nil
-evalCoreS (Var v) = fromMaybe nil . lookupVar v <$> get
-evalCoreS (Lit c) = return $ polynomial (Proxy :: Proxy n) [c]
-evalCoreS (Rats r) = return $ R.evalCore r
-evalCoreS (Let v e) = do
-    (f, env) <- runState (evalCoreS e) <$> get
+evalCoreS1 :: KnownNat n => Core -> State (Env n) (Series n)
+evalCoreS1 (App f es) = evalName f <$> get <*> mapM evalCoreS1 es
+evalCoreS1 X = return $ polynomial (Proxy :: Proxy n) [0,1]
+evalCoreS1 (A i) = fromMaybe nil . lookupANum i <$> get
+evalCoreS1 (Tag _) = return nil
+evalCoreS1 (Var v) = fromMaybe nil . lookupVar v <$> get
+evalCoreS1 (Lit c) = return $ polynomial (Proxy :: Proxy n) [c]
+evalCoreS1 (Rats r) = return $ R.evalCore r
+evalCoreS1 (Let v e) = do
+    (f, env) <- runState (evalCoreS1 e) <$> get
     put (insertVar v f env)
     return f
-evalCoreS (Seq e e') = do
-    (_, env) <- runState (evalCoreS e) <$> get
-    let (f, env') = runState (evalCoreS e') env
+evalCoreS1 (Seq e e') = do
+    (_, env) <- runState (evalCoreS1 e) <$> get
+    let (f, env') = runState (evalCoreS1 e') env
     put env'
     return f
 
--- | Evaluate a program in a given environment. E.g.
---
--- > evalCorePrg (emptyEnv :: Env 4) [ log (1/(1-X)) ]
--- series (Proxy :: Proxy 4) [Val (0 % 1),Val (1 % 1),Val (1 % 2),Val (1 % 3)]
---
-evalCore :: KnownNat n => Core -> State (Env n) (Series n)
-evalCore c = go 1
+evalCoreS :: KnownNat n => Core -> State (Env n) (Series n)
+evalCoreS c = go 1
   where
     f0 = nil
     go 0 = return f0
     go n = do
-      (f, env) <- runState (evalCoreS c) <$> get
+      (f, env) <- runState (evalCoreS1 c) <$> get
       put env
       if n == precision f0
          then return f
          else go (n+1)
 
-evalCore' :: KnownNat n => Env n -> Core -> Series n
-evalCore' env c = fst $ runState (evalCore c) env
+-- | Evaluate a program in a given environment. E.g.
+--
+-- >>> evalCore (emptyEnv :: Env 4) [ log (1/(1-X)) ]
+-- series (Proxy :: Proxy 4) [Val (0 % 1),Val (1 % 1),Val (1 % 2),Val (1 % 3)]
+--
+evalCore :: KnownNat n => Env n -> Core -> Series n
+evalCore env c = fst $ runState (evalCoreS c) env
 
 --------------------------------------------------------------------------------
 -- Parse

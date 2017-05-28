@@ -100,7 +100,7 @@ stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
 stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 
 evalCoreMany :: KnownNat n => Env n -> [Core] -> [Sequence]
-evalCoreMany env cs = [ rationalPrefix $ evalCore' env c | c <- cs ]
+evalCoreMany env cs = [ rationalPrefix $ evalCore env c | c <- cs ]
 
 runPrgs :: KnownNat n => [Env n] -> [Core] -> [Sequence]
 runPrgs envs progs =
