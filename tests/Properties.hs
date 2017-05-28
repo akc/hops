@@ -14,7 +14,7 @@ import GHC.TypeLits
 import Text.Printf
 import Data.List
 import Data.Maybe
-import Data.Monoid
+import Data.Semigroup
 import Data.Ratio
 import Data.Proxy
 import qualified Data.ByteString.Char8 as B
@@ -156,10 +156,9 @@ instance KnownNat n => Arbitrary (FullInvertible n) where
 
 instance Arbitrary Expr where
     arbitrary = frequency
-        [ ( 4, return EPass)
-        , (45, Singleton <$> arbitrary)
-        , (45, ELet <$> nameGen <*> arbitrary)
-        , ( 6, ESeq <$> arbitrary <*> arbitrary)
+        [ (30, Singleton <$> arbitrary)
+        , (60, ELet <$> nameGen <*> arbitrary)
+        , (10, ESeq <$> arbitrary <*> arbitrary)
         ]
 
 instance Arbitrary Expr0 where
@@ -324,8 +323,6 @@ propN1 m = propN m [nil::S20]
 propN1' :: ByteString -> Bool
 propN1' = prop' [nil::S20]
 
-prop_Expr_id1 p = mempty <> p == (p :: Expr)
-prop_Expr_id2 p = p <> mempty == (p :: Expr)
 prop_Expr_assoc p q r = pretty (p <> (q <> r)) == pretty ((p <> q) <> (r :: Expr))
 
 prop_Expr_value p = evalExpr1 p == (evalExpr1 q :: Series 40)
@@ -496,7 +493,7 @@ determinant :: Num a => Vector (Vector a) -> a
 determinant m =
   let n = V.length m
       minor i j = del j . V.map (del i)
-      del k u = let (s, t) = V.splitAt k u in s <> V.tail t
+      del k u = let (s, t) = V.splitAt k u in V.concat[s, V.tail t]
   in if V.null m
      then 1
      else let c = V.head m
@@ -536,10 +533,8 @@ prop_mset (Revertible f) = uncurry (~=) $ evalEqn [f::S10, mset f] "mset(f) == g
 prop_pset (Revertible f) = uncurry (~=) $ evalEqn [f::S10, pset f] "pset(f) == g"
 
 tests =
-    [ ("Expr-monoid/id-1",        check 100 prop_Expr_id1)
-    , ("Expr-monoid/id-2",        check 100 prop_Expr_id2)
-    , ("Expr-monoid/associative", check 100 prop_Expr_assoc)
-    , ("Expr-monoid/value",       check 100 prop_Expr_value)
+    [ ("Expr/associative",        check 100 prop_Expr_assoc)
+    , ("Expr/value",              check 100 prop_Expr_value)
     , ("unit/Rat-Power",          check   1 prop_Rat_power_u)
     , ("unit/Neg-Power",          check   1 prop_Neg_power_u)
     , ("unit/shift",              check   1 prop_shift_u)

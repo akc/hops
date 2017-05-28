@@ -43,7 +43,7 @@ import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe
 import Data.List
-import Data.Monoid
+import Data.Semigroup
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))
@@ -86,8 +86,7 @@ type Name = ByteString -- Variable name
 type Subs = Name -> Name
 
 data Expr
-    = EPass
-    | Singleton Expr0
+    = Singleton Expr0
     | ELet Name Expr0
     | ESeq Expr Expr
     deriving (Show, Eq)
@@ -150,8 +149,7 @@ instance Num Expr where
     signum = from3 . EApp "sgn" . pure . to0
 
 data Core
-    = Pass
-    | App !Name ![Core]
+    = App !Name ![Core]
     | X
     | A   {-# UNPACK #-} !Int
     | Tag {-# UNPACK #-} !Int
@@ -163,7 +161,6 @@ data Core
     deriving (Show, Eq, Ord)
 
 instance Pretty Core where
-    pretty Pass = ""
     pretty (App f es) = f <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty X = "x"
     pretty (A i) = B.cons 'A' (pad 6 i)
@@ -208,11 +205,8 @@ instance FromJSON Expr where
     parseJSON (String t) = fromMaybe mzero (return <$> parseExpr (encodeUtf8 t))
     parseJSON _ = mzero
 
-instance Monoid Expr where
-    mempty = EPass
-    mappend EPass q = q
-    mappend p EPass = p
-    mappend p q = snd $ rename nameSupply (p2 `ESeq` q2)
+instance Semigroup Expr where
+    p <> q = snd $ rename nameSupply (p2 `ESeq` q2)
       where
         (vs, p1) = normalForm nameSupply p
         (us, p2) = rename vs p1
@@ -221,7 +215,6 @@ instance Monoid Expr where
         q2 = subs [("stdin", s)] q1
 
 instance Pretty Expr where
-    pretty EPass = ""
     pretty (Singleton e) = pretty e
     pretty (ELet s e)    = s <> "=" <> pretty e
     pretty (ESeq e1 e2)  = pretty e1 <> ";" <> pretty e2
@@ -281,7 +274,6 @@ anums :: Core -> [Int]
 anums = nub . anumsCore
 
 subsExpr :: Subs -> Expr -> Expr
-subsExpr _ EPass = EPass
 subsExpr f (Singleton e) = Singleton (subsExpr0 f e)
 subsExpr f (ELet s e)    = ELet (f s) (subsExpr0 f e)
 subsExpr f (ESeq e1 e2)  = ESeq (subsExpr f e1) (subsExpr f e2)
@@ -333,10 +325,8 @@ lastExpr e = e
 normalForm :: [Name] -> Expr -> ([Name], Expr)
 normalForm vs e = nf e
   where
-    nf EPass = (vs, EPass)
     nf (Singleton e0) = let u:us = vs \\ vars' e in (us, ELet u e0)
     nf e1@(ELet _ _) = (vs, e1)
-    nf (ESeq e1 EPass) = nf e1
     nf (ESeq e1 e2) = let (us, e3) = nf e2 in (us, ESeq e1 e3)
 
 rename :: [Name] -> Expr -> ([Name], Expr)
@@ -369,7 +359,6 @@ core :: Expr -> Core
 core = coreExpr
 
 coreExpr :: Expr -> Core
-coreExpr EPass = Pass
 coreExpr (Singleton e) = coreExpr0 e
 coreExpr (ELet s e) = Let s (coreExpr0 e)
 coreExpr (ESeq e1 e2) = Seq (coreExpr e1) (coreExpr e2)
@@ -409,7 +398,6 @@ coreExpr3 (ERats r) = Rats (R.core r)
 coreExpr3 (Expr e) = coreExpr e
 
 varsCore :: Core -> [Name]
-varsCore Pass = []
 varsCore (App _ es) = varsCore =<< es
 varsCore (Var s) = [s]
 varsCore (Seq e1 e2) = varsCore e1 ++ varsCore e2
@@ -417,7 +405,6 @@ varsCore (Let s e) = s : varsCore e
 varsCore _ = []
 
 anumsCore :: Core -> [Int]
-anumsCore Pass = []
 anumsCore (App _ es) = anumsCore =<< es
 anumsCore (A i) = [i]
 anumsCore (Seq e1 e2) = anumsCore e1 ++ anumsCore e2
@@ -440,7 +427,6 @@ evalName t env ss =
     Just (Transform k f) -> if length ss == k then f ss else nil
 
 evalCoreS :: KnownNat n => Core -> State (Env n) (Series n)
-evalCoreS Pass = return nil
 evalCoreS (App f es) = evalName f <$> get <*> mapM evalCoreS es
 evalCoreS X = return $ polynomial (Proxy :: Proxy n) [0,1]
 evalCoreS (A i) = fromMaybe nil . lookupANum i <$> get

@@ -14,7 +14,7 @@ module Main (main) where
 import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe
-import Data.Monoid
+import Data.Semigroup
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
