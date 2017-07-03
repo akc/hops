@@ -2,6 +2,7 @@
 
 n=0
 
+export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:+${LD_LIBRARY_PATH}:}dist/build"
 hops=dist/build/hops/hops
 
 check () {
