@@ -26,6 +26,8 @@ module HOPS.GF
     , insertVar
     , aNumExpr
     , tagExpr
+    -- Expand
+    , expand
     -- Core
     , Core (..)
     , core
@@ -63,6 +65,7 @@ import HOPS.OEIS
 import HOPS.GF.Series
 import HOPS.GF.Transform
 import qualified HOPS.GF.Rats as R
+import qualified HOPS.GF.Const as C
 
 -- | A compact `ByteString` representation of a `Prg`.
 newtype PackedExpr = PackedExpr ByteString deriving (Eq, Show)
@@ -123,6 +126,7 @@ data Expr3
     | EA Int -- An A-number
     | ETag Int
     | EVar Name
+    | ESet Name Int -- A named set of expressions
     | ELit Integer
     | EApp Name [Expr0] -- A named transform
     | ERats R.Rats
@@ -248,6 +252,7 @@ instance Pretty Expr3 where
     pretty (EA i) = B.cons 'A' (pad 6 i)
     pretty (ETag i) = "TAG" <> pad 6 i
     pretty (EVar s) = s
+    pretty (ESet s i) = s <> paren (pretty i)
     pretty (ELit t) = pretty t
     pretty (EApp s es) = s <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty (ERats r) = pretty r
@@ -352,6 +357,84 @@ tagExpr :: Int -> Expr
 tagExpr m = Singleton $ Expr1 (Expr2 (Expr3 (ETag m)))
 
 --------------------------------------------------------------------------------
+-- Expand phase
+--------------------------------------------------------------------------------
+
+polyList :: Int -> Int -> [[Int]]
+polyList _ 0 = [[]]
+polyList 0 j = [ replicate j 0 ]
+polyList d j = [ i:xs | i <- [-d .. d], xs <- polyList (d - abs i) (j-1) ]
+
+polyList1 :: Int -> Int -> [[Int]]
+polyList1 d j = [ 1:xs | xs <- polyList (d-1) (j-1) ]
+
+fromList :: [Int] -> Expr3
+fromList cs = ERats (lift <$> init cs, R.Constant (lift (last cs)), R.Poly)
+  where
+    lift = C.Expr1 . C.Expr2 . C.Expr3 . C.ELit . fromIntegral
+
+divide :: Expr3 -> Expr3 -> Expr3
+divide e1 e2 = Expr $ Singleton $ Expr1 $ EDiv (Expr2 (Expr3 e1)) (Expr2 (Expr3 e2))
+
+polys :: Int -> [Expr3]
+polys d = [ fromList cs | cs <- polyList d d, any (/=0) cs ]
+
+polys1 :: Int -> [Expr3]
+polys1 d = [ fromList cs | cs <- polyList1 d d ]
+
+rationals :: Int -> [Expr3]
+rationals d = divide <$> polys d <*> polys1 d
+
+lookupSet :: Name -> Int -> [Expr3]
+lookupSet "poly" d = polys d
+lookupSet "poly1" d = polys1 d
+lookupSet "rat" d = rationals d
+lookupSet _ _ = undefined
+
+expand :: Expr -> [Expr]
+expand = expandExpr
+
+expandExpr :: Expr -> [Expr]
+expandExpr (Singleton e) = Singleton <$> expandExpr0 e
+expandExpr (ELet s e) = ELet s <$> expandExpr0 e
+expandExpr (ESeq e1 e2) = ESeq <$> expandExpr e1 <*> expandExpr e2
+
+expandExpr0 :: Expr0 -> [Expr0]
+expandExpr0 (EAdd e1 e2) = EAdd <$> expandExpr0 e1 <*> expandExpr0 e2
+expandExpr0 (ESub e1 e2) = ESub <$> expandExpr0 e1 <*> expandExpr0 e2
+expandExpr0 (Expr1 e) = Expr1 <$> expandExpr1 e
+
+expandExpr1 :: Expr1 -> [Expr1]
+expandExpr1 (EMul e1 e2) = EMul <$> expandExpr1 e1 <*> expandExpr1 e2
+expandExpr1 (EDiv e1 e2) = EDiv <$> expandExpr1 e1 <*> expandExpr1 e2
+expandExpr1 (EBDP e1 e2) = EBDP <$> expandExpr1 e1 <*> expandExpr1 e2
+expandExpr1 (EPtMul e1 e2) = EPtMul <$> expandExpr1 e1 <*> expandExpr1 e2
+expandExpr1 (EPtDiv e1 e2) = EPtDiv <$> expandExpr1 e1 <*> expandExpr1 e2
+expandExpr1 (Expr2 e) = Expr2 <$> expandExpr2 e
+
+expandExpr2 :: Expr2 -> [Expr2]
+expandExpr2 (ENeg e) = ENeg <$> expandExpr2 e
+expandExpr2 (EPos e) = EPos <$> expandExpr2 e
+expandExpr2 (EFac e) = EFac <$> expandExpr3 e
+expandExpr2 (EPow e1 e2) = EPow <$> expandExpr3 e1 <*> expandExpr3 e2
+expandExpr2 (EComp e1 e2) = EComp <$> expandExpr3 e1 <*> expandExpr3 e2
+expandExpr2 (ECoef e1 e2) = ECoef <$> expandExpr3 e1 <*> expandExpr3 e2
+expandExpr2 (Expr3 e) = Expr3 <$> expandExpr3 e
+
+expandExpr3 :: Expr3 -> [Expr3]
+expandExpr3 EX = [EX]
+expandExpr3 EDZ = [EDZ]
+expandExpr3 EIndet = [EIndet]
+expandExpr3 (EA i) = [EA i]
+expandExpr3 (ETag i) = [ETag i]
+expandExpr3 (EVar s) = [EVar s]
+expandExpr3 (ESet s i) = lookupSet s i
+expandExpr3 (ELit t) = [ELit $ fromInteger t]
+expandExpr3 (EApp s es) = EApp s <$> sequence (expandExpr0 <$> es)
+expandExpr3 (ERats r) = [ERats r]
+expandExpr3 (Expr e) = Expr <$> expandExpr e
+
+--------------------------------------------------------------------------------
 -- Core
 --------------------------------------------------------------------------------
 
@@ -392,6 +475,7 @@ coreExpr3 EIndet = Lit Indet
 coreExpr3 (EA i) = A i
 coreExpr3 (ETag i) = Tag i
 coreExpr3 (EVar s) = Var s
+coreExpr3 (ESet _ _) = error "Internal error"
 coreExpr3 (ELit t) = Lit $ fromInteger t
 coreExpr3 (EApp s es) = App s (map coreExpr0 es)
 coreExpr3 (ERats r) = Rats (R.core r)
@@ -462,7 +546,7 @@ evalCoreS c = go 1
 -- series (Proxy :: Proxy 4) [Val (0 % 1),Val (1 % 1),Val (1 % 2),Val (1 % 3)]
 --
 evalCore :: KnownNat n => Env n -> Core -> Series n
-evalCore env c = fst $ runState (evalCoreS c) env
+evalCore env c = evalState (evalCoreS c) env
 
 --------------------------------------------------------------------------------
 -- Parse
@@ -509,17 +593,17 @@ expr2
 
 expr3 :: Parser Expr3
 expr3
-     =  EApp     <$> name <*> parens (expr0 `sepBy` (char ','))
-    <|> ELit     <$> decimal
+     =  ESet  <$> (string "poly1" <|> string "poly" <|> string "rat") <*> parens decimal
+    <|> EApp  <$> name <*> parens (expr0 `sepBy` char ',')
+    <|> ELit  <$> decimal
     <|> const EDZ <$> string "DZ"
     <|> const EIndet <$> string "Indet"
-    <|> EA       <$> aNumInt
-    <|> ETag     <$> tag
-    <|> EApp     <$> name <*> ((pure . Expr1 . Expr2 . Expr3) <$> expr3)
-    <|> EVar     <$> var
+    <|> EA    <$> aNumInt
+    <|> ETag  <$> tag
+    <|> EVar  <$> var
     <|> const EX <$> string "x"
-    <|> ERats    <$> R.rats
-    <|> Expr     <$> parens expr
+    <|> ERats <$> R.rats
+    <|> Expr  <$> parens expr
     <?> "expr3"
 
 reserved :: [Name]

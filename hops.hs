@@ -60,11 +60,11 @@ readEntries = map decodeErr <$> readStdin
 
 readPrgs :: Options -> IO ([Expr], [Core])
 readPrgs opts = do
-    prgs <- map parseExprErr <$>
+    prgs <- concatMap (expand . parseExprErr) <$>
                 if script opts == ""
                 then return (map B.pack (program opts))
                 else lines' <$> BL.readFile (script opts)
-    return (prgs, map core prgs)
+    return (prgs, core <$> prgs)
 
 mkEntry :: (ANum, Sequence) -> Entry
 mkEntry (ANum a, s) = Entry (aNumExpr a) s []
