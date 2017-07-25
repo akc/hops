@@ -126,9 +126,9 @@ data Expr3
     | EA Int -- An A-number
     | ETag Int
     | EVar Name
-    | ESet Name Int -- A named set of expressions
     | ELit Integer
     | EApp Name [Expr0] -- A named transform
+    | ESet Name [Expr0] -- A named set of expressions
     | ERats R.Rats
     | Expr Expr
     deriving (Show, Eq)
@@ -252,7 +252,7 @@ instance Pretty Expr3 where
     pretty (EA i) = B.cons 'A' (pad 6 i)
     pretty (ETag i) = "TAG" <> pad 6 i
     pretty (EVar s) = s
-    pretty (ESet s i) = s <> paren (pretty i)
+    pretty (ESet s es) = pretty (EApp s es)
     pretty (ELit t) = pretty t
     pretty (EApp s es) = s <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty (ERats r) = pretty r
@@ -385,10 +385,12 @@ polys1 d = [ fromList cs | cs <- polyList1 d d ]
 rationals :: Int -> [Expr3]
 rationals d = divide <$> polys d <*> polys1 d
 
-lookupSet :: Name -> Int -> [Expr3]
-lookupSet "poly" d = polys d
-lookupSet "poly1" d = polys1 d
-lookupSet "rat" d = rationals d
+lookupSet :: Name -> [Expr0] -> [Expr3]
+lookupSet "poly" [Expr1 (Expr2 (Expr3 (ELit d)))] = polys (fromIntegral d)
+lookupSet "poly" _ = error "'poly' expects an integer"
+lookupSet "rat" [Expr1 (Expr2 (Expr3 (ELit d)))] = rationals (fromIntegral d)
+lookupSet "rat" _ = error "'rat' expects an integer"
+lookupSet "oneof" es = Expr . Singleton <$> es
 lookupSet _ _ = undefined
 
 expand :: Expr -> [Expr]
@@ -428,7 +430,7 @@ expandExpr3 EIndet = [EIndet]
 expandExpr3 (EA i) = [EA i]
 expandExpr3 (ETag i) = [ETag i]
 expandExpr3 (EVar s) = [EVar s]
-expandExpr3 (ESet s i) = lookupSet s i
+expandExpr3 (ESet s es) = lookupSet s es
 expandExpr3 (ELit t) = [ELit $ fromInteger t]
 expandExpr3 (EApp s es) = EApp s <$> sequence (expandExpr0 <$> es)
 expandExpr3 (ERats r) = [ERats r]
@@ -593,8 +595,8 @@ expr2
 
 expr3 :: Parser Expr3
 expr3
-     =  ESet  <$> (string "poly1" <|> string "poly" <|> string "rat") <*> parens decimal
-    <|> EApp  <$> name <*> parens (expr0 `sepBy` char ',')
+     =  ESet  <$> name' <*> parens (expr0 `sepBy` char ',')
+    <|> EApp  <$> name  <*> parens (expr0 `sepBy` char ',')
     <|> ELit  <$> decimal
     <|> const EDZ <$> string "DZ"
     <|> const EIndet <$> string "Indet"
@@ -608,6 +610,9 @@ expr3
 
 reserved :: [Name]
 reserved = "x" : transforms
+
+name' :: Parser Name
+name' = string "poly" <|> string "rat" <|> string "oneof"
 
 name :: Parser Name
 name = mappend <$> takeWhile1 isAlpha_ascii
