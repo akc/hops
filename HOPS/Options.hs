@@ -18,6 +18,8 @@ data Options = Options
     {
       script  :: String
     , prec    :: Int
+    , minPrec :: Int
+    , int     :: Bool
     , tagSeqs :: Maybe Int
     , forAll  :: Bool
     , update  :: Bool
@@ -40,6 +42,14 @@ optionsParser =
        <> metavar "N"
        <> value 15
        <> help "Generating function precision [default: 15]" )
+    <*> option auto
+        ( long "min-prec"
+       <> metavar "N"
+       <> value 0
+       <> help "Smallest precision of returned sequences [default: 0]" )
+    <*> switch
+        ( long "int"
+       <> help "Only return sequences whose entries are integers" )
     <*> optional (option auto
         ( long "tag"
        <> metavar "N"

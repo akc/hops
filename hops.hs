@@ -4,7 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015, 2016
+-- Copyright   : Anders Claesson 2015-2017
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -14,6 +14,7 @@ module Main (main) where
 import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe
+import Data.Ratio
 import Data.Semigroup
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as B
@@ -99,17 +100,23 @@ printOutput (Entries es) = mapM_ (BL.putStrLn . encode) es
 stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
 stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 
-evalCoreMany :: KnownNat n => Env n -> [Core] -> [Sequence]
-evalCoreMany env cs = [ rationalPrefix $ evalCore env c | c <- cs ]
+evalMany :: KnownNat n => Options -> Env n -> [Core] -> [Sequence]
+evalMany opts env cs =
+    [ f
+    | c <- cs
+    , let f = rationalPrefix (evalCore env c)
+    , not (int opts) || all (\r -> denominator r == 1) f
+    , minPrec opts == 0 || length f >= minPrec opts
+    ]
 
-runPrgs :: KnownNat n => [Env n] -> [Core] -> [Sequence]
-runPrgs envs progs =
-    concat ( [ evalCoreMany env progs
+runPrgs :: KnownNat n => Options -> [Env n] -> [Core] -> [Sequence]
+runPrgs opts envs progs =
+    concat ( [ evalMany opts env progs
              | env <- envs
              ] `using` parBuffer 256 rdeepseq )
 
-hops :: KnownNat n => Proxy n -> Input n -> IO Output
-hops n inp =
+hops :: KnownNat n => Options -> Proxy n -> Input n -> IO Output
+hops opts n inp =
     case inp of
 
       UpdateDBs hopsdir sdbPath -> do
@@ -128,7 +135,7 @@ hops n inp =
           return $ Entries (zipWith3 Entry ps results (trails ++ repeat []))
         where
           (qs, seqs, trails) = unzip3 [ (q,s,t) | Entry q s t <- entries ]
-          results = runPrgs envs cprgs
+          results = runPrgs opts envs cprgs
           (ps, envs) = if null qs
                        then (prgs, [env])
                        else ((<>) <$> qs <*> prgs, map (stdEnv n env) seqs)
@@ -142,4 +149,4 @@ main = do
     case someNatVal d of
       Nothing -> error $ show d ++ " not a valid prec"
       Just (SomeNat (_ :: Proxy n)) ->
-          readInput t c >>= hops (Proxy :: Proxy n) >>= printOutput
+          readInput t c >>= hops t (Proxy :: Proxy n) >>= printOutput
