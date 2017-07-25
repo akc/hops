@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015, 2016
+-- Copyright   : Anders Claesson 2015-2017
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -128,7 +128,7 @@ data Expr3
     | EVar Name
     | ELit Integer
     | EApp Name [Expr0] -- A named transform
-    | ESet Name [Expr0] -- A named set of expressions
+    | ESet Name [Expr] -- A named set of expressions
     | ERats R.Rats
     | Expr Expr
     deriving (Show, Eq)
@@ -252,9 +252,9 @@ instance Pretty Expr3 where
     pretty (EA i) = B.cons 'A' (pad 6 i)
     pretty (ETag i) = "TAG" <> pad 6 i
     pretty (EVar s) = s
-    pretty (ESet s es) = pretty (EApp s es)
     pretty (ELit t) = pretty t
     pretty (EApp s es) = s <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
+    pretty (ESet s es) = s <> paren (foldl' (<>) "" $ intersperse "," $ map pretty es)
     pretty (ERats r) = pretty r
     pretty (Expr e) = paren $ pretty e
 
@@ -385,12 +385,12 @@ polys1 d = [ fromList cs | cs <- polyList1 d d ]
 rationals :: Int -> [Expr3]
 rationals d = divide <$> polys d <*> polys1 d
 
-lookupSet :: Name -> [Expr0] -> [Expr3]
-lookupSet "poly" [Expr1 (Expr2 (Expr3 (ELit d)))] = polys (fromIntegral d)
+lookupSet :: Name -> [Expr] -> [Expr3]
+lookupSet "poly" [Singleton (Expr1 (Expr2 (Expr3 (ELit d))))] = polys (fromIntegral d)
 lookupSet "poly" _ = error "'poly' expects an integer"
-lookupSet "rat" [Expr1 (Expr2 (Expr3 (ELit d)))] = rationals (fromIntegral d)
+lookupSet "rat" [Singleton (Expr1 (Expr2 (Expr3 (ELit d))))] = rationals (fromIntegral d)
 lookupSet "rat" _ = error "'rat' expects an integer"
-lookupSet "oneof" es = Expr . Singleton <$> es
+lookupSet "oneof" es = Expr <$> es
 lookupSet _ _ = undefined
 
 expand :: Expr -> [Expr]
@@ -595,17 +595,17 @@ expr2
 
 expr3 :: Parser Expr3
 expr3
-     =  ESet  <$> name' <*> parens (expr0 `sepBy` char ',')
-    <|> EApp  <$> name  <*> parens (expr0 `sepBy` char ',')
-    <|> ELit  <$> decimal
+     =  ESet <$> name' <*> parens (expr  `sepBy` char ',')
+    <|> EApp <$> name  <*> parens (expr0 `sepBy` char ',')
+    <|> ELit <$> decimal
     <|> const EDZ <$> string "DZ"
     <|> const EIndet <$> string "Indet"
-    <|> EA    <$> aNumInt
-    <|> ETag  <$> tag
-    <|> EVar  <$> var
+    <|> EA   <$> aNumInt
+    <|> ETag <$> tag
+    <|> EVar <$> var
     <|> const EX <$> string "x"
     <|> ERats <$> R.rats
-    <|> Expr  <$> parens expr
+    <|> Expr <$> parens expr
     <?> "expr3"
 
 reserved :: [Name]
