@@ -32,7 +32,7 @@ import HOPS.DB
 import HOPS.GF
 
 versionString :: String
-versionString = "0.8.0"
+versionString = "0.8.1"
 
 seqsURL :: String
 seqsURL = "https://oeis.org/stripped.gz"
@@ -100,18 +100,12 @@ printOutput (Entries es) = mapM_ (BL.putStrLn . encode) es
 stdEnv :: KnownNat n => Proxy n -> Env n -> Sequence -> Env n
 stdEnv n (Env a v) s = Env a $ M.insert "stdin" (series n (map Val s)) v
 
-evalMany :: KnownNat n => Options -> Env n -> [Core] -> [Sequence]
-evalMany opts env cs =
-    [ f
-    | c <- cs
-    , let f = rationalPrefix (evalCore env c)
-    , not (int opts) || all (\r -> denominator r == 1) f
-    , minPrec opts == 0 || length f >= minPrec opts
-    ]
+evalMany :: KnownNat n => Env n -> [Core] -> [Sequence]
+evalMany env = map (rationalPrefix . evalCore env)
 
-runPrgs :: KnownNat n => Options -> [Env n] -> [Core] -> [Sequence]
-runPrgs opts envs progs =
-    concat ( [ evalMany opts env progs
+runPrgs :: KnownNat n => [Env n] -> [Core] -> [Sequence]
+runPrgs envs progs =
+    concat ( [ evalMany env progs
              | env <- envs
              ] `using` parBuffer 256 rdeepseq )
 
@@ -132,10 +126,15 @@ hops opts n inp =
       Empty -> putStrLn ("hops " ++ versionString) >> return NOP
 
       RunPrgs env prgs cprgs entries ->
-          return $ Entries (zipWith3 Entry ps results (trails ++ repeat []))
+          return $ Entries
+             [ Entry p f t
+             | (p, f, t) <- zip3 ps results (trails ++ repeat [])
+             , not (int opts) || all (\r -> denominator r == 1) f
+             , minPrec opts == 0 || minPrec opts <= length f
+             ]
         where
           (qs, seqs, trails) = unzip3 [ (q,s,t) | Entry q s t <- entries ]
-          results = runPrgs opts envs cprgs
+          results = runPrgs envs cprgs
           (ps, envs) = if null qs
                        then (prgs, [env])
                        else ((<>) <$> qs <*> prgs, map (stdEnv n env) seqs)
