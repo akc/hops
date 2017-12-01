@@ -200,10 +200,10 @@ bousi :: KnownNat n => Series n -> Series n
 bousi f = laplace (laplacei f / (sec x + tan x))
 
 hankel :: Vector Rat -> Vector Rat
-hankel v = V.generate n $ \i -> det (hankelN (i+1))
+hankel v = V.reverse $ V.map det subMatrices
   where
     n = V.length v
-    hankelN i = V.take i $ V.map (V.take i) hankelMatrix
+    subMatrices = V.iterateN n (V.init . V.map V.init) hankelMatrix
     hankelMatrix = V.iterateN n (\u -> V.snoc (V.tail u) Indet) v
 
 laplace :: KnownNat n => Series n -> Series n
