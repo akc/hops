@@ -19,6 +19,7 @@ import Data.Proxy
 import Data.Ratio
 import Data.Maybe
 import Data.List (foldl')
+import Data.Function.Memoize
 import Data.Vector (Vector, (!), (!?), (//))
 import qualified Data.Vector as V
 import Data.Map.Strict (Map)
@@ -206,6 +207,58 @@ hankel v = V.reverse $ V.map det subMatrices
     subMatrices = V.iterateN n (V.init . V.map V.init) hankelMatrix
     hankelMatrix = V.iterateN n (\u -> V.snoc (V.tail u) Indet) v
 
+twine :: [a] -> [a] -> [a]
+twine [] bs = bs
+twine (a:as) bs = a : twine bs as
+
+-- Like the Hankel transform but calculated from the J-fraction. It also
+-- has an extra leading 1. So (most of the time), hankel1(f) = 1+x*hankel(f)
+hankel1 :: Fractional a => Vector a -> Vector a
+hankel1 = V.scanl (*) 1 . V.scanl1 (*) . jacobi1
+
+jacobi0 :: Fractional a => Vector a -> Vector a
+jacobi0 = fst . jacobi
+
+jacobi1 :: Fractional a => Vector a -> Vector a
+jacobi1 = snd . jacobi
+
+-- J-fraction
+jacobi :: Fractional a => Vector a -> (Vector a, Vector a)
+jacobi cs =
+    if V.null cs then
+        (V.empty, V.empty)
+    else
+        (u, V.cons (cs ! 0) v)
+  where
+    ds = V.drop 1 $ stieltjes cs
+    n = V.length ds `div` 2
+    f (-1) = 0
+    f i = ds ! i
+    u = V.fromList $ (\k -> f (2*k-1) + f (2*k)) <$> [0 .. n]
+    v = V.fromList $ (\k -> f (2*k) * f (2*k+1)) <$> [0 .. n - 1]
+
+-- S-fraction
+stieltjes :: Fractional a => Vector a -> Vector a
+stieltjes cs =
+    if V.null cs then
+        V.empty
+    else
+        V.fromList (cs ! 0 : twine qs es)
+  where
+    n = V.length cs `div` 2
+    qs = map (q 0) [ 1 .. n ]
+    es = map (e 0) [ 1 .. n - 1 ]
+
+    qM = memoize2 q
+    eM = memoize2 e
+
+    e _ 0 = 0
+    e k j = eM (k+1) (j-1) + qM (k+1) j - qM k j
+
+    q k 1 = cs ! (k+1) / cs ! k
+    q k j = qM (k+1) (j-1) * eM (k+1) (j-1) / eM k (j-1)
+
+
 laplace :: KnownNat n => Series n -> Series n
 laplace f = f .* facSeries
 
@@ -224,6 +277,10 @@ associations =
     , ("dirichleti", \[f] -> lift dirichleti f)
     , ("euleri",     \[f] -> euleri f)
     , ("euler",      \[f] -> euler f)
+    , ("jacobi0",    \[f] -> lift jacobi0 f)
+    , ("jacobi1",    \[f] -> lift jacobi1 f)
+    , ("stieltjes",  \[f] -> lift stieltjes f)
+    , ("hankel1",    \[f] -> lift hankel1 f)
     , ("hankel",     \[f] -> lift hankel f)
     , ("indicator",  \[f] -> rseq f)
     , ("indicatorc", \[f] -> rseq' f)
