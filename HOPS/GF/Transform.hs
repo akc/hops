@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson 2015-2017
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -19,14 +19,17 @@ import Data.Proxy
 import Data.Ratio
 import Data.Maybe
 import Data.List (foldl')
-import Data.Function.Memoize
 import Data.Vector (Vector, (!), (!?), (//))
 import qualified Data.Vector as V
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.ByteString.Char8 (ByteString)
 import HOPS.GF.Series
-import HOPS.Utils.Matrix
+import HOPS.GF.Hankel
+import qualified HOPS.GF.CFrac.Hankel as CFrac.Hankel
+import qualified HOPS.GF.CFrac.Poly as CFrac.Poly
+import qualified HOPS.GF.CFrac.QD as CFrac.QD
+import qualified HOPS.GF.CFrac.Reference as CFrac.Reference
 
 -- | A `Transform` takes zero or more `Series` to another `Series`.
 data Transform n = Transform Int ([Series n] -> Series n)
@@ -200,70 +203,31 @@ bous f = laplace (laplacei f * (sec x + tan x))
 bousi :: KnownNat n => Series n -> Series n
 bousi f = laplace (laplacei f / (sec x + tan x))
 
-hankel :: Vector Rat -> Vector Rat
-hankel v = V.reverse $ V.map det subMatrices
-  where
-    n = V.length v
-    subMatrices = V.iterateN n (V.init . V.map V.init) hankelMatrix
-    hankelMatrix = V.iterateN n (\u -> V.snoc (V.tail u) Indet) v
-
-twine :: [a] -> [a] -> [a]
-twine [] bs = bs
-twine (a:as) bs = a : twine bs as
-
--- Like the Hankel transform but calculated from the J-fraction. It also
--- has an extra leading 1. So (most of the time), hankel1(f) = 1+x*hankel(f)
-hankel1 :: Fractional a => Vector a -> Vector a
-hankel1 = V.scanl (*) 1 . V.scanl1 (*) . jacobi1
-
-jacobi0 :: Fractional a => Vector a -> Vector a
-jacobi0 = fst . jacobi
-
-jacobi1 :: Fractional a => Vector a -> Vector a
-jacobi1 = snd . jacobi
-
--- J-fraction
-jacobi :: Fractional a => Vector a -> (Vector a, Vector a)
-jacobi cs =
-    if V.null cs then
-        (V.empty, V.empty)
-    else
-        (u, V.cons (cs ! 0) v)
-  where
-    ds = V.drop 1 $ stieltjes cs
-    n = V.length ds `div` 2
-    f (-1) = 0
-    f i = ds ! i
-    u = V.fromList $ (\k -> f (2*k-1) + f (2*k)) <$> [0 .. n]
-    v = V.fromList $ (\k -> f (2*k) * f (2*k+1)) <$> [0 .. n - 1]
-
--- S-fraction
-stieltjes :: Fractional a => Vector a -> Vector a
-stieltjes cs =
-    if V.null cs then
-        V.empty
-    else
-        V.fromList (cs ! 0 : twine qs es)
-  where
-    n = V.length cs `div` 2
-    qs = map (q 0) [ 1 .. n ]
-    es = map (e 0) [ 1 .. n - 1 ]
-
-    qM = memoize2 q
-    eM = memoize2 e
-
-    e _ 0 = 0
-    e k j = eM (k+1) (j-1) + qM (k+1) j - qM k j
-
-    q k 1 = cs ! (k+1) / cs ! k
-    q k j = qM (k+1) (j-1) * eM (k+1) (j-1) / eM k (j-1)
-
+-- Like the Hankel transform but calculated from the J-fraction using
+-- the quotient-difference algorithm. It also has an extra leading 1. So
+-- (most of the time), hankelQD(f) = 1+x*hankel(f)
+-- hankelQD :: Vector Rat -> Vector Rat
+-- hankelQD = V.scanl (*) 1 . V.scanl1 (*) . jacobiHankel1
 
 laplace :: KnownNat n => Series n -> Series n
 laplace f = f .* facSeries
 
 laplacei :: KnownNat n => Series n -> Series n
 laplacei f = f ./ facSeries
+
+jacobi :: KnownNat n => Series n -> (Series n, Series n)
+jacobi (Series w) = (Series u, Series v)
+  where
+    (u, v) =
+        case CFrac.Hankel.jacobi w of
+          Just (u, v) -> (u, v)
+          Nothing -> CFrac.Poly.jacobi w
+
+jacobi0 :: KnownNat n => Series n -> Series n
+jacobi0 = fst . jacobi
+
+jacobi1 :: KnownNat n => Series n -> Series n
+jacobi1 = snd . jacobi
 
 associations :: KnownNat n => [(ByteString, Transform n)]
 associations =
@@ -277,11 +241,21 @@ associations =
     , ("dirichleti", \[f] -> lift dirichleti f)
     , ("euleri",     \[f] -> euleri f)
     , ("euler",      \[f] -> euler f)
-    , ("jacobi0",    \[f] -> lift jacobi0 f)
-    , ("jacobi1",    \[f] -> lift jacobi1 f)
-    , ("stieltjes",  \[f] -> lift stieltjes f)
-    , ("hankel1",    \[f] -> lift hankel1 f)
+    , ("jacobi0",    \[f] -> jacobi0 f)
+    , ("jacobi1",    \[f] -> jacobi1 f)
+    , ("jacobiPoly0", \[f] -> lift CFrac.Poly.jacobi0 f)
+    , ("jacobiPoly1", \[f] -> lift CFrac.Poly.jacobi1 f)
+    , ("jacobiQD0",  \[f] -> lift CFrac.QD.jacobi0 f)
+    , ("jacobiQD1",  \[f] -> lift CFrac.QD.jacobi1 f)
+    , ("jacobiReference0", \[f] -> lift CFrac.Reference.jacobi0 f)
+    , ("jacobiReference1", \[f] -> lift CFrac.Reference.jacobi1 f)
+    , ("stieltjes", \[f] -> lift CFrac.Hankel.stieltjes f)
+    , ("stieltjesPoly", \[f] -> lift CFrac.Poly.stieltjes f)
+    , ("stieltjesQD", \[f] -> lift CFrac.QD.stieltjes f)
+    , ("stieltjesReference", \[f] -> lift CFrac.Reference.stieltjes f)
+--    , ("hankelQD",   \[f] -> lift hankelQD f)
     , ("hankel",     \[f] -> lift hankel f)
+    , ("hankel1",    \[f] -> lift hankel1 f)
     , ("indicator",  \[f] -> rseq f)
     , ("indicatorc", \[f] -> rseq' f)
     , ("shift",      \[f] -> shift f)

@@ -5,7 +5,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015, 2016
+-- Copyright   : Anders Claesson 2015-2017
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -36,10 +36,17 @@ import qualified HOPS.GF.Const as C
 import qualified HOPS.GF.Rats as R
 import HOPS.DB
 import HOPS.Config
+import qualified HOPS.GF.CFrac.Hankel as CFrac.Hankel
+import qualified HOPS.GF.CFrac.Poly as CFrac.Poly
+import qualified HOPS.GF.CFrac.QD as CFrac.QD
+import qualified HOPS.GF.CFrac.Reference as CFrac.Reference
 
 type S5  = Series 5
 type S10 = Series 10
 type S20 = Series 20
+
+-- Series all of whose coefficients (with index < n) are nonzero.
+newtype CoeffwiseNonzero n = CoeffwiseNonzero (Series n) deriving Show
 
 -- Series of the form `x*f` (i.e. the constant term is 0).
 newtype Revertible n = Revertible (Series n) deriving Show
@@ -109,6 +116,9 @@ instance Arbitrary Rat where
 instance KnownNat n => Arbitrary (Series n) where
     arbitrary = series (Proxy :: Proxy n) <$> arbitrary
 
+instance KnownNat n => Arbitrary (CoeffwiseNonzero n) where
+    arbitrary = CoeffwiseNonzero <$> arbitrary `suchThat` coeffWiseNonzero
+
 instance KnownNat n => Arbitrary (Revertible n) where
     arbitrary = Revertible . series (Proxy :: Proxy n) . (0:) <$> arbitrary
 
@@ -118,6 +128,9 @@ instance KnownNat n => Arbitrary (Unit n) where
 nonzeroVal :: Rat -> Bool
 nonzeroVal (Val r) | r /= 0 = True
 nonzeroVal _ = False
+
+coeffWiseNonzero :: Series n -> Bool
+coeffWiseNonzero = all nonzeroVal . coeffList
 
 nonzeroLeadingVal :: Series n -> Bool
 nonzeroLeadingVal = nonzeroVal . leadingCoeff
@@ -255,6 +268,11 @@ infix 4 ~=
 (~=) :: Series n -> Series n -> Bool
 f ~= g = rationalPrefix f == rationalPrefix g
 
+infix 4 ~<
+
+(~<) :: Series n -> Series n -> Bool
+f ~< g = rationalPrefix f `isPrefixOf` rationalPrefix g
+
 infix 4 ~==
 
 f ~== g = as `isPrefixOf` bs || bs `isPrefixOf` as
@@ -280,6 +298,7 @@ runExpr1 = runExpr emptyEnv
 ogf :: KnownNat n => Proxy n -> [Integer] -> Series n
 ogf n = series n . map (Val . fromIntegral)
 
+ogf10 = ogf (Proxy :: Proxy 10)
 ogf20 = ogf (Proxy :: Proxy 20)
 
 stubDB :: KnownNat n => Vector (Series n)
@@ -488,6 +507,9 @@ prop_A088789     = prop1  "A088789 == F=2*x/(1+exp(x));laplace(revert(F))"
 prop_A049140     = prop1' "A049140 == shift(revert(x*(1-x-x^3)))"
 prop_A008965     = prop1' "A008965 == cyc(indicator({n+1}))/x"
 
+prop_Hankel_A000108 = prop1' "hankel(A000108) == {1,1,1,1,1,1,1,1,1,1}"
+prop_Hankel_A033321 = prop1' "hankel(A033321) == {1,1,1,1,1,1,1,1,1,1}"
+
 -- Naive cofactor implementation of determinant
 determinant :: Num a => Vector (Vector a) -> a
 determinant m =
@@ -531,6 +553,44 @@ pset f
 
 prop_mset (Revertible f) = uncurry (~=) $ evalEqn [f::S10, mset f] "mset(f) == g"
 prop_pset (Revertible f) = uncurry (~=) $ evalEqn [f::S10, pset f] "pset(f) == g"
+
+lookupTr1 :: KnownNat n => ByteString -> Series n -> Series n
+lookupTr1 name =
+    let Just (Transform 1 tr) = lookupTransform name
+    in \f -> tr [f]
+
+equalTr :: KnownNat n => ByteString -> ByteString -> Series n -> Bool
+equalTr name1 name2 f = lookupTr1 name1 f ~= lookupTr1 name2 f
+
+lessTr :: KnownNat n => ByteString -> ByteString -> Series n -> Bool
+lessTr name1 name2 f = lookupTr1 name1 f ~< lookupTr1 name2 f
+
+prop_Stieltjes_Poly :: KnownNat n => Series n -> Bool
+prop_Stieltjes_Poly = equalTr "stieltjesPoly" "stieltjesReference"
+
+prop_Jacobi0_Poly :: KnownNat n => Series n -> Bool
+prop_Jacobi0_Poly = equalTr "jacobiPoly0" "jacobiReference0"
+
+prop_Jacobi1_Poly :: KnownNat n => Series n -> Bool
+prop_Jacobi1_Poly = equalTr "jacobiPoly1" "jacobiReference1"
+
+prop_Stieltjes_Hankel :: KnownNat n => Series n -> Bool
+prop_Stieltjes_Hankel = equalTr "stieltjes" "stieltjesReference"
+
+prop_Jacobi0_Hankel :: KnownNat n => Series n -> Bool
+prop_Jacobi0_Hankel = equalTr "jacobi0" "jacobiReference0"
+
+prop_Jacobi1_Hankel :: KnownNat n => Series n -> Bool
+prop_Jacobi1_Hankel = equalTr "jacobi1" "jacobiReference1"
+
+prop_Stieltjes_QD :: KnownNat n => Series n -> Bool
+prop_Stieltjes_QD = lessTr "stieltjesQD" "stieltjesReference"
+
+prop_Jacobi0_QD :: KnownNat n => Series n -> Bool
+prop_Jacobi0_QD f@(Series v) = lessTr "jacobiQD0" "jacobiReference0" f
+
+prop_Jacobi1_QD :: KnownNat n => Series n -> Bool
+prop_Jacobi1_QD = lessTr "jacobiQD1" "jacobiReference1"
 
 tests =
     [ ("Expr/associative",        check 100 prop_Expr_assoc)
@@ -654,11 +714,31 @@ tests =
     , ("A088789",                 check   1 prop_A088789)
     , ("A049140",                 check   1 prop_A049140)
     , ("A008965",                 check   1 prop_A008965)
+    , ("hankel(A000108)",         check   1 prop_Hankel_A000108)
+    , ("hankel(A033321)",         check   1 prop_Hankel_A033321)
     , ("Determinant",             check 100 prop_Determinant)
     , ("Coefficients",            check   1 prop_Coefficients)
     , ("seq identity",            check  50 prop_seq)
     , ("mset identity",           check  50 prop_mset)
     , ("pset identity",           check  50 prop_pset)
+    , ("Stieltjes/Poly/7",        check 100 (prop_Stieltjes_Poly :: Series 7 -> Bool))
+    , ("Stieltjes/Poly/8",        check 100 (prop_Stieltjes_Poly :: Series 8 -> Bool))
+    , ("Jacobi0/Poly/7",          check 100 (prop_Jacobi0_Poly :: Series 7 -> Bool))
+    , ("Jacobi0/Poly/8",          check 100 (prop_Jacobi0_Poly :: Series 8 -> Bool))
+    , ("Jacobi1/Poly/7",          check 100 (prop_Jacobi1_Poly :: Series 7 -> Bool))
+    , ("Jacobi1/Poly/8",          check 100 (prop_Jacobi1_Poly :: Series 8 -> Bool))
+    , ("Stieltjes/Hankel/7",      check 100 (prop_Stieltjes_Hankel :: Series 7 -> Bool))
+    , ("Stieltjes/Hankel/8",      check 100 (prop_Stieltjes_Hankel :: Series 8 -> Bool))
+    , ("Jacobi0/Hankel/7",        check 100 (prop_Jacobi0_Hankel :: Series 7 -> Bool))
+    , ("Jacobi0/Hankel/8",        check 100 (prop_Jacobi0_Hankel :: Series 8 -> Bool))
+    , ("Jacobi1/Hankel/7",        check 100 (prop_Jacobi1_Hankel :: Series 7 -> Bool))
+    , ("Jacobi1/Hankel/8",        check 100 (prop_Jacobi1_Hankel :: Series 8 -> Bool))
+    , ("Stieltjes/QD/7",          check 100 (prop_Stieltjes_QD :: Series 7 -> Bool))
+    , ("Stieltjes/QD/8",          check 100 (prop_Stieltjes_QD :: Series 8 -> Bool))
+    -- , ("Jacobi0/QD/7",            check 100 (prop_Jacobi0_QD :: Series 7 -> Bool))
+    -- , ("Jacobi0/QD/8",            check 100 (prop_Jacobi0_QD :: Series 8 -> Bool))
+    -- , ("Jacobi1/QD/7",            check 100 (prop_Jacobi1_QD :: Series 7 -> Bool))
+    -- , ("Jacobi1/QD/8",            check 100 (prop_Jacobi1_QD :: Series 8 -> Bool))
     ]
 
 main =
