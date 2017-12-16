@@ -4,6 +4,8 @@
 -- License     : BSD-3
 --
 
+-- Quotient difference algorithm for S- and J-fractions
+
 module HOPS.GF.CFrac.QD
     ( stieltjes
     , jacobi
@@ -21,6 +23,16 @@ jacobi0 = fst . jacobi
 
 jacobi1 :: Fractional a => Vector a -> Vector a
 jacobi1 = snd . jacobi
+
+-- XXX: Jacobi0/1 is currently broken:
+--
+-- *Main> quickCheck (prop_Jacobi0_QD :: Series 3 -> Bool)
+-- *** Failed! (after 6 tests):
+-- Exception:
+--   ./Data/Vector/Generic.hs:245 ((!)): index out of bounds (2,2)
+--   CallStack (from HasCallStack):
+--     error, called at .<snip>
+-- series (Proxy :: Proxy 3) [Val (1 % 1),Val ((-3) % 4),Val (5 % 1)]
 
 jacobi :: Fractional a => Vector a -> (Vector a, Vector a)
 jacobi = contraction stieltjes
