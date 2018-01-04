@@ -45,6 +45,7 @@ import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe
 import Data.List
+import Data.Ratio
 import Data.Semigroup
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
@@ -385,11 +386,30 @@ polys1 d = [ fromList cs | cs <- polyList1 d d ]
 rationals :: Int -> [Expr3]
 rationals d = divide <$> polys d <*> polys1 d
 
+-- Calkin-Wilf sequence
+cw :: Int -> Rational
+cw 0 = 1
+cw k = 1 / (2*y - x + 1)
+  where
+    x = cwStream !! (k-1)
+    y = fromInteger (truncate x)
+
+cwStream :: [Rational]
+cwStream = map cw [0..]
+
+cwFracs :: Int -> [Rational]
+cwFracs n = take (2*(2^n-1)) (cwStream >>= \x -> [-x,x])
+
+fracs :: Int -> [Expr3]
+fracs n = [ divide (ELit (numerator r)) (ELit (denominator r)) | r <- cwFracs n ]
+
 lookupSet :: Name -> [Expr] -> [Expr3]
 lookupSet "poly" [Singleton (Expr1 (Expr2 (Expr3 (ELit d))))] = polys (fromIntegral d)
 lookupSet "poly" _ = error "'poly' expects an integer"
 lookupSet "rat" [Singleton (Expr1 (Expr2 (Expr3 (ELit d))))] = rationals (fromIntegral d)
 lookupSet "rat" _ = error "'rat' expects an integer"
+lookupSet "frac" [Singleton (Expr1 (Expr2 (Expr3 (ELit d))))] = fracs (fromIntegral d)
+lookupSet "frac" _ = error "'frac' expects an integer"
 lookupSet "oneof" es = Expr <$> es
 lookupSet _ _ = undefined
 
@@ -612,7 +632,7 @@ reserved :: [Name]
 reserved = "x" : transforms
 
 name' :: Parser Name
-name' = string "poly" <|> string "rat" <|> string "oneof"
+name' = string "poly" <|> string "rat" <|> string "frac" <|> string "oneof"
 
 name :: Parser Name
 name = mappend <$> takeWhile1 isAlpha_ascii
