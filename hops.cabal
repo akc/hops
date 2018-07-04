@@ -1,5 +1,5 @@
 Name:                hops
-Version:             0.8.3
+Version:             0.8.4
 Synopsis:            Handy Operations on Power Series
 Description:         HOPS is a DSL for power series and integer sequences.
 Homepage:            http://akc.is/hops
@@ -65,12 +65,13 @@ Library
                        HOPS.GF.CFrac.QD
                        HOPS.GF.CFrac.Reference
                        HOPS.GF.Const
+                       HOPS.GF.Hankel
                        HOPS.GF.Rat
                        HOPS.GF.Rats
                        HOPS.GF.Series
                        HOPS.GF.Transform
 
---  Other-modules:       Paths_hops
+  Other-modules:       Paths_hops
 
   ghc-options:         -Wall -fno-warn-unused-do-bind
                        -fno-warn-missing-signatures -O2

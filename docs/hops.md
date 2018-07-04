@@ -1,5 +1,5 @@
 ---
-title: HOPS(1) User Manual | Version 0.8.3
+title: HOPS(1) User Manual | Version 0.8.4
 date: 28 May 2017
 ---
 

@@ -32,7 +32,7 @@ import HOPS.DB
 import HOPS.GF
 
 versionString :: String
-versionString = "0.8.3"
+versionString = "0.8.4"
 
 seqsURL :: String
 seqsURL = "https://oeis.org/stripped.gz"

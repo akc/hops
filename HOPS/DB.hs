@@ -46,7 +46,7 @@ readANumDB cfg = do
     entries <- parseStripped . unDB <$> readSeqDB cfg
     let series' = series (Proxy :: Proxy n) . map Val
     let pairs = [ (unANum a - 1, series' s) | (a, s) <- entries ]
-    return $ V.replicate 350000 (series' []) // pairs
+    return $ V.replicate 999999 (series' []) // pairs
 
 -- | An empty A-number database
 emptyANumDB :: Vector (Series n)
