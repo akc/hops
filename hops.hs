@@ -4,7 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015-2017
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -15,7 +15,6 @@ import GHC.TypeLits
 import Data.Proxy
 import Data.Maybe
 import Data.Ratio
-import Data.Semigroup
 import qualified Data.Map as M
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -27,12 +26,11 @@ import HOPS.Entry
 import HOPS.OEIS
 import HOPS.Options
 import HOPS.Config
-import HOPS.Download
 import HOPS.DB
 import HOPS.GF
 
 versionString :: String
-versionString = "0.8.4"
+versionString = "0.8.5"
 
 seqsURL :: String
 seqsURL = "https://oeis.org/stripped.gz"
@@ -40,7 +38,7 @@ seqsURL = "https://oeis.org/stripped.gz"
 data Input (n :: Nat)
     = RunPrgs (Env n) [Expr] [Core] [Entry]
     | TagSeqs Int [Sequence]
-    | UpdateDBs FilePath FilePath
+    | UpdateDBs FilePath
     | Empty
 
 data Output
@@ -79,7 +77,7 @@ readSeqs = map (parseIntegerSeq . B.filter (/=' ')) <$> readStdin
 readInput :: KnownNat n => Options -> Config -> IO (Input n)
 readInput opts cfg
     | version opts = return Empty
-    | update opts = return $ UpdateDBs (hopsDir cfg) (seqDBPath cfg)
+    | update opts = return $ UpdateDBs (hopsDir cfg)
     | isJust (tagSeqs opts) = TagSeqs (fromJust (tagSeqs opts)) <$> readSeqs
     | otherwise = do
         (prgs, cprgs) <- readPrgs opts
@@ -113,11 +111,14 @@ hops :: KnownNat n => Options -> Proxy n -> Input n -> IO Output
 hops opts n inp =
     case inp of
 
-      UpdateDBs hopsdir sdbPath -> do
+      UpdateDBs hopsdir -> do
           createDirectoryIfMissing False hopsdir
-          let msg1 = "Downloading " ++ seqsURL ++ ": "
-          putStr msg1 >> hFlush stdout
-          download (length msg1) seqsURL sdbPath >> putStrLn ""
+          putStrLn "# You have download a file manually:"
+          putStrLn $ "cd " ++ hopsdir
+          putStrLn $ "wget " ++ seqsURL
+          putStrLn "gunzip stripped.gz"
+          putStrLn "cd -"
+          hFlush stdout
           return NOP
 
       TagSeqs i0 ts ->

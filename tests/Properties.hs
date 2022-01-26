@@ -5,7 +5,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015-2017
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -14,7 +14,6 @@ import GHC.TypeLits
 import Text.Printf
 import Data.List
 import Data.Maybe
-import Data.Semigroup
 import Data.Ratio
 import Data.Proxy
 import qualified Data.ByteString.Char8 as B

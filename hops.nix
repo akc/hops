@@ -2,25 +2,25 @@
 , conduit, conduit-extra, containers, deepseq, directory, filepath
 , http-conduit, http-types, memoize, optparse-applicative, parallel
 , process, QuickCheck, resourcet, stdenv, text, transformers
-, vector
+, vector, lib
 }:
 mkDerivation {
   pname = "hops";
-  version = "0.8.4";
+  version = "0.8.5";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
   enableSeparateDataOutput = true;
   libraryHaskellDepends = [
-    aeson ansi-terminal attoparsec base bytestring conduit
-    conduit-extra containers deepseq directory filepath http-conduit
-    http-types memoize optparse-applicative resourcet text transformers
+    aeson attoparsec base bytestring
+    containers deepseq directory filepath
+    memoize optparse-applicative text transformers
     vector
   ];
   executableHaskellDepends = [
-    aeson ansi-terminal attoparsec base bytestring conduit
-    conduit-extra containers deepseq directory filepath http-conduit
-    http-types memoize optparse-applicative parallel resourcet text
+    aeson attoparsec base bytestring
+    containers deepseq directory filepath
+    memoize optparse-applicative parallel text
     transformers vector
   ];
   testHaskellDepends = [
@@ -29,5 +29,5 @@ mkDerivation {
   ];
   homepage = "http://akc.is/hops";
   description = "Handy Operations on Power Series";
-  license = stdenv.lib.licenses.bsd3;
+  license = lib.licenses.bsd3;
 }

@@ -1,5 +1,5 @@
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --

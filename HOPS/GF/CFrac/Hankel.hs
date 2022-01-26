@@ -1,5 +1,5 @@
 -- |
--- Copyright   : Anders Claesson 2017
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -15,7 +15,6 @@ import Data.Vector (Vector, (!))
 import qualified Data.Vector as V
 import HOPS.GF.Rat
 import HOPS.GF.Hankel
-import HOPS.GF.CFrac.Contraction
 
 -- S-fraction using the Hankel determinants
 stieltjes :: Vector Rat -> Vector Rat

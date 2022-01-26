@@ -1,5 +1,5 @@
 -- |
--- Copyright   : Anders Claesson 2015, 2016
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -10,7 +10,6 @@ module HOPS.Options
     , getOptions
     ) where
 
-import Data.Monoid
 import Options.Applicative
 
 -- | Command line options:
@@ -30,7 +29,7 @@ data Options = Options
 -- | Parse command line options.
 optionsParser :: Parser Options
 optionsParser =
-  abortOption ShowHelpText (long "help") <*> (Options
+  abortOption (ShowHelpText Nothing) (long "help") <*> (Options
     <$> strOption
         ( short 'f'
        <> long "script"

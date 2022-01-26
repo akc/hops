@@ -4,7 +4,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -23,7 +23,6 @@ module HOPS.GF.Rats
 
 import Prelude as P
 import GHC.TypeLits
-import Data.Monoid
 import Data.Proxy
 import Data.Maybe
 import qualified Data.ByteString.Char8 as B

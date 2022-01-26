@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- |
--- Copyright   : Anders Claesson 2015, 2016
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -23,7 +23,6 @@ module HOPS.GF.Const
     , expr
     ) where
 
-import Data.Monoid
 import Data.Attoparsec.ByteString.Char8
 import Control.Applicative
 import HOPS.GF.Series

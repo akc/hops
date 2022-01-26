@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds #-}
 
 -- |
--- Copyright   : Anders Claesson 2015-2017
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -46,7 +46,6 @@ import Data.Proxy
 import Data.Maybe
 import Data.List
 import Data.Ratio
-import Data.Semigroup
 import Data.Aeson (FromJSON (..), ToJSON(..), Value (..))
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Vector (Vector, (!?))

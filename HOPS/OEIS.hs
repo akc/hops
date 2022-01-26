@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- |
--- Copyright   : Anders Claesson 2015, 2016
+-- Copyright   : Anders Claesson
 -- Maintainer  : Anders Claesson <anders.claesson@gmail.com>
 -- License     : BSD-3
 --
@@ -24,7 +24,6 @@ module HOPS.OEIS
 
 import Data.List
 import Data.Maybe
-import Data.Monoid
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
